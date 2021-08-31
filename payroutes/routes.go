@@ -1,6 +1,9 @@
 package payroutes
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 /**
  * 支付路由
@@ -12,7 +15,7 @@ type RoutingManager struct {
 	nodeUpdateLock           sync.Mutex               // 数据锁定
 	nodeUpdateLastestPageNum uint32                   // 最新数据更新翻页
 	nodeById                 map[uint32]*PayRelayNode // 节点
-	nodeByName               map[string]*PayRelayNode // 节点
+	nodeByName               map[string]*PayRelayNode // 节点名称，不区分大小写
 	graphDatas               []*ChannelRelationship   // 关系表
 
 }
@@ -41,4 +44,9 @@ func (r *RoutingManager) UpdateLock() {
 
 func (r *RoutingManager) UpdateUnlock() {
 	r.nodeUpdateLock.Unlock()
+}
+
+// find node by name
+func (r *RoutingManager) FindNodeByName(name string) *PayRelayNode {
+	return r.nodeByName[strings.ToLower(name)]
 }

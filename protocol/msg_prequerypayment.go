@@ -60,17 +60,22 @@ func (m NodeIdPath) Serialize() ([]byte, error) {
 
 //
 type PayPathDescribe struct {
-	NodeIdPath *NodeIdPath
-	Describe   fields.StringMax65535 // 通道支付描述
+	NodeIdPath     *NodeIdPath
+	PredictPathFee fields.Amount         // 路径预估手续费
+	Describe       fields.StringMax65535 // 通道支付描述
 }
 
 func (m PayPathDescribe) Size() uint32 {
-	return m.NodeIdPath.Size() + m.Describe.Size()
+	return m.NodeIdPath.Size() + m.PredictPathFee.Size() + m.Describe.Size()
 }
 
 func (m *PayPathDescribe) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
 	seek, e = m.NodeIdPath.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
+	seek, e = m.PredictPathFee.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
@@ -86,6 +91,11 @@ func (m PayPathDescribe) Serialize() ([]byte, error) {
 	var bt []byte = nil
 	buf := bytes.NewBuffer(nil)
 	bt, e = m.NodeIdPath.Serialize()
+	if e != nil {
+		return nil, e
+	}
+	buf.Write(bt)
+	bt, e = m.PredictPathFee.Serialize()
 	if e != nil {
 		return nil, e
 	}
@@ -152,20 +162,19 @@ func (m PayPathForms) Serialize() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-/***************************************************/
+/********************************************************/
 
-// 支付预查询
+/**
+ * 预查询支付 ，请求
+ */
+
 type MsgRequestPrequeryPayment struct {
-	PredictTotalFee  fields.Amount       // 总共需要支付的手续费
 	PayAmount        fields.Amount       // 支付金额，必须为正整数
 	PayeeChannelAddr fields.StringMax255 // 收款人通道地址，例如： 1Ke39SGbnrsDzkThANzTAFJmDhcc8qvM2Z__HACorg
-
-	Notes     fields.StringMax255 // 描述信息
-	PathForms *PayPathForms
 }
 
 func (m MsgRequestPrequeryPayment) Type() uint8 {
-	return MsgTypeRequestPrequeryPayment
+	return MsgTypeResponsePrequeryPayment
 }
 
 func (m MsgRequestPrequeryPayment) Size() uint32 {
@@ -213,15 +222,12 @@ func (m MsgRequestPrequeryPayment) SerializeWithType() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-/********************************************************/
+/***************************************************/
 
-/**
- * 预查询支付 ，内容响应
- */
-
+// 支付预查询 响应
 type MsgResponsePrequeryPayment struct {
-	PayAmount        fields.Amount       // 支付金额，必须为正整数
-	PayeeChannelAddr fields.StringMax255 // 收款人通道地址，例如： 1Ke39SGbnrsDzkThANzTAFJmDhcc8qvM2Z__HACorg
+	Notes     fields.StringMax65535 // 描述信息
+	PathForms *PayPathForms         // 可选择的支付通道列表
 }
 
 func (m MsgResponsePrequeryPayment) Type() uint8 {
@@ -229,17 +235,18 @@ func (m MsgResponsePrequeryPayment) Type() uint8 {
 }
 
 func (m MsgResponsePrequeryPayment) Size() uint32 {
-	return m.PayAmount.Size() +
-		m.PayeeChannelAddr.Size()
+	return m.Notes.Size() +
+		m.PathForms.Size()
+
 }
 
 func (m *MsgResponsePrequeryPayment) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
-	seek, e = m.PayAmount.Parse(buf, seek)
+	seek, e = m.Notes.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
-	seek, e = m.PayeeChannelAddr.Parse(buf, seek)
+	seek, e = m.PathForms.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
@@ -247,17 +254,19 @@ func (m *MsgResponsePrequeryPayment) Parse(buf []byte, seek uint32) (uint32, err
 }
 
 func (m MsgResponsePrequeryPayment) Serialize() ([]byte, error) {
+	var e error
+	var bt []byte
 	buf := bytes.NewBuffer(nil)
-	b2, e := m.PayAmount.Serialize()
+	bt, e = m.Notes.Serialize()
 	if e != nil {
 		return nil, e
 	}
-	buf.Write(b2)
-	b3, e := m.PayeeChannelAddr.Serialize()
+	buf.Write(bt)
+	bt, e = m.PathForms.Serialize()
 	if e != nil {
 		return nil, e
 	}
-	buf.Write(b3)
+	buf.Write(bt)
 	// ok
 	return buf.Bytes(), nil
 }

@@ -9,7 +9,7 @@ import (
  * 发起支付
  */
 
-type MsgInitiatePayment struct {
+type MsgRequestInitiatePayment struct {
 	OrderNoteHashHalfChecker fields.HashHalfChecker // 订单详情数据哈希
 
 	HighestAcceptanceFee fields.Amount       // 最高可接受的总手续费数额
@@ -20,11 +20,11 @@ type MsgInitiatePayment struct {
 	TargetPath NodeIdPath
 }
 
-func (m MsgInitiatePayment) Type() uint8 {
+func (m MsgRequestInitiatePayment) Type() uint8 {
 	return MsgTypeInitiatePayment
 }
 
-func (m MsgInitiatePayment) Size() uint32 {
+func (m MsgRequestInitiatePayment) Size() uint32 {
 	return m.OrderNoteHashHalfChecker.Size() +
 		m.HighestAcceptanceFee.Size() +
 		m.PayAmount.Size() +
@@ -32,7 +32,7 @@ func (m MsgInitiatePayment) Size() uint32 {
 		m.TargetPath.Size()
 }
 
-func (m *MsgInitiatePayment) Parse(buf []byte, seek uint32) (uint32, error) {
+func (m *MsgRequestInitiatePayment) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
 	seek, e = m.OrderNoteHashHalfChecker.Parse(buf, seek)
 	if e != nil {
@@ -57,7 +57,7 @@ func (m *MsgInitiatePayment) Parse(buf []byte, seek uint32) (uint32, error) {
 	return seek, nil
 }
 
-func (m MsgInitiatePayment) Serialize() ([]byte, error) {
+func (m MsgRequestInitiatePayment) Serialize() ([]byte, error) {
 	var e error
 	var bt []byte
 	buf := bytes.NewBuffer(nil)
@@ -90,7 +90,7 @@ func (m MsgInitiatePayment) Serialize() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (m MsgInitiatePayment) SerializeWithType() ([]byte, error) {
+func (m MsgRequestInitiatePayment) SerializeWithType() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{m.Type()})
 	b1, e := m.Serialize()
 	if e != nil {

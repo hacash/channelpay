@@ -3,6 +3,7 @@ package payroutes
 import (
 	"bytes"
 	"github.com/hacash/core/fields"
+	"math/big"
 )
 
 /**
@@ -152,4 +153,30 @@ func (m PayRelayNode) Serialize() ([]byte, error) {
 	buf.Write(bt)
 	// ok
 	return buf.Bytes(), nil
+}
+
+// 预估手续费
+func (m PayRelayNode) PredictFeeForPay(payamt *fields.Amount) *fields.Amount {
+	nofee := fields.NewEmptyAmount()
+	// 计算比例
+	bv := payamt.GetValue()
+	feeb := new(big.Int).Div(bv, new(big.Int).SetUint64(10000*10000))
+	feeb = new(big.Int).Mul(feeb, new(big.Int).SetUint64(uint64(m.FeeRatio)))
+	fee, e := fields.NewAmountByBigInt(feeb)
+	if e != nil {
+		return nofee // error
+	}
+	// 限制高低
+	if m.FeeMin.IsNotEmpty() && fee.LessThan(&m.FeeMin) {
+		fee = m.FeeMin.Copy() // 最低
+	} else if m.FeeMax.IsNotEmpty() && fee.MoreThan(&m.FeeMax) {
+		fee = m.FeeMax.Copy() // 最高
+	}
+	// 字段大小限制
+	retfee, _, e := fee.CompressForMainNumLen(4, false)
+	if e != nil {
+		return nofee
+	}
+	// ok
+	return retfee
 }

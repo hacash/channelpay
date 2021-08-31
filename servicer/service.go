@@ -15,7 +15,7 @@ type Servicer struct {
 	chanset   datasources.DataSourceOfServicerPayChannelSetup
 
 	// 客户连接池
-	customerChgLock sync.Mutex
+	customerChgLock sync.RWMutex
 	customers       map[string]*Customer
 
 	// 路由管理器

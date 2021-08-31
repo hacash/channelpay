@@ -3,6 +3,7 @@ package payroutes
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -33,8 +34,8 @@ func (r *RoutingManager) SearchNodePath(startName, targetName string) ([][]*PayR
 	var respath = make([][]uint32, 0)
 	var respathnodes = make([][]*PayRelayNode, 0)
 	// 解析id
-	startNode := r.nodeByName[startName]
-	targetNode := r.nodeByName[targetName]
+	startNode := r.nodeByName[strings.ToLower(startName)]
+	targetNode := r.nodeByName[strings.ToLower(targetName)]
 	if startNode == nil {
 		return nil, fmt.Errorf("Start node name <%s> not find", startName)
 	}

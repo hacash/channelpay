@@ -14,6 +14,8 @@ type ServicerConfig struct {
 	SelfIdentificationName string // 本机服务商识别名称
 	LoadRoutesUrl          string // 下发路由数据
 
+	FullNodeRpcUrl string // Hacash 全节点数据接口地址
+
 }
 
 func NewEmptyServicerConfig() *ServicerConfig {
@@ -43,6 +45,8 @@ func NewServicerConfig(cnffile *sys.Inicnf) *ServicerConfig {
 	cnf.SelfIdentificationName = section.Key("pay_servicer_identification_name").MustString("HACorg")
 
 	cnf.LoadRoutesUrl = section.Key("load_routes_data_url").MustString("wss://channelroutes.hacash.org/routesdata/distribute")
+
+	cnf.FullNodeRpcUrl = section.Key("full_node_rpc_url").MustString("http://127.0.0.1:3381")
 	// ok
 	return cnf
 }

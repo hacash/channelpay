@@ -66,7 +66,7 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 	case MsgTypeRequestPrequeryPayment:
 		msg = &MsgRequestPrequeryPayment{}
 	case MsgTypeInitiatePayment:
-		msg = &MsgInitiatePayment{}
+		msg = &MsgRequestInitiatePayment{}
 	case MsgTypePayRouteRequestServiceNodes:
 		msg = &MsgPayRouteRequestServiceNodes{}
 	case MsgTypePayRouteResponseServiceNodes:

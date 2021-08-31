@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/hacash/core/fields"
+	"strings"
 )
 
 /**
@@ -137,7 +138,7 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 					} else {
 						// 插入节点
 						p.nodeById[uint32(node.ID)] = node
-						p.nodeByName[node.IdentificationName.Value()] = node
+						p.nodeByName[strings.ToLower(node.IdentificationName.Value())] = node
 					}
 				}
 			})
@@ -155,10 +156,10 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 						fmt.Printf("ForceUpdataNodesAndRelationshipByJsonBytes Update Error: node id <%d> not find.\n", nodeid)
 					} else {
 						// 更新节点
-						delete(p.nodeByName, oldnode.IdentificationName.Value())
+						delete(p.nodeByName, strings.ToLower(oldnode.IdentificationName.Value()))
 						newnode := createNodeFromJsonVal(value, oldnode) // 创建节点
 						p.nodeById[uint32(newnode.ID)] = newnode
-						p.nodeByName[newnode.IdentificationName.Value()] = newnode
+						p.nodeByName[strings.ToLower(newnode.IdentificationName.Value())] = newnode
 					}
 				}
 			})
@@ -176,7 +177,7 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 						fmt.Printf("ForceUpdataNodesAndRelationshipByJsonBytes Delete Error: node id <%d> not find.\n", nodeid)
 					} else {
 						// 删除节点
-						delete(p.nodeByName, oldnode.IdentificationName.Value())
+						delete(p.nodeByName, strings.ToLower(oldnode.IdentificationName.Value()))
 						delete(p.nodeById, uint32(oldnode.ID))
 					}
 				}

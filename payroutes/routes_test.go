@@ -27,7 +27,7 @@ func Test_t1(t *testing.T) {
 			OverdueTime:        fields.BlockTxTimestamp(overdueTime),
 		}
 		mng.nodeById[uint32(i)] = node
-		mng.nodeByName[name] = node
+		mng.nodeByName[strings.ToLower(name)] = node
 	}
 
 	// 添加关系表

@@ -6,6 +6,7 @@ import (
 	"github.com/hacash/core/fields"
 	"io/ioutil"
 	"path"
+	"strings"
 )
 
 const (
@@ -93,7 +94,7 @@ func (p *RoutingManager) RebuildNodesAndRelationshipUnsafe(fnamety string, conbt
 				break // 全部解析完毕
 			}
 			nodeById[uint32(node.ID)] = node
-			nodeByName[node.IdentificationName.Value()] = node
+			nodeByName[strings.ToLower(node.IdentificationName.Value())] = node // 忽略大小写
 		}
 		p.nodeById = nodeById
 		p.nodeByName = nodeByName // 读取完毕
