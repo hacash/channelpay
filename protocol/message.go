@@ -15,6 +15,12 @@ const (
 	MsgTypeLoginCheckLastestBill   uint8 = 2 // 服务端发送最新对账单
 	MsgTypeResponsePrequeryPayment uint8 = 3 // 预查询支付信息
 
+	MsgTypeRequestChannelPayCollectionSign               uint8 = 5 // 向客户端请求收款签名
+	MsgTypeResponseChannelPayCollectionSign              uint8 = 6 // 获得签名
+	MsgTypeRequestChannelPayPaymentSign                  uint8 = 7 // 向客户端请求支付签名
+	MsgTypeResponseChannelPayPaymentSign                 uint8 = 8 // 获得签名
+	MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 9 // 发送完整票据给支付下游
+
 	// 客户端发送
 	MsgTypeLogin                  uint8 = 101 // 顾客登录消息
 	MsgTypeLogout                 uint8 = 102 // 客户端主动下线
@@ -55,18 +61,29 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 	switch ty {
 	case MsgTypeError:
 		msg = &MsgError{}
-	case MsgTypeLogin:
-		msg = &MsgLogin{}
 	case MsgTypeDisplacementOffline:
 		msg = &MsgDisplacementOffline{}
 	case MsgTypeLoginCheckLastestBill:
 		msg = &MsgLoginCheckLastestBill{}
+
+	case MsgTypeRequestChannelPayCollectionSign:
+		msg = &MsgRequestChannelPayCollectionSign{}
+	case MsgTypeResponseChannelPayCollectionSign:
+		msg = &MsgResponseChannelPayCollectionSign{}
+	case MsgTypeRequestChannelPayPaymentSign:
+		msg = &MsgRequestChannelPayPaymentSign{}
+	case MsgTypeResponseChannelPayPaymentSign:
+		msg = &MsgResponseChannelPayPaymentSign{}
+
+	case MsgTypeLogin:
+		msg = &MsgLogin{}
 	case MsgTypeLogout:
 		msg = &MsgCustomerLogout{}
 	case MsgTypeRequestPrequeryPayment:
 		msg = &MsgRequestPrequeryPayment{}
 	case MsgTypeInitiatePayment:
 		msg = &MsgRequestInitiatePayment{}
+
 	case MsgTypePayRouteRequestServiceNodes:
 		msg = &MsgPayRouteRequestServiceNodes{}
 	case MsgTypePayRouteResponseServiceNodes:

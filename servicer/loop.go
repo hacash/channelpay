@@ -6,8 +6,8 @@ import "time"
 func (s *Servicer) loop() {
 
 	// 8 小时更新一次路由更改
-	//loadUpdateFileTick := time.NewTicker(time.Hour * 8)
-	loadUpdateFileTick := time.NewTicker(time.Second * 8)
+	loadUpdateFileTick := time.NewTicker(time.Hour * 8)
+	//loadUpdateFileTick := time.NewTicker(time.Second * 8)
 
 	for {
 		select {

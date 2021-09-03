@@ -19,7 +19,8 @@ type Servicer struct {
 	customers       map[string]*Customer
 
 	// 路由管理器
-	payRouteMng *payroutes.RoutingManager
+	payRouteMng      *payroutes.RoutingManager
+	localServiceNode *payroutes.PayRelayNode // 本地服务节点
 }
 
 func NewServicer(cnf *ServicerConfig) *Servicer {
@@ -60,4 +61,19 @@ func (s *Servicer) SetDataSource(
 ) {
 	s.billstore = billstore
 	s.chanset = chanset
+}
+
+// 设置数据来源接口
+func (s *Servicer) GetLocalServiceNode() (*payroutes.PayRelayNode, error) {
+	if s.localServiceNode != nil {
+		return s.localServiceNode, nil
+	}
+	s.customerChgLock.Lock()
+	defer s.customerChgLock.Unlock()
+	lname := s.config.SelfIdentificationName
+	s.localServiceNode = s.payRouteMng.FindNodeByName(lname)
+	if s.localServiceNode == nil {
+		return nil, fmt.Errorf("Not find PayRelayNode of SelfIdentificationName <%s>", lname)
+	}
+	return s.localServiceNode, nil
 }
