@@ -119,7 +119,7 @@ func (c *Customer) GetChannelCapacityAmountForCollect() *fields.Amount {
 }
 
 // 直接保存（不做检查）支付对账票据
-func (c *Customer) UncheckSignSaveChannelPayReconciliationBalanceBill(bills *channel.ChannelPayBillAssemble) error {
+func (c *Customer) UncheckSignSaveChannelPayReconciliationBalanceBill(bills *channel.ChannelPayCompleteDocuments) error {
 
 	// 找出对账单
 	var proveBody *channel.ChannelChainTransferProveBodyInfo = nil

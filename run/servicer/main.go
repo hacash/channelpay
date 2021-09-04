@@ -41,7 +41,7 @@ func main() {
 		fmt.Println(e.Error())
 	} else {
 		// 设置数据源
-		sev.SetDataSource(localsto, localsto)
+		sev.SetDataSource(localsto, localsto, localsto)
 		// 启动
 		sev.Start()
 	}

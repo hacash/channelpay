@@ -9,8 +9,8 @@ import (
 /**************************************************/
 
 type MsgRequestChannelPayCollectionSign struct {
-	OperationNum fields.VarUint8                 // 操作单号
-	Bills        *channel.ChannelPayBillAssemble // 全部票据
+	OperationNum fields.VarUint8                      // 操作单号
+	Bills        *channel.ChannelPayCompleteDocuments // 全部票据
 }
 
 func (m MsgRequestChannelPayCollectionSign) Type() uint8 {
@@ -117,8 +117,8 @@ func (m MsgResponseChannelPayCollectionSign) SerializeWithType() ([]byte, error)
 /**************************************************/
 
 type MsgRequestChannelPayPaymentSign struct {
-	OperationNum fields.VarUint8                 // 操作单号
-	Bills        *channel.ChannelPayBillAssemble // 全部票据
+	OperationNum fields.VarUint8                      // 操作单号
+	Bills        *channel.ChannelPayCompleteDocuments // 全部票据
 }
 
 func (m MsgRequestChannelPayPaymentSign) Type() uint8 {

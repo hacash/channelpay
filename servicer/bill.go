@@ -21,11 +21,13 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fiel
 	}
 	trsbody := &channel.ChannelChainTransferProveBodyInfo{
 		ChannelId:           usr.channelId,
+		ChannelReuseVersion: usr.channelInfo.ReuseVersion,
+		BillAutoNumber:      autoNumber1,
+		Direction:           1, // 后续判断支付方向
+		PayAmount:           *trsAmt,
 		Mode:                channel.ChannelTransferProveBodyPayModeNormal,
 		LeftAmount:          fields.Amount{},
 		RightAmount:         fields.Amount{},
-		ChannelReuseVersion: usr.channelInfo.ReuseVersion,
-		BillAutoNumber:      autoNumber1,
 	}
 	paySideBls := usr.GetChannelCapacityAmountForPay()
 	collectSideBls := usr.GetChannelCapacityAmountForCollect()
@@ -45,11 +47,17 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fiel
 	if e != nil {
 		return nil, fmt.Errorf("Channel balance distribution error: %s", e.Error())
 	}
-	// 通道分配
+	// 支付方向，通道分配
 	cusisleft := usr.CustomerAddressIsLeft()
+	if cusisleft && cusispay {
+	}
 	if (cusisleft && cusispay) || (!cusisleft && !cusispay) {
+		// left => right
+		trsbody.Direction = channel.ChannelTransferProveBodyPayDirectionLeftToRight
 		trsbody.LeftAmount, trsbody.RightAmount = *paySideDis, *collectSideDis
 	} else {
+		// right => left
+		trsbody.Direction = channel.ChannelTransferProveBodyPayDirectionRightToLeft
 		trsbody.LeftAmount, trsbody.RightAmount = *collectSideDis, *paySideDis
 	}
 	// 创建成功
@@ -57,7 +65,7 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fiel
 }
 
 // 创建通道支付票据
-func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *Customer, collectusr *Customer, trsAmt *fields.Amount, realpayamtwithfee *fields.Amount, orderHashCheck fields.HashHalfChecker) (*channel.ChannelPayBillAssemble, error) {
+func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *Customer, collectusr *Customer, trsAmt *fields.Amount, realpayamtwithfee *fields.Amount, orderHashCheck fields.HashHalfChecker) (*channel.ChannelPayCompleteDocuments, error) {
 
 	// 创建支付方对账单
 	ispay1 := true
@@ -110,7 +118,7 @@ func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *Custom
 	}
 
 	// 创建完毕，返回
-	allbill := &channel.ChannelPayBillAssemble{
+	allbill := &channel.ChannelPayCompleteDocuments{
 		ProveBodys: &channel.ChannelPayProveBodyList{
 			Count: fields.VarUint1(2),
 			ProveBodys: []*channel.ChannelChainTransferProveBodyInfo{

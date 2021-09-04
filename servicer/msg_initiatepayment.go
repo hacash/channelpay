@@ -27,7 +27,7 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, msg *prot
 		errorReturn(fmt.Errorf("Payment channel is being occupied, please try again later"))
 		return
 	}
-	defer payuser.ClearBusinessExclusive() // 终止独占状态
+	defer payuser.ClearBusinessExclusive() // 支付结束时，或者发生错误时，终止独占状态
 
 	var e error
 
@@ -152,8 +152,17 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 	}
 
 	// 2. 本地服务节点签名， 5秒超时返回错误
-
-	// TODO:: SERVICER do signs
+	// 服务节点地址
+	localnodeaddrs := make([]fields.Address, 0)
+	localnodeaddrs = append(localnodeaddrs, payuser.servicerAddress)
+	if payuser.servicerAddress.NotEqual(receiveCustomer.servicerAddress) {
+		localnodeaddrs = append(localnodeaddrs, receiveCustomer.servicerAddress)
+	}
+	// 服务商签名
+	nodesigns, e := s.signmachine.CheckPaydocumentAndFillNeedSignature(bills, localnodeaddrs)
+	if e != nil {
+		return fmt.Errorf("Fill need sign Error: ", e.Error()) // 返回错误
+	}
 
 	// 3. 付款方签名， 5秒超时返回错误
 	smsg3 := &protocol.MsgRequestChannelPayPaymentSign{
@@ -182,7 +191,9 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 	// 发送全部签名至收款方
 	signlist := fields.CreateEmptySignListMax255()
 	signlist.Append(msgobj3.Sign)
-	// TODO:: Append 服务商签名
+	for _, v := range nodesigns.Signs {
+		signlist.Append(v) // 本地节点签名
+	}
 	msg4 := &protocol.MsgSendChannelPayCompletedSignaturesToDownstream{
 		OperationNum: operationnumber,
 		AllSigns:     *signlist,

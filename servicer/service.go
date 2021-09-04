@@ -11,8 +11,9 @@ type Servicer struct {
 	config *ServicerConfig
 
 	// 数据接口
-	billstore datasources.DataSourceOfBalanceBill
-	chanset   datasources.DataSourceOfServicerPayChannelSetup
+	billstore   datasources.DataSourceOfBalanceBill
+	chanset     datasources.DataSourceOfServicerPayChannelSetup
+	signmachine datasources.DataSourceOfSignatureMachine // 签名机器
 
 	// 客户连接池
 	customerChgLock sync.RWMutex
@@ -58,9 +59,11 @@ func (s *Servicer) Start() {
 func (s *Servicer) SetDataSource(
 	billstore datasources.DataSourceOfBalanceBill,
 	chanset datasources.DataSourceOfServicerPayChannelSetup,
+	signmachine datasources.DataSourceOfSignatureMachine,
 ) {
 	s.billstore = billstore
 	s.chanset = chanset
+	s.signmachine = signmachine
 }
 
 // 设置数据来源接口
