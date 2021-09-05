@@ -145,6 +145,9 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 		return fmt.Errorf("Collection customer signature failed")
 	}
 	msgobj1 := msg1.(*protocol.MsgResponseChannelPayCollectionSign)
+	if msgobj1.ErrorCode > 0 {
+		return fmt.Errorf("Collection customer sign Error: ", msgobj1.ErrorMsg.Value()) // 返回错误
+	}
 	// 判断签名地址
 	e = bills.ChainPayment.FillSignByPosition(msgobj1.Sign)
 	if e != nil {
@@ -177,6 +180,9 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 		return fmt.Errorf("Payment customer signature failed")
 	}
 	msgobj3 := msg3.(*protocol.MsgResponseChannelPayPaymentSign)
+	if msgobj3.ErrorCode > 0 {
+		return fmt.Errorf("Payment customer sign Error: ", msgobj3.ErrorMsg.Value()) // 返回错误
+	}
 	// 判断签名地址
 	e = bills.ChainPayment.FillSignByPosition(msgobj3.Sign)
 	if e != nil {

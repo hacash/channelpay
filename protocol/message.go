@@ -21,6 +21,11 @@ const (
 	MsgTypeResponseChannelPayPaymentSign                 uint8 = 8 // 获得签名
 	MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 9 // 发送完整票据给支付下游
 
+	MsgTypeRequestLaunchRemoteChannelPayment      uint8 = 11 // 发起远程支付消息
+	MsgTypeResponseRemoteChannelPayment           uint8 = 12 // 远程支付由目标终端最终响应
+	MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 13 // 向远程请求收款签名
+	MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 14 // 远程签名回复
+
 	// 客户端发送
 	MsgTypeLogin                  uint8 = 101 // 顾客登录消息
 	MsgTypeLogout                 uint8 = 102 // 客户端主动下线

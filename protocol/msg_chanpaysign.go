@@ -61,6 +61,7 @@ func (m MsgRequestChannelPayCollectionSign) SerializeWithType() ([]byte, error) 
 
 type MsgResponseChannelPayCollectionSign struct {
 	OperationNum fields.VarUint8     // 操作单号
+	ErrorCode    fields.VarUint2     // 如果错误的消息
 	ErrorMsg     fields.StringMax255 // 如果错误的消息
 	Sign         fields.Sign         // 如果成功的签名
 }
@@ -70,13 +71,15 @@ func (m MsgResponseChannelPayCollectionSign) Type() uint8 {
 }
 
 func (m MsgResponseChannelPayCollectionSign) Size() uint32 {
-	return m.OperationNum.Size() + m.ErrorMsg.Size() + m.Sign.Size()
+	return m.OperationNum.Size() + m.ErrorCode.Size() + m.ErrorMsg.Size() + m.Sign.Size()
 }
 
 func (c MsgResponseChannelPayCollectionSign) Serialize() ([]byte, error) {
 	var bt []byte
 	var buffer bytes.Buffer
 	bt, _ = c.OperationNum.Serialize() // 数据体
+	buffer.Write(bt)
+	bt, _ = c.ErrorCode.Serialize() // 数据体
 	buffer.Write(bt)
 	bt, _ = c.ErrorMsg.Serialize() // 数据体
 	buffer.Write(bt)
@@ -88,6 +91,10 @@ func (c MsgResponseChannelPayCollectionSign) Serialize() ([]byte, error) {
 func (c *MsgResponseChannelPayCollectionSign) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
 	seek, e = c.OperationNum.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
+	seek, e = c.ErrorCode.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
@@ -169,6 +176,7 @@ func (m MsgRequestChannelPayPaymentSign) SerializeWithType() ([]byte, error) {
 
 type MsgResponseChannelPayPaymentSign struct {
 	OperationNum fields.VarUint8     // 操作单号
+	ErrorCode    fields.VarUint2     // 如果错误的消息
 	ErrorMsg     fields.StringMax255 // 如果错误的消息
 	Sign         fields.Sign         // 如果成功的签名
 }
@@ -178,13 +186,15 @@ func (m MsgResponseChannelPayPaymentSign) Type() uint8 {
 }
 
 func (m MsgResponseChannelPayPaymentSign) Size() uint32 {
-	return m.OperationNum.Size() + m.ErrorMsg.Size() + m.Sign.Size()
+	return m.OperationNum.Size() + m.ErrorCode.Size() + m.ErrorMsg.Size() + m.Sign.Size()
 }
 
 func (c MsgResponseChannelPayPaymentSign) Serialize() ([]byte, error) {
 	var bt []byte
 	var buffer bytes.Buffer
 	bt, _ = c.OperationNum.Serialize() // 数据体
+	buffer.Write(bt)
+	bt, _ = c.ErrorCode.Serialize() // 数据体
 	buffer.Write(bt)
 	bt, _ = c.ErrorMsg.Serialize() // 数据体
 	buffer.Write(bt)
@@ -196,6 +206,10 @@ func (c MsgResponseChannelPayPaymentSign) Serialize() ([]byte, error) {
 func (c *MsgResponseChannelPayPaymentSign) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
 	seek, e = c.OperationNum.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
+	seek, e = c.ErrorCode.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
