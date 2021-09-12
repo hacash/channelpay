@@ -2,16 +2,28 @@ package servicer
 
 import (
 	"fmt"
+	"github.com/hacash/channelpay/payroutes"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
+	"github.com/hacash/node/websocket"
 	"math/rand"
 )
 
 /**
  * 发起支付
  */
+func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, upstreamSide *RelayPaySettleNoder, msg *protocol.MsgRequestInitiatePayment) {
 
-func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, msg *protocol.MsgRequestInitiatePayment) {
+	// 创建side
+
+	var originWsConn *websocket.Conn = nil
+	if payuser != nil {
+		originWsConn = payuser.ChannelSide.wsConn
+	} else if upstreamSide != nil {
+		originWsConn = upstreamSide.ChannelSide.wsConn
+	} else {
+		return // 错误
+	}
 
 	// 返回错误消息
 	errorReturn := func(e error) {
@@ -19,15 +31,8 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, msg *prot
 			ErrCode: 0,
 			ErrTip:  fields.CreateStringMax65535(e.Error()),
 		}
-		protocol.SendMsg(payuser.wsConn, errmsg)
+		protocol.SendMsg(originWsConn, errmsg)
 	}
-
-	// 支付方通道独占
-	if false == payuser.StartBusinessExclusive() {
-		errorReturn(fmt.Errorf("Payment channel is being occupied, please try again later"))
-		return
-	}
-	defer payuser.ClearBusinessExclusive() // 支付结束时，或者发生错误时，终止独占状态
 
 	var e error
 
@@ -39,12 +44,37 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, msg *prot
 		return
 	}
 
-	// 本地还是远程支付
-	if targetAddr.CompareServiceName(s.config.SelfIdentificationName) {
-		e = s.localPay(payuser, msg, targetAddr)
-	} else {
-		e = s.remotePay(payuser, msg, targetAddr)
+	// 本地节点
+	localnode, e := s.GetLocalServiceNode()
+	if e != nil {
+		errorReturn(e)
+		return
 	}
+
+	// 检查路由
+	nids := msg.TargetPath.NodeIdPath
+	if len(nids) > 8 {
+		// 路由中继最多8层
+		errorReturn(fmt.Errorf("Routing distance cannot be more than 8"))
+		return
+	}
+
+	// 不区分本地还是远程支付
+
+	if payuser != nil {
+		// 支付方通道独占
+		if false == payuser.StartBusinessExclusive() {
+			errorReturn(fmt.Errorf("Payment channel is being occupied, please try again later"))
+			return
+		}
+		defer payuser.ClearBusinessExclusive() // 支付结束时，或者发生错误时，终止独占状态
+	}
+
+	//if targetAddr.CompareServiceName(s.config.SelfIdentificationName) {
+	//	e = s.launchLocalPay(localnode, payuser, msg, targetAddr)
+	//} else {
+	//	e = s.launchRemotePay(localnode, payuser, msg, targetAddr)
+	//}
 
 	// 返回错误
 	if e != nil {
@@ -54,13 +84,13 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, msg *prot
 }
 
 // 开始本地支付
-func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
+func (s *Servicer) launchLocalPay(localnode *payroutes.PayRelayNode, payuser *Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
 
 	// 取出收款目标地址的连接
 	targetCuntomers := make([]*Customer, 0)
 	s.customerChgLock.RLock()
 	for _, v := range s.customers {
-		if v.customerAddress.Equal(targetAddr.Address) {
+		if v.ChannelSide.remoteAddress.Equal(targetAddr.Address) {
 			targetCuntomers = append(targetCuntomers, v)
 		}
 	}
@@ -74,7 +104,7 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 
 	// 筛选最适合收款
 	var receiveCustomer = targetCuntomers[0]
-	var chanwideamt = receiveCustomer.GetChannelCapacityAmountForCollect()
+	var chanwideamt = receiveCustomer.GetChannelCapacityAmountForRemoteCollect()
 	if cusnum > 1 {
 		// 找出收款最大的通道容量
 		for i := 1; i < len(targetCuntomers); i++ {
@@ -82,8 +112,8 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 			if v.IsInBusinessExclusive() {
 				continue // 通道占用
 			}
-			wideamt := v.GetChannelCapacityAmountForCollect()
-			if wideamt.MoreThan(chanwideamt) {
+			wideamt := v.GetChannelCapacityAmountForRemoteCollect()
+			if wideamt.MoreThan(&chanwideamt) {
 				chanwideamt = wideamt
 				receiveCustomer = v
 			}
@@ -103,16 +133,12 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 	}
 
 	// 检查支付方通道容量
-	localnode, e := s.GetLocalServiceNode()
-	if e != nil {
-		return e
-	}
 	fee := localnode.PredictFeeForPay(&msg.PayAmount)
 	realpayamtwithfee, e := msg.PayAmount.Add(fee)
 	if e != nil {
 		return fmt.Errorf("InitiatePayment of add fee fail: %s", e.Error())
 	}
-	capamt := payuser.GetChannelCapacityAmountForPay()
+	capamt := payuser.GetChannelCapacityAmountForRemotePay()
 	if capamt.LessThan(realpayamtwithfee) {
 		// 支付通道余额不足
 		return fmt.Errorf("Insufficient payment channel balance, need %s but got %s",
@@ -137,7 +163,7 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 		Bills:        bills,
 	}
 	// 等待收款方签名
-	msg1, _, e := protocol.SendMsgForResponseTimeout(receiveCustomer.wsConn, smsg1, timeoutsec)
+	msg1, _, e := protocol.SendMsgForResponseTimeout(receiveCustomer.ChannelSide.wsConn, smsg1, timeoutsec)
 	if e != nil {
 		return e // 返回错误
 	}
@@ -157,9 +183,9 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 	// 2. 本地服务节点签名， 5秒超时返回错误
 	// 服务节点地址
 	localnodeaddrs := make([]fields.Address, 0)
-	localnodeaddrs = append(localnodeaddrs, payuser.servicerAddress)
-	if payuser.servicerAddress.NotEqual(receiveCustomer.servicerAddress) {
-		localnodeaddrs = append(localnodeaddrs, receiveCustomer.servicerAddress)
+	localnodeaddrs = append(localnodeaddrs, payuser.GetServicerAddress())
+	if payuser.GetServicerAddress().NotEqual(receiveCustomer.GetServicerAddress()) {
+		localnodeaddrs = append(localnodeaddrs, receiveCustomer.GetServicerAddress())
 	}
 	// 服务商签名
 	nodesigns, e := s.signmachine.CheckPaydocumentAndFillNeedSignature(bills, localnodeaddrs)
@@ -172,7 +198,7 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 		OperationNum: operationnumber,
 		Bills:        bills,
 	}
-	msg3, _, e := protocol.SendMsgForResponseTimeout(payuser.wsConn, smsg3, timeoutsec)
+	msg3, _, e := protocol.SendMsgForResponseTimeout(payuser.ChannelSide.wsConn, smsg3, timeoutsec)
 	if e != nil {
 		return e // 返回错误
 	}
@@ -204,17 +230,17 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 		OperationNum: operationnumber,
 		AllSigns:     *signlist,
 	}
-	e = protocol.SendMsg(receiveCustomer.wsConn, msg4)
+	e = protocol.SendMsg(receiveCustomer.ChannelSide.wsConn, msg4)
 	if e != nil {
 		return fmt.Errorf("SendChannelPayCompletedSignedBillToDownstream Error: ", e.Error()) // 返回错误
 	}
 
 	// 5. 保存支付票据，清除通道独占状态，支付完成
-	e = receiveCustomer.UncheckSignSaveChannelPayReconciliationBalanceBill(bills)
+	e = receiveCustomer.ChannelSide.UncheckSignSaveChannelPayReconciliationBalanceBill(bills)
 	if e != nil {
 		return fmt.Errorf("Receive Customer SaveChannelPayReconciliationBalanceBill Error: ", e.Error()) // 返回错误
 	}
-	e = payuser.UncheckSignSaveChannelPayReconciliationBalanceBill(bills)
+	e = payuser.ChannelSide.UncheckSignSaveChannelPayReconciliationBalanceBill(bills)
 	if e != nil {
 		return fmt.Errorf("Payment Customer SaveChannelPayReconciliationBalanceBill Error: ", e.Error()) // 返回错误
 	}
@@ -224,6 +250,48 @@ func (s *Servicer) localPay(payuser *Customer, msg *protocol.MsgRequestInitiateP
 }
 
 // 开始远程支付
-func (s *Servicer) remotePay(newcur *Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
+func (s *Servicer) launchRemotePay(localnode *payroutes.PayRelayNode, newcur *Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
+
+	// 展开路由节点并检查路径是否有效
+	nids := msg.TargetPath.NodeIdPath
+	nlen := len(nids)
+	if nlen < 2 {
+		return fmt.Errorf("Node id path cannot less than 2.")
+	}
+
+	// 第一个节点必须是自己
+	if nids[0] != localnode.ID {
+		return fmt.Errorf("First node id need %d but got %d.",
+			localnode.ID, nids[0])
+	}
+
+	// 展开
+	pathnodes := make([]*payroutes.PayRelayNode, nlen)
+	pathnodes[0] = localnode
+	for i := 1; i < nlen; i++ {
+		id := uint32(nids[i])
+		nd := s.payRouteMng.FindNodeById(id)
+		if nd == nil {
+			return fmt.Errorf("Not find node id %d", id)
+		}
+		pathnodes[i] = nd
+	}
+
+	// 向下游节点发起连接
+	nextnode := pathnodes[1]
+	urlpto := "wss"
+	if s.config.DebugTest {
+		urlpto = "ws" // 测试环境
+	}
+	wsurl := fmt.Sprintf("%s://%s/relaypay/connect", urlpto, nextnode.Gateway1)
+
+	// 连接并发送发起支付消息
+	var msg1 = &protocol.MsgRequestLaunchRemoteChannelPayment{}
+	msg1.CopyFromInitiatePayment(msg)
+	wsconn, msgobjres, _, e := protocol.OpenConnectAndSendMsgForResponseTimeout(wsurl, msg1, 15)
+	if e != nil {
+		return e
+	}
+
 	return nil
 }

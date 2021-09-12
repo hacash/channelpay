@@ -6,6 +6,8 @@ import (
 )
 
 type ServicerConfig struct {
+	DebugTest bool
+
 	WssListenPort int
 
 	PaySourceDataDir    string // 支付数据储存
@@ -28,6 +30,9 @@ func NewEmptyServicerConfig() *ServicerConfig {
 func NewServicerConfig(cnffile *sys.Inicnf) *ServicerConfig {
 	cnf := NewEmptyServicerConfig()
 	section := cnffile.Section("")
+
+	// debug
+	cnf.DebugTest = section.Key("DebugTest").MustBool(false)
 
 	// port
 	cnf.WssListenPort = section.Key("listen_port").MustInt(3351)

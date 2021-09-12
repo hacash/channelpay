@@ -14,7 +14,10 @@ func (s *Servicer) startListen() {
 	mux := http.NewServeMux()
 
 	// 处理顾客连接
-	mux.Handle("/customer/connect", websocket.Handler(s.connectHandler))
+	mux.Handle("/customer/connect", websocket.Handler(s.connectCustomerHandler))
+
+	// 处理中继支付连接
+	mux.Handle("/relaypay/connect", websocket.Handler(s.connectRelayPayHandler))
 
 	// 设置监听的端口
 	portstr := strconv.Itoa(s.config.WssListenPort)

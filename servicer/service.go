@@ -11,13 +11,17 @@ type Servicer struct {
 	config *ServicerConfig
 
 	// 数据接口
-	billstore   datasources.DataSourceOfBalanceBill
-	chanset     datasources.DataSourceOfServicerPayChannelSetup
-	signmachine datasources.DataSourceOfSignatureMachine // 签名机器
+	billstore   datasources.DataSourceOfBalanceBill             // 票据储存
+	chanset     datasources.DataSourceOfServicerPayChannelSetup // 通道配置
+	signmachine datasources.DataSourceOfSignatureMachine        // 签名机器
 
 	// 客户连接池
 	customerChgLock sync.RWMutex
-	customers       map[string]*Customer
+	customers       map[string]*Customer // 客户端
+
+	// 结算通道连接池
+	settlenoderChgLock sync.RWMutex
+	settlenoder        map[string][]*RelayPaySettleNoder // 结算通道
 
 	// 路由管理器
 	payRouteMng      *payroutes.RoutingManager
@@ -29,6 +33,7 @@ func NewServicer(cnf *ServicerConfig) *Servicer {
 	ser := &Servicer{
 		config:      cnf,
 		customers:   make(map[string]*Customer, 0),
+		settlenoder: make(map[string][]*RelayPaySettleNoder, 0),
 		payRouteMng: payroutes.NewRoutingManager(),
 	}
 

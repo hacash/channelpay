@@ -21,12 +21,19 @@ type DataSourceOfBalanceBill interface {
 // 通道载入数据
 type DataSourceOfServicerPayChannelSetup interface {
 	Init() error // 初始化
-	// 设定服务通道
-	SetupServicerPayChannel(channelId fields.Bytes16) error
-	// 查询服务通道
-	CheckServicerPayChannel(channelId fields.Bytes16) bool
-	// 取消服务通道
-	CancelServicerPayChannel(channelId fields.Bytes16) error
+	// 设定客户服务通道，weIsRightSide 本方地址是否为右侧
+	SetupCustomerPayChannel(channelId fields.Bytes16, weIsRightSide bool) error
+	// 查询客户服务通道是否存在，前一个bool 表示是否存在，后一个bool=weIsRightSide
+	CheckCustomerPayChannel(channelId fields.Bytes16) (bool, bool)
+	// 取消客户服务通道
+	CancelCustomerPayChannel(channelId fields.Bytes16) error
+
+	// 设定服务商结算通道，weIsRightSide 本方地址是否为右侧
+	SetupRelaySettlementPayChannel(channelId fields.Bytes16, weIsRightSide bool) error
+	// 查询服务商结算通道是否存在，前一个bool 表示是否存在，后一个bool=weIsRightSide
+	CheckRelaySettlementPayChannel(channelId fields.Bytes16) (bool, bool)
+	// 取消服务商结算通道
+	CancelRelaySettlementPayChannel(channelId fields.Bytes16) error
 }
 
 // 签名机

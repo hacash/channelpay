@@ -9,7 +9,7 @@ func (s *Servicer) msgHandler(customer *Customer, msgobj protocol.Message, msgda
 
 	// 退出
 	case protocol.MsgTypeLogout:
-		customer.wsConn.Close() // 直接关闭连接
+		customer.ChannelSide.wsConn.Close() // 直接关闭连接
 		break
 
 	// 预查询支付
@@ -19,8 +19,9 @@ func (s *Servicer) msgHandler(customer *Customer, msgobj protocol.Message, msgda
 
 	// 确定发起支付
 	case protocol.MsgTypeInitiatePayment:
-
+		s.MsgHandlerRequestInitiatePayment(customer, nil, msgobj.(*protocol.MsgRequestInitiatePayment))
 		break
+
 	}
 
 }

@@ -74,26 +74,66 @@ func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.Bytes16)
 /********************************************************************/
 
 // 设定服务通道
-func (l *LocalDBImpOfDataSource) SetupServicerPayChannel(channelId fields.Bytes16) error {
+func (l *LocalDBImpOfDataSource) setupChannel(channelId fields.Bytes16, weAreRightSide bool) error {
 	key := l.key("chanset", channelId)
-	return l.ldb.Put(key, []byte{1}, nil)
+	vside := uint8(1)
+	if weAreRightSide {
+		vside = 2
+	}
+	return l.ldb.Put(key, []byte{vside}, nil)
 }
 
 // 查询服务通道
-func (l *LocalDBImpOfDataSource) CheckServicerPayChannel(channelId fields.Bytes16) bool {
+func (l *LocalDBImpOfDataSource) checkChannel(channelId fields.Bytes16) (bool, bool) {
 	key := l.key("chanset", channelId)
 	data, e := l.ldb.Get(key, nil)
 	if e == nil && len(data) > 0 {
-		return true
+		weAreRightSide := false
+		if data[0] == 2 {
+			weAreRightSide = true
+		}
+		return true, weAreRightSide
 	}
 	// 未找到
-	return false
+	return false, false
 }
 
 // 取消服务通道
-func (l *LocalDBImpOfDataSource) CancelServicerPayChannel(channelId fields.Bytes16) error {
+func (l *LocalDBImpOfDataSource) cancelChannel(channelId fields.Bytes16) error {
 	key := l.key("chanset", channelId)
 	return l.ldb.Delete(key, nil)
+}
+
+// 设定服务通道
+func (l *LocalDBImpOfDataSource) SetupCustomerPayChannel(channelId fields.Bytes16, weAreRightSide bool) error {
+	return l.setupChannel(channelId, weAreRightSide)
+}
+
+// 查询服务通道
+func (l *LocalDBImpOfDataSource) CheckCustomerPayChannel(channelId fields.Bytes16) (bool, bool) {
+	return l.checkChannel(channelId)
+}
+
+// 取消服务通道
+func (l *LocalDBImpOfDataSource) CancelCustomerPayChannel(channelId fields.Bytes16) error {
+	return l.cancelChannel(channelId)
+}
+
+/********************************************************************/
+
+// 设定服务商结算通道，weAreRightSide 本方地址是否为右侧
+func (l *LocalDBImpOfDataSource) SetupRelaySettlementPayChannel(channelId fields.Bytes16, weAreRightSide bool) error {
+	return l.setupChannel(channelId, weAreRightSide)
+}
+
+// 查询服务商结算通道是否存在，前一个bool 表示是否存在，后一个bool=weIsRightSide
+func (l *LocalDBImpOfDataSource) CheckRelaySettlementPayChannel(channelId fields.Bytes16) (bool, bool) {
+	return l.checkChannel(channelId)
+}
+
+// 取消服务商结算通道
+func (l *LocalDBImpOfDataSource) CancelRelaySettlementPayChannel(channelId fields.Bytes16) error {
+	return l.cancelChannel(channelId)
 }
 
 /********************************************************************/
@@ -137,8 +177,8 @@ func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *c
 	bodys := paydocs.ProveBodys.ProveBodys
 	for i := 0; i < len(bodys)-1; i++ {
 		// 必须两个连续的通道
-		if s.CheckServicerPayChannel(bodys[i].ChannelId) {
-			if s.CheckServicerPayChannel(bodys[i+1].ChannelId) {
+		if hav1, _ := s.CheckCustomerPayChannel(bodys[i].ChannelId); hav1 {
+			if hav2, _ := s.CheckCustomerPayChannel(bodys[i+1].ChannelId); hav2 {
 				paychan1 = bodys[i]
 				paychan2 = bodys[i+1]
 			}

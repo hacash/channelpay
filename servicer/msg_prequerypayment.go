@@ -17,7 +17,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *Customer, msg *proto
 			ErrCode: 0,
 			ErrTip:  fields.CreateStringMax65535(e.Error()),
 		}
-		protocol.SendMsg(newcur.wsConn, errmsg)
+		protocol.SendMsg(newcur.ChannelSide.wsConn, errmsg)
 	}
 
 	// 查询支付路径
@@ -45,7 +45,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *Customer, msg *proto
 			PathForms: forms,
 		}
 		// 消息返回
-		protocol.SendMsg(newcur.wsConn, resmsg)
+		protocol.SendMsg(newcur.ChannelSide.wsConn, resmsg)
 		// 成功
 		return
 	}
@@ -76,7 +76,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *Customer, msg *proto
 		PathForms: forms,
 	}
 	// 消息返回
-	protocol.SendMsg(newcur.wsConn, resmsg)
+	protocol.SendMsg(newcur.ChannelSide.wsConn, resmsg)
 	// 成功
 	return
 

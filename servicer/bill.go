@@ -16,21 +16,22 @@ import (
 func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fields.Amount, cusispay bool) (*channel.ChannelChainTransferProveBodyInfo, error) {
 	// 创建支付方对账单
 	var autoNumber1 = fields.VarUint8(1)
-	if usr.latestReconciliationBalanceBill != nil {
-		autoNumber1 = fields.VarUint8(usr.latestReconciliationBalanceBill.ChannelAutoNumber() + 1)
+	usrbill := usr.ChannelSide.GetReconciliationBill()
+	if usrbill != nil {
+		autoNumber1 = fields.VarUint8(usrbill.ChannelAutoNumber() + 1)
 	}
 	trsbody := &channel.ChannelChainTransferProveBodyInfo{
-		ChannelId:           usr.channelId,
-		ChannelReuseVersion: usr.channelInfo.ReuseVersion,
-		BillAutoNumber:      autoNumber1,
-		Direction:           1, // 后续判断支付方向
-		PayAmount:           *trsAmt,
-		Mode:                channel.ChannelTransferProveBodyPayModeNormal,
-		LeftAmount:          fields.Amount{},
-		RightAmount:         fields.Amount{},
+		ChannelId:      usr.ChannelSide.channelId,
+		ReuseVersion:   usr.ChannelSide.channelInfo.ReuseVersion,
+		BillAutoNumber: autoNumber1,
+		PayDirection:   1, // 后续判断支付方向
+		PayAmount:      *trsAmt,
+		Mode:           channel.ChannelTransferProveBodyPayModeNormal,
+		LeftBalance:    fields.Amount{},
+		RightBalance:   fields.Amount{},
 	}
-	paySideBls := usr.GetChannelCapacityAmountForPay()
-	collectSideBls := usr.GetChannelCapacityAmountForCollect()
+	paySideBls := usr.GetChannelCapacityAmountForRemotePay()
+	collectSideBls := usr.GetChannelCapacityAmountForRemoteCollect()
 	if cusispay == false {
 		// 客户端收款, 调换位置
 		paySideBls, collectSideBls = collectSideBls, paySideBls
@@ -53,12 +54,12 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fiel
 	}
 	if (cusisleft && cusispay) || (!cusisleft && !cusispay) {
 		// left => right
-		trsbody.Direction = channel.ChannelTransferProveBodyPayDirectionLeftToRight
-		trsbody.LeftAmount, trsbody.RightAmount = *paySideDis, *collectSideDis
+		trsbody.PayDirection = channel.ChannelTransferProveBodyPayDirectionLeftToRight
+		trsbody.LeftBalance, trsbody.RightBalance = *paySideDis, *collectSideDis
 	} else {
 		// right => left
-		trsbody.Direction = channel.ChannelTransferProveBodyPayDirectionRightToLeft
-		trsbody.LeftAmount, trsbody.RightAmount = *collectSideDis, *paySideDis
+		trsbody.PayDirection = channel.ChannelTransferProveBodyPayDirectionRightToLeft
+		trsbody.LeftBalance, trsbody.RightBalance = *collectSideDis, *paySideDis
 	}
 	// 创建成功
 	return trsbody, nil
@@ -89,8 +90,8 @@ func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *Custom
 	proveBodys[1] = collectbody
 
 	// 建立支付签名票据
-	bdchecker1 := paybody.SignStuffHashHalfChecker()
-	bdchecker2 := collectbody.SignStuffHashHalfChecker()
+	bdchecker1 := paybody.GetSignStuffHashHalfChecker()
+	bdchecker2 := collectbody.GetSignStuffHashHalfChecker()
 	curtimes := fields.BlockTxTimestamp(time.Now().Unix())
 	billforsign := &channel.OffChainFormPaymentChannelTransfer{
 		Timestamp:                curtimes,
@@ -106,8 +107,8 @@ func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *Custom
 	// 地址去重和排序
 	billforsign.MustSignCount, billforsign.MustSignAddresses =
 		channel.CleanSortMustSignAddresses([]fields.Address{
-			payusr.channelInfo.LeftAddress, payusr.channelInfo.RightAddress,
-			collectusr.channelInfo.LeftAddress, collectusr.channelInfo.RightAddress,
+			payusr.ChannelSide.channelInfo.LeftAddress, payusr.ChannelSide.channelInfo.RightAddress,
+			collectusr.ChannelSide.channelInfo.LeftAddress, collectusr.ChannelSide.channelInfo.RightAddress,
 		})
 
 	// 空签名填充

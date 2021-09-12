@@ -50,3 +50,6 @@ func (r *RoutingManager) UpdateUnlock() {
 func (r *RoutingManager) FindNodeByName(name string) *PayRelayNode {
 	return r.nodeByName[strings.ToLower(name)]
 }
+func (r *RoutingManager) FindNodeById(id uint32) *PayRelayNode {
+	return r.nodeById[id]
+}

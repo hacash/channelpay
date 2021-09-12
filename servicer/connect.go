@@ -1,16 +1,27 @@
 package servicer
 
 import (
+	"fmt"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
+	"time"
 )
 
-func (s *Servicer) connectHandler(ws *websocket.Conn) {
+// 客户端连接
+func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 
 	// 创建客户连接
 	customer := NewCustomer(ws)
 
+	// 如果 5 秒钟之内还未注册，则关闭连接
+	time.AfterFunc(time.Second*5, func() {
+		if customer.IsRegistered == false {
+			ws.Close() // 超时未注册，关闭
+		}
+	})
+
+	// 循环读取消息
 	for {
 		// 读取消息，解析消息错误，断开连接
 		msgobj, msgdata, err := protocol.ReceiveMsg(ws)
@@ -47,11 +58,12 @@ func (s *Servicer) connectHandler(ws *websocket.Conn) {
 				billmsg := &protocol.MsgLoginCheckLastestBill{
 					IsNonExistent: fields.CreateBool(false),
 				}
-				if customer.latestReconciliationBalanceBill != nil {
+				cusbill := customer.ChannelSide.GetReconciliationBill()
+				if cusbill != nil {
 					billmsg.IsNonExistent = fields.CreateBool(true)
-					billmsg.LastBill = customer.latestReconciliationBalanceBill
+					billmsg.LastBill = cusbill
 				}
-				protocol.SendMsg(customer.wsConn, billmsg)
+				protocol.SendMsg(customer.ChannelSide.wsConn, billmsg)
 				// 继续接受消息
 				continue
 			} else {
@@ -67,6 +79,58 @@ func (s *Servicer) connectHandler(ws *websocket.Conn) {
 
 	// 从管理池里移除
 	s.RemoveCustomerFromPool(customer)
+
+	// 断开连接
+	ws.Close()
+}
+
+// 中继支付服务连接
+func (s *Servicer) connectRelayPayHandler(ws *websocket.Conn) {
+
+	// 返回错误消息
+	errorReturn := func(e error) {
+		errmsg := &protocol.MsgError{
+			ErrCode: 0,
+			ErrTip:  fields.CreateStringMax65535(e.Error()),
+		}
+		protocol.SendMsg(ws, errmsg)
+	}
+
+	isLaunchPay := false
+
+	// 如果 3 秒钟之内还未收到发起支付消息，则关闭连接
+	time.AfterFunc(time.Second*4, func() {
+		if isLaunchPay == false {
+			ws.Close() // 超时未注册，关闭
+		}
+	})
+
+	// 循环读取消息
+	for {
+		// 读取消息，解析消息错误，断开连接
+		msgobj, _, err := protocol.ReceiveMsg(ws)
+		if err != nil {
+			break // 断开
+		}
+
+		mty := msgobj.Type()
+		if mty == protocol.MsgTypeRequestLaunchRemoteChannelPayment {
+			// 发起支付消息
+			initpaymsg, ok := msgobj.(*protocol.MsgRequestLaunchRemoteChannelPayment)
+			if !ok {
+				errorReturn(fmt.Errorf("MsgRequestInitiatePayment format error"))
+				break // 消息解析错误
+			}
+			isLaunchPay = true // 成功发起支付
+			// 处理远程支付
+			e := s.dealRemoteRelayPay(ws, initpaymsg)
+			if e != nil {
+				errorReturn(fmt.Errorf("DealRemotePay error: %s", e.Error()))
+				break
+			}
+		}
+
+	}
 
 	// 断开连接
 	ws.Close()

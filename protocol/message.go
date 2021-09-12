@@ -10,36 +10,44 @@ const (
 	// 通用
 	MsgTypeError uint8 = 0 // 发生错误
 
+	// 通道路由下发数据更新
+	MsgTypePayRouteRequestServiceNodes      uint8 = 255 // 请求节点列表
+	MsgTypePayRouteResponseServiceNodes     uint8 = 254 // 响应节点列表
+	MsgTypePayRouteRequestNodeRelationship  uint8 = 253 // 请求节点连接关系
+	MsgTypePayRouteResponseNodeRelationship uint8 = 252 // 响应节点连接关系
+	MsgTypePayRouteRequestUpdates           uint8 = 251 // 请求更新
+	MsgTypePayRouteResponseUpdates          uint8 = 250 // 响应更新
+	MsgTypePayRouteEndClose                 uint8 = 249 // 完成关闭
+
 	// 服务端发送
 	MsgTypeDisplacementOffline     uint8 = 1 // 异地登录被顶下线
 	MsgTypeLoginCheckLastestBill   uint8 = 2 // 服务端发送最新对账单
 	MsgTypeResponsePrequeryPayment uint8 = 3 // 预查询支付信息
 
-	MsgTypeRequestChannelPayCollectionSign               uint8 = 5 // 向客户端请求收款签名
-	MsgTypeResponseChannelPayCollectionSign              uint8 = 6 // 获得签名
-	MsgTypeRequestChannelPayPaymentSign                  uint8 = 7 // 向客户端请求支付签名
-	MsgTypeResponseChannelPayPaymentSign                 uint8 = 8 // 获得签名
-	MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 9 // 发送完整票据给支付下游
-
-	MsgTypeRequestLaunchRemoteChannelPayment      uint8 = 11 // 发起远程支付消息
-	MsgTypeResponseRemoteChannelPayment           uint8 = 12 // 远程支付由目标终端最终响应
-	MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 13 // 向远程请求收款签名
-	MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 14 // 远程签名回复
-
 	// 客户端发送
-	MsgTypeLogin                  uint8 = 101 // 顾客登录消息
-	MsgTypeLogout                 uint8 = 102 // 客户端主动下线
-	MsgTypeRequestPrequeryPayment uint8 = 103 // 预查询支付信息
-	MsgTypeInitiatePayment        uint8 = 104 // 发起支付
+	MsgTypeLogin                  uint8 = 4 // 顾客登录消息
+	MsgTypeLogout                 uint8 = 5 // 客户端主动下线
+	MsgTypeRequestPrequeryPayment uint8 = 6 // 预查询支付信息
+	MsgTypeInitiatePayment        uint8 = 7 // 发起支付
 
-	// 通道路由下发数据更新
-	MsgTypePayRouteRequestServiceNodes      uint8 = 201 // 请求节点列表
-	MsgTypePayRouteResponseServiceNodes     uint8 = 202 // 响应节点列表
-	MsgTypePayRouteRequestNodeRelationship  uint8 = 203 // 请求节点连接关系
-	MsgTypePayRouteResponseNodeRelationship uint8 = 204 // 响应节点连接关系
-	MsgTypePayRouteRequestUpdates           uint8 = 205 // 请求更新
-	MsgTypePayRouteResponseUpdates          uint8 = 206 // 响应更新
-	MsgTypePayRouteEndClose                 uint8 = 207 // 完成关闭
+	// 支付相关
+	MsgTypeBroadcastChannelStatementProveBody uint8 = 8  // 广播对账单
+	MsgTypeBroadcastChannelStatementSignature uint8 = 9  // 广播通道支付签名
+	MsgTypeBroadcastChannelStatementError     uint8 = 10 // 广播通道支付错误
+	MsgTypeBroadcastChannelStatementSuccessed uint8 = 11 // 广播通道支付成功完成
+
+	//////////////////////////////////////////
+
+	MsgTypeRequestChannelPayCollectionSign               uint8 = 101 // 向客户端请求收款签名
+	MsgTypeResponseChannelPayCollectionSign              uint8 = 102 // 获得签名
+	MsgTypeRequestChannelPayPaymentSign                  uint8 = 103 // 向客户端请求支付签名
+	MsgTypeResponseChannelPayPaymentSign                 uint8 = 104 // 获得签名
+	MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 105 // 发送完整票据给支付下游
+
+	MsgTypeRequestLaunchRemoteChannelPayment      uint8 = 106 // 发起远程支付消息
+	MsgTypeResponseRemoteChannelPayment           uint8 = 107 // 远程支付由目标终端最终响应
+	MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 108 // 向远程请求收款签名
+	MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 109 // 远程签名回复
 
 )
 
@@ -71,14 +79,25 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 	case MsgTypeLoginCheckLastestBill:
 		msg = &MsgLoginCheckLastestBill{}
 
-	case MsgTypeRequestChannelPayCollectionSign:
-		msg = &MsgRequestChannelPayCollectionSign{}
-	case MsgTypeResponseChannelPayCollectionSign:
-		msg = &MsgResponseChannelPayCollectionSign{}
-	case MsgTypeRequestChannelPayPaymentSign:
-		msg = &MsgRequestChannelPayPaymentSign{}
-	case MsgTypeResponseChannelPayPaymentSign:
-		msg = &MsgResponseChannelPayPaymentSign{}
+		/*
+			case MsgTypeRequestChannelPayCollectionSign:
+				msg = &MsgRequestChannelPayCollectionSign{}
+			case MsgTypeResponseChannelPayCollectionSign:
+				msg = &MsgResponseChannelPayCollectionSign{}
+			case MsgTypeRequestChannelPayPaymentSign:
+				msg = &MsgRequestChannelPayPaymentSign{}
+			case MsgTypeResponseChannelPayPaymentSign:
+				msg = &MsgResponseChannelPayPaymentSign{}
+
+			case MsgTypeRequestLaunchRemoteChannelPayment:
+				//msg = &MsgRequestLaunchRemoteChannelPayment{}
+			case MsgTypeResponseRemoteChannelPayment:
+				//msg = &MsgResponseRemoteChannelPayment{}
+			case MsgTypeRequestRemoteChannelPayCollectionSign:
+				msg = &MsgRequestRemoteChannelPayCollectionSign{}
+			case MsgTypeResponseRemoteChannelPayCollectionSign:
+				msg = &MsgResponseRemoteChannelPayCollectionSign{}
+		*/
 
 	case MsgTypeLogin:
 		msg = &MsgLogin{}
@@ -88,6 +107,15 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 		msg = &MsgRequestPrequeryPayment{}
 	case MsgTypeInitiatePayment:
 		msg = &MsgRequestInitiatePayment{}
+
+	case MsgTypeBroadcastChannelStatementProveBody:
+		msg = &MsgBroadcastChannelStatementProveBody{}
+	case MsgTypeBroadcastChannelStatementSignature:
+		msg = &MsgBroadcastChannelStatementSignature{}
+	case MsgTypeBroadcastChannelStatementError:
+		msg = &MsgBroadcastChannelStatementError{}
+	case MsgTypeBroadcastChannelStatementSuccessed:
+		msg = &MsgBroadcastChannelStatementSuccessed{}
 
 	case MsgTypePayRouteRequestServiceNodes:
 		msg = &MsgPayRouteRequestServiceNodes{}

@@ -10,7 +10,10 @@ import (
  */
 
 type MsgRequestInitiatePayment struct {
-	OrderNoteHashHalfChecker fields.HashHalfChecker // 订单详情数据哈希
+	TransactionDistinguishId fields.VarUint8 // 交易识别id
+
+	Timestamp                fields.BlockTxTimestamp // 交易时间戳
+	OrderNoteHashHalfChecker fields.HashHalfChecker  // 订单详情数据哈希
 
 	HighestAcceptanceFee fields.Amount       // 最高可接受的总手续费数额
 	PayAmount            fields.Amount       // 支付金额，必须为正整数
@@ -25,7 +28,9 @@ func (m MsgRequestInitiatePayment) Type() uint8 {
 }
 
 func (m MsgRequestInitiatePayment) Size() uint32 {
-	return m.OrderNoteHashHalfChecker.Size() +
+	return m.TransactionDistinguishId.Size() +
+		m.Timestamp.Size() +
+		m.OrderNoteHashHalfChecker.Size() +
 		m.HighestAcceptanceFee.Size() +
 		m.PayAmount.Size() +
 		m.PayeeChannelAddr.Size() +
@@ -34,6 +39,14 @@ func (m MsgRequestInitiatePayment) Size() uint32 {
 
 func (m *MsgRequestInitiatePayment) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
+	seek, e = m.TransactionDistinguishId.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
+	seek, e = m.Timestamp.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
 	seek, e = m.OrderNoteHashHalfChecker.Parse(buf, seek)
 	if e != nil {
 		return 0, e
@@ -61,6 +74,16 @@ func (m MsgRequestInitiatePayment) Serialize() ([]byte, error) {
 	var e error
 	var bt []byte
 	buf := bytes.NewBuffer(nil)
+	bt, e = m.TransactionDistinguishId.Serialize()
+	if e != nil {
+		return nil, e
+	}
+	buf.Write(bt)
+	bt, e = m.Timestamp.Serialize()
+	if e != nil {
+		return nil, e
+	}
+	buf.Write(bt)
 	bt, e = m.OrderNoteHashHalfChecker.Serialize()
 	if e != nil {
 		return nil, e
