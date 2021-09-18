@@ -2,12 +2,13 @@ package servicer
 
 import (
 	"fmt"
+	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/core/fields"
 	"sort"
 )
 
 // 添加客户到连接管理池，返回旧的
-func (s *Servicer) AddCustomerToPool(newcur *Customer) (*Customer, error) {
+func (s *Servicer) AddCustomerToPool(newcur *chanpay.Customer) (*chanpay.Customer, error) {
 	if newcur.IsRegistered == false {
 		return nil, fmt.Errorf("Customer unregistered")
 	}
@@ -15,9 +16,9 @@ func (s *Servicer) AddCustomerToPool(newcur *Customer) (*Customer, error) {
 	s.customerChgLock.Lock()
 	defer s.customerChgLock.Unlock()
 	//
-	var oldcur *Customer = nil
+	var oldcur *chanpay.Customer = nil
 	// 查找旧的
-	pkey := string(newcur.ChannelSide.channelId)
+	pkey := string(newcur.ChannelSide.ChannelId)
 	if old, hav := s.customers[pkey]; hav {
 		oldcur = old
 	}
@@ -28,7 +29,7 @@ func (s *Servicer) AddCustomerToPool(newcur *Customer) (*Customer, error) {
 }
 
 // 从管理池移除
-func (s *Servicer) RemoveCustomerFromPool(cur *Customer) {
+func (s *Servicer) RemoveCustomerFromPool(cur *chanpay.Customer) {
 	if cur.IsRegistered == false {
 		return
 	}
@@ -36,23 +37,23 @@ func (s *Servicer) RemoveCustomerFromPool(cur *Customer) {
 	s.customerChgLock.Lock()
 	defer s.customerChgLock.Unlock()
 	// 移除
-	pkey := string(cur.ChannelSide.channelId)
+	pkey := string(cur.ChannelSide.ChannelId)
 	delete(s.customers, pkey)
 	// ok
 	return
 }
 
 // 查询客户端连接
-func (s *Servicer) FindCustomersByAddress(addr fields.Address) []*Customer {
+func (s *Servicer) FindCustomersByAddress(addr fields.Address) []*chanpay.Customer {
 
 	// 并发锁
 	s.customerChgLock.RLock()
 	defer s.customerChgLock.RUnlock()
 
-	users := make([]*Customer, 0)
+	users := make([]*chanpay.Customer, 0)
 	// 搜索
 	for _, v := range s.customers {
-		if v.ChannelSide.remoteAddress.Equal(addr) {
+		if v.ChannelSide.RemoteAddress.Equal(addr) {
 			users = append(users, v)
 		}
 	}
@@ -61,7 +62,7 @@ func (s *Servicer) FindCustomersByAddress(addr fields.Address) []*Customer {
 
 // 找出通道容量最大的客户端连接
 // 查询客户端连接
-func (s *Servicer) FindAndStartBusinessExclusiveWithOneCustomersByAddress(addr fields.Address, payamt *fields.Amount) (*Customer, error) {
+func (s *Servicer) FindAndStartBusinessExclusiveWithOneCustomersByAddress(addr fields.Address, payamt *fields.Amount) (*chanpay.Customer, error) {
 
 	users := s.FindCustomersByAddress(addr)
 	if len(users) == 0 {
@@ -69,7 +70,7 @@ func (s *Servicer) FindAndStartBusinessExclusiveWithOneCustomersByAddress(addr f
 	}
 
 	// 按收款通道容量排序
-	list := CreateChannelSideConnWrapForCustomer(users)
+	list := chanpay.CreateChannelSideConnWrapForCustomer(users)
 	sort.Sort(list) // 排序
 
 	// 查询并锁定

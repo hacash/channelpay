@@ -2,8 +2,8 @@ package servicer
 
 import (
 	"fmt"
+	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/channelpay/payroutes"
-	"github.com/hacash/channelpay/servicer/datasources"
 	"sync"
 )
 
@@ -11,17 +11,17 @@ type Servicer struct {
 	config *ServicerConfig
 
 	// 数据接口
-	billstore   datasources.DataSourceOfBalanceBill             // 票据储存
-	chanset     datasources.DataSourceOfServicerPayChannelSetup // 通道配置
-	signmachine datasources.DataSourceOfSignatureMachine        // 签名机器
+	billstore   chanpay.DataSourceOfBalanceBill             // 票据储存
+	chanset     chanpay.DataSourceOfServicerPayChannelSetup // 通道配置
+	signmachine chanpay.DataSourceOfSignatureMachine        // 签名机器
 
 	// 客户连接池
 	customerChgLock sync.RWMutex
-	customers       map[string]*Customer // 客户端
+	customers       map[string]*chanpay.Customer // 客户端
 
 	// 结算通道连接池
 	settlenoderChgLock sync.RWMutex
-	settlenoder        map[string][]*RelayPaySettleNoder // 结算通道
+	settlenoder        map[string][]*chanpay.RelayPaySettleNoder // 结算通道
 
 	// 路由管理器
 	payRouteMng      *payroutes.RoutingManager
@@ -32,8 +32,8 @@ func NewServicer(cnf *ServicerConfig) *Servicer {
 
 	ser := &Servicer{
 		config:      cnf,
-		customers:   make(map[string]*Customer, 0),
-		settlenoder: make(map[string][]*RelayPaySettleNoder, 0),
+		customers:   make(map[string]*chanpay.Customer, 0),
+		settlenoder: make(map[string][]*chanpay.RelayPaySettleNoder, 0),
 		payRouteMng: payroutes.NewRoutingManager(),
 	}
 
@@ -62,9 +62,9 @@ func (s *Servicer) Start() {
 
 // 设置数据来源接口
 func (s *Servicer) SetDataSource(
-	billstore datasources.DataSourceOfBalanceBill,
-	chanset datasources.DataSourceOfServicerPayChannelSetup,
-	signmachine datasources.DataSourceOfSignatureMachine,
+	billstore chanpay.DataSourceOfBalanceBill,
+	chanset chanpay.DataSourceOfServicerPayChannelSetup,
+	signmachine chanpay.DataSourceOfSignatureMachine,
 ) {
 	s.billstore = billstore
 	s.chanset = chanset

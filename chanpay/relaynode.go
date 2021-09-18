@@ -1,8 +1,7 @@
-package servicer
+package chanpay
 
 import (
 	"github.com/hacash/core/fields"
-	"github.com/hacash/node/websocket"
 )
 
 // 中继支付连接通道
@@ -14,10 +13,9 @@ type RelayPaySettleNoder struct {
 	ChannelSide *ChannelSideConn
 }
 
-func NewRelayPayNodeConnect(ws *websocket.Conn) *RelayPaySettleNoder {
-	side := NewChannelSideConn(ws)
+func NewRelayPayNodeConnect(name string, side *ChannelSideConn) *RelayPaySettleNoder {
 	return &RelayPaySettleNoder{
-		identificationName: "",
+		identificationName: name,
 		ChannelSide:        side,
 	}
 }

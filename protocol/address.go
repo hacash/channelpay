@@ -20,6 +20,16 @@ type ChannelAccountAddress struct {
 
 }
 
+// 解析新地址
+func ParseChannelAccountAddress(addrstr string) (*ChannelAccountAddress, error) {
+	addr := &ChannelAccountAddress{}
+	e := addr.Parse(addrstr)
+	if e != nil {
+		return nil, e
+	}
+	return addr, nil
+}
+
 // 对比运营商名称
 func (c *ChannelAccountAddress) CompareServiceName(sname string) bool {
 	if strings.Compare(

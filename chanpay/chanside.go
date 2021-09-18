@@ -1,7 +1,8 @@
-package servicer
+package chanpay
 
 import (
 	"fmt"
+	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/channel"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
@@ -16,17 +17,17 @@ import (
 type ChannelSideConn struct {
 
 	// ws长连接
-	wsConn *websocket.Conn
+	WsConn *websocket.Conn
 
 	// 数据
-	channelId   fields.Bytes16      // 通道链 ID
-	channelInfo *RpcDataChannelInfo // 通道当前的信息
+	ChannelId   fields.Bytes16               // 通道链 ID
+	ChannelInfo *protocol.RpcDataChannelInfo // 通道当前的信息
 
-	ourAddress    fields.Address // 我方地址
-	remoteAddress fields.Address // 对方地址（客户地址或结算通道对方地址）
+	OurAddress    fields.Address // 我方地址
+	RemoteAddress fields.Address // 对方地址（客户地址或结算通道对方地址）
 
 	// 最新的对账票据
-	latestReconciliationBalanceBill channel.ReconciliationBalanceBill
+	LatestReconciliationBalanceBill channel.ReconciliationBalanceBill
 
 	// 支付收款状态锁 0:未占用  1:占用状态
 	businessExclusiveStatus uint32 //
@@ -35,48 +36,48 @@ type ChannelSideConn struct {
 
 func NewChannelSideConn(conn *websocket.Conn) *ChannelSideConn {
 	return &ChannelSideConn{
-		wsConn:                          conn,
-		channelInfo:                     nil,
-		latestReconciliationBalanceBill: nil,
+		WsConn:                          conn,
+		ChannelInfo:                     nil,
+		LatestReconciliationBalanceBill: nil,
 		businessExclusiveStatus:         0,
 	}
 }
 
 func (c *ChannelSideConn) SetChannelId(id fields.Bytes16) {
-	c.channelId = id
+	c.ChannelId = id
 }
 
 func (c *ChannelSideConn) GetChannelId() fields.Bytes16 {
-	return c.channelId
+	return c.ChannelId
 }
 
-func (c *ChannelSideConn) SetChannelInfo(info *RpcDataChannelInfo) {
-	c.channelInfo = info
+func (c *ChannelSideConn) SetChannelInfo(info *protocol.RpcDataChannelInfo) {
+	c.ChannelInfo = info
 }
 
-func (c *ChannelSideConn) GetChannelInfo() *RpcDataChannelInfo {
-	return c.channelInfo
+func (c *ChannelSideConn) GetChannelInfo() *protocol.RpcDataChannelInfo {
+	return c.ChannelInfo
 }
 
 func (c *ChannelSideConn) SetAddresses(our, remote fields.Address) {
-	c.ourAddress = our
-	c.remoteAddress = remote
+	c.OurAddress = our
+	c.RemoteAddress = remote
 }
 
 func (c *ChannelSideConn) GetOurAddress() fields.Address {
-	return c.ourAddress
+	return c.OurAddress
 }
 
 func (c *ChannelSideConn) GetRemoteAddress() fields.Address {
-	return c.remoteAddress
+	return c.RemoteAddress
 }
 
 func (c *ChannelSideConn) SetReconciliationBill(bill channel.ReconciliationBalanceBill) {
-	c.latestReconciliationBalanceBill = bill
+	c.LatestReconciliationBalanceBill = bill
 }
 
 func (c *ChannelSideConn) GetReconciliationBill() channel.ReconciliationBalanceBill {
-	return c.latestReconciliationBalanceBill
+	return c.LatestReconciliationBalanceBill
 }
 
 // 检查收款通道是否被占用
@@ -97,21 +98,21 @@ func (c *ChannelSideConn) ClearBusinessExclusive() {
 
 // 判断
 func (c *ChannelSideConn) RemoteAddressIsLeft() bool {
-	return c.remoteAddress.Equal(c.channelInfo.LeftAddress)
+	return c.RemoteAddress.Equal(c.ChannelInfo.LeftAddress)
 }
 
 // 获取通道容量
 // side = our, remote
 func (c *ChannelSideConn) GetChannelCapacityAmount(side string) fields.Amount {
-	leftAmt := c.channelInfo.LeftAmount
-	rightAmt := c.channelInfo.RightAmount
+	leftAmt := c.ChannelInfo.LeftAmount
+	rightAmt := c.ChannelInfo.RightAmount
 	// 判断是否有收据
-	bill := c.latestReconciliationBalanceBill
+	bill := c.LatestReconciliationBalanceBill
 	if bill != nil {
-		leftAmt = bill.LeftAmount()
-		rightAmt = bill.RightAmount()
+		leftAmt = bill.GetLeftBalance()
+		rightAmt = bill.GetRightBalance()
 	}
-	remoteIsLeft := c.remoteAddress.Equal(c.channelInfo.LeftAddress)
+	remoteIsLeft := c.RemoteAddress.Equal(c.ChannelInfo.LeftAddress)
 	// 返回容量
 	if (side == "remote" && remoteIsLeft) ||
 		(side == "our" && !remoteIsLeft) {
@@ -144,7 +145,7 @@ func (c *ChannelSideConn) CreateNewProveBodyByDoPayFromSide(side string, payamt 
 	// 创建
 	body := &channel.ChannelChainTransferProveBodyInfo{}
 
-	return nil, nil
+	return body, nil
 }
 
 // 直接保存（不做检查）支付对账票据
@@ -153,31 +154,29 @@ func (c *ChannelSideConn) UncheckSignSaveChannelPayReconciliationBalanceBill(bil
 	// 找出对账单
 	var proveBody *channel.ChannelChainTransferProveBodyInfo = nil
 	for _, v := range bills.ProveBodys.ProveBodys {
-		if v.ChannelId.Equal(c.channelId) {
+		if v.ChannelId.Equal(c.ChannelId) {
 			proveBody = v
 			break
 		}
 	}
 	// 是否存在
 	if proveBody == nil {
-		return fmt.Errorf("proveBody of channel id %s not find", c.channelId.ToHex())
+		return fmt.Errorf("proveBody of channel id %s not find", c.ChannelId.ToHex())
 	}
 	// 检查对账流水号
-	if c.channelInfo.ReuseVersion != proveBody.ReuseVersion {
-		return fmt.Errorf("ReuseVersion not match need %d but got %d", c.channelInfo.ReuseVersion, proveBody.ReuseVersion)
+	if c.ChannelInfo.ReuseVersion != proveBody.ReuseVersion {
+		return fmt.Errorf("ReuseVersion not match need %d but got %d", c.ChannelInfo.ReuseVersion, proveBody.ReuseVersion)
 	}
 	needBillAutoNumber := fields.VarUint8(1)
-	if c.latestReconciliationBalanceBill != nil {
-		needBillAutoNumber = fields.VarUint8(c.latestReconciliationBalanceBill.ChannelAutoNumber() + 1)
+	if c.LatestReconciliationBalanceBill != nil {
+		needBillAutoNumber = fields.VarUint8(c.LatestReconciliationBalanceBill.GetAutoNumber() + 1)
 	}
 	if needBillAutoNumber != proveBody.BillAutoNumber {
 		return fmt.Errorf("BillAutoNumber not match need %d but got %d", needBillAutoNumber, proveBody.BillAutoNumber)
 	}
 
 	// 保存
-	c.latestReconciliationBalanceBill = &channel.CrossNodeSimplePaymentReconciliationBill{
-		LeftAddr:                            c.channelInfo.LeftAddress,
-		RightAddr:                           c.channelInfo.RightAddress,
+	c.LatestReconciliationBalanceBill = &channel.OffChainCrossNodeSimplePaymentReconciliationBill{
 		ChannelChainTransferTargetProveBody: *proveBody,
 		ChannelChainTransferData:            *bills.ChainPayment,
 	}

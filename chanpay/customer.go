@@ -1,4 +1,4 @@
-package servicer
+package chanpay
 
 import (
 	"github.com/hacash/channelpay/protocol"
@@ -51,19 +51,19 @@ func CreateChannelSideConnWrapForCustomer(list []*Customer) ChannelSideConnListB
 // 执行注册
 func (c *Customer) DoRegister(channelId fields.Bytes16, address fields.Address) {
 	c.IsRegistered = true
-	c.ChannelSide.channelId = channelId
-	c.ChannelSide.remoteAddress = address
+	c.ChannelSide.ChannelId = channelId
+	c.ChannelSide.RemoteAddress = address
 }
 
 // 被顶替下线
 func (c *Customer) DoDisplacementOffline(newcur *Customer) {
 	// 拷贝数据
-	newcur.ChannelSide.latestReconciliationBalanceBill = c.ChannelSide.latestReconciliationBalanceBill
-	newcur.ChannelSide.remoteAddress = c.ChannelSide.remoteAddress
+	newcur.ChannelSide.LatestReconciliationBalanceBill = c.ChannelSide.LatestReconciliationBalanceBill
+	newcur.ChannelSide.RemoteAddress = c.ChannelSide.RemoteAddress
 	// 发送被顶替消息，被顶替者自动下线
-	protocol.SendMsg(c.ChannelSide.wsConn, &protocol.MsgDisplacementOffline{})
+	protocol.SendMsg(c.ChannelSide.WsConn, &protocol.MsgDisplacementOffline{})
 	// 关闭连接
-	c.ChannelSide.wsConn.Close()
+	c.ChannelSide.WsConn.Close()
 }
 
 // 检查收款通道是否被占用
@@ -83,10 +83,10 @@ func (c *Customer) ClearBusinessExclusive() {
 
 // 判断
 func (c *Customer) GetCustomerAddress() fields.Address {
-	return c.ChannelSide.remoteAddress
+	return c.ChannelSide.RemoteAddress
 }
 func (c *Customer) GetServicerAddress() fields.Address {
-	return c.ChannelSide.ourAddress
+	return c.ChannelSide.OurAddress
 }
 
 // 判断

@@ -16,3 +16,5 @@
 
 *_data/
 go_build_github_com_*
+
+test_*.go

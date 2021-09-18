@@ -1,4 +1,4 @@
-package datasources
+package chanpay
 
 import (
 	"github.com/hacash/core/channel"

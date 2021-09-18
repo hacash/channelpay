@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/channelpay/servicer"
-	"github.com/hacash/channelpay/servicer/datasources"
 	"github.com/hacash/core/sys"
 	"os"
 	"os/signal"
@@ -36,7 +36,7 @@ func main() {
 	sev := servicer.NewServicer(svcnf)
 
 	// 数据源
-	localsto, e := datasources.NewLocalDBImpOfDataSource(svcnf.PaySourceDataDir)
+	localsto, e := chanpay.NewLocalDBImpOfDataSource(svcnf.PaySourceDataDir)
 	if e != nil {
 		fmt.Println(e.Error())
 	} else {

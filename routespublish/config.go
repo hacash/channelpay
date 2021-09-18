@@ -1,7 +1,6 @@
 package routespublish
 
 import (
-	"fmt"
 	"github.com/hacash/core/sys"
 )
 
@@ -12,6 +11,8 @@ import (
 type PayRoutesPublishConfig struct {
 	WssListenPort int
 	DataSourceDir string
+
+	FullNodeRpcURL string // 全节点 rpc 地址
 }
 
 func NewEmptyPayRoutesPublishConfig() *PayRoutesPublishConfig {
@@ -26,10 +27,12 @@ func NewPayRoutesPublishConfig(cnffile *sys.Inicnf) *PayRoutesPublishConfig {
 	section := cnffile.Section("")
 	// port
 	cnf.WssListenPort = section.Key("listen_port").MustInt(3350)
-	fmt.Println(cnf.WssListenPort)
 	// data dir
 	dtdir := section.Key("data_source_dir").MustString("./hacash_channel_routes_source_data")
 	cnf.DataSourceDir = sys.AbsDir(dtdir) // 绝对路径
+	// rpc
+	cnf.FullNodeRpcURL = section.Key("full_node_rpc_url").MustString("http://127.0.0.1:38082")
+
 	// ok
 	return cnf
 }

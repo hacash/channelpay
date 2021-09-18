@@ -12,7 +12,7 @@ import (
 
 type MsgLoginCheckLastestBill struct {
 	ProtocolVersion fields.VarUint2 // 服务端的最新协议版本号，用于提醒客户端更新软件版本
-	IsNonExistent   fields.Bool     // 是否存在对账单
+	BillIsExistent  fields.Bool     // 是否存在对账单
 	LastBill        channel.ReconciliationBalanceBill
 }
 
@@ -22,8 +22,8 @@ func (m MsgLoginCheckLastestBill) Type() uint8 {
 
 func (m MsgLoginCheckLastestBill) Size() uint32 {
 	size := m.ProtocolVersion.Size() +
-		m.IsNonExistent.Size()
-	if m.IsNonExistent.Check() {
+		m.BillIsExistent.Size()
+	if m.BillIsExistent.Check() {
 		size += m.LastBill.Size()
 	}
 	return size
@@ -35,11 +35,11 @@ func (m *MsgLoginCheckLastestBill) Parse(buf []byte, seek uint32) (uint32, error
 	if e != nil {
 		return 0, e
 	}
-	seek, e = m.IsNonExistent.Parse(buf, seek)
+	seek, e = m.BillIsExistent.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
-	if m.IsNonExistent.Check() {
+	if m.BillIsExistent.Check() {
 		seek, e = m.LastBill.Parse(buf, seek)
 		if e != nil {
 			return 0, e
@@ -57,12 +57,12 @@ func (m MsgLoginCheckLastestBill) Serialize() ([]byte, error) {
 		return nil, e
 	}
 	buf.Write(bt)
-	bt, e = m.IsNonExistent.Serialize()
+	bt, e = m.BillIsExistent.Serialize()
 	if e != nil {
 		return nil, e
 	}
 	buf.Write(bt)
-	if m.IsNonExistent.Check() {
+	if m.BillIsExistent.Check() {
 		bt, e = m.LastBill.Serialize()
 		if e != nil {
 			return nil, e

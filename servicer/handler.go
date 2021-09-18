@@ -1,15 +1,18 @@
 package servicer
 
-import "github.com/hacash/channelpay/protocol"
+import (
+	"github.com/hacash/channelpay/chanpay"
+	"github.com/hacash/channelpay/protocol"
+)
 
 // 消息处理
-func (s *Servicer) msgHandler(customer *Customer, msgobj protocol.Message, msgdata []byte) {
+func (s *Servicer) msgHandler(customer *chanpay.Customer, msgobj protocol.Message, msgdata []byte) {
 
 	switch msgobj.Type() {
 
 	// 退出
 	case protocol.MsgTypeLogout:
-		customer.ChannelSide.wsConn.Close() // 直接关闭连接
+		customer.ChannelSide.WsConn.Close() // 直接关闭连接
 		break
 
 	// 预查询支付

@@ -1,10 +1,9 @@
-package servicer
+package chanpay
 
 import (
 	"fmt"
 	"github.com/hacash/channelpay/payroutes"
 	"github.com/hacash/channelpay/protocol"
-	"github.com/hacash/channelpay/servicer/datasources"
 	"github.com/hacash/core/channel"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
@@ -40,7 +39,7 @@ type ChannelPayActionInstance struct {
 	allSignsCompleted        bool
 
 	// 签名机器
-	signMachine datasources.DataSourceOfSignatureMachine
+	signMachine DataSourceOfSignatureMachine
 
 	// 签名地址
 	ourMustSignAddresses []fields.Address
@@ -74,7 +73,7 @@ func (c *ChannelPayActionInstance) checkOurAddress(addr fields.Address) bool {
 }
 
 // 设定签名机器
-func (c *ChannelPayActionInstance) SetSignatureMachine(machine datasources.DataSourceOfSignatureMachine) {
+func (c *ChannelPayActionInstance) SetSignatureMachine(machine DataSourceOfSignatureMachine) {
 	c.signMachine = machine
 }
 
@@ -101,7 +100,7 @@ func (c *ChannelPayActionInstance) CheckMaybeCanDoSign() (bool, error) {
 		}
 		// 检查
 		var a1, a2 = v.LeftAddress, v.RightAddress
-		if v.PayDirection == 2 { // 如果从又往左支付
+		if uint8(v.PayDirection) == channel.ChannelTransferDirectionRightToLeft { // 如果从又往左支付
 			a2, a1 = a1, a2
 		}
 		if prevlast.Equal(a1) {
@@ -175,29 +174,29 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	}
 
 	// 创建对账单
-	chaninfo := chanSide.channelInfo
+	chaninfo := chanSide.ChannelInfo
 	reuseversion := uint32(chaninfo.ReuseVersion)
 	billautonumber := uint64(1)
-	lastbill := chanSide.latestReconciliationBalanceBill
+	lastbill := chanSide.LatestReconciliationBalanceBill
 	oldleftamt := chaninfo.LeftAmount
 	oldrightamt := chaninfo.RightAmount
 	if lastbill != nil {
-		oldleftamt = lastbill.LeftAmount()
-		oldrightamt = lastbill.RightAmount()
-		blrn, blan := lastbill.ChannelReuseVersionAndAutoNumber()
+		oldleftamt = lastbill.GetLeftBalance()
+		oldrightamt = lastbill.GetRightBalance()
+		blrn, blan := lastbill.GetReuseVersionAndAutoNumber()
 		if reuseversion != blrn {
 			return nil, fmt.Errorf("Channel Reuse Version %d in last bill and %d in channel info not match.", blrn, reuseversion)
 		}
 		billautonumber = uint64(blan) + 1 // 自增
 	}
 	// 方向
-	paydirection := 2
+	paydirection := channel.ChannelTransferDirectionRightToLeft
 	oldpayamt := oldrightamt
 	oldcollectamt := oldleftamt
 	remoteisleft := chanSide.RemoteAddressIsLeft()
 	if remoteisleft {
-		paydirection = 1                                    // 总是对方支付给我
-		oldpayamt, oldcollectamt = oldcollectamt, oldpayamt // 反向
+		paydirection = channel.ChannelTransferDirectionLeftToRight // 总是对方支付给我
+		oldpayamt, oldcollectamt = oldcollectamt, oldpayamt        // 反向
 	}
 	// 计算最新分配
 	newpayamt, e := oldpayamt.Sub(collectAmt)
@@ -221,7 +220,7 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	}
 	// 创建
 	body := &channel.ChannelChainTransferProveBodyInfo{
-		ChannelId:      chanSide.channelId,
+		ChannelId:      chanSide.ChannelId,
 		ReuseVersion:   fields.VarUint4(reuseversion),
 		BillAutoNumber: fields.VarUint8(billautonumber),
 		PayDirection:   fields.VarUint1(paydirection),
@@ -276,11 +275,11 @@ func (c *ChannelPayActionInstance) CheckMaybeReportMyProveBody(msg *protocol.Msg
 		bdlist := c.billDocuments.ProveBodys.ProveBodys
 		for i := len(bdlist) - 1; i >= 0; i-- {
 			one := bdlist[i]
-			if one.ChannelId.Equal(downSide.channelId) {
+			if one.ChannelId.Equal(downSide.ChannelId) {
 				bodyindex = i - 1
 				downSideColletAmt = &one.PayAmount
 				payaddr = &one.LeftAddress
-				if one.PayDirection == 2 {
+				if uint8(one.PayDirection) == channel.ChannelTransferDirectionRightToLeft {
 					payaddr = &one.RightAddress
 				}
 			}
@@ -291,7 +290,7 @@ func (c *ChannelPayActionInstance) CheckMaybeReportMyProveBody(msg *protocol.Msg
 			return false, nil
 		}
 		// 检查付款段是否是我
-		if payaddr.NotEqual(downSide.ourAddress) {
+		if payaddr.NotEqual(downSide.OurAddress) {
 			return false, fmt.Errorf("pay address is not our address.")
 		}
 		// 检测我是否为付款端
@@ -323,7 +322,7 @@ func (c *ChannelPayActionInstance) CheckMaybeReportMyProveBody(msg *protocol.Msg
 		// 创建对账单
 		bodyinfo, e = c.createMyProveBodyByRemotePay(newpayamt)
 		if e != nil {
-			return false, fmt.Errorf("create my prove body of channel id %s by remote pay error: %s", upSide.channelId.ToHex(), e.Error())
+			return false, fmt.Errorf("create my prove body of channel id %s by remote pay error: %s", upSide.ChannelId.ToHex(), e.Error())
 		}
 	}
 
@@ -382,11 +381,11 @@ func (c *ChannelPayActionInstance) InitCreateEmptyBillDocumentsByInitPayMsg(msg 
 // 全部完成，销毁所有资源
 func (c *ChannelPayActionInstance) Destroy() {
 	if c.upstreamSide != nil {
-		c.upstreamSide.ChannelSide.wsConn.Close()
+		c.upstreamSide.ChannelSide.WsConn.Close()
 		c.upstreamSide.ClearBusinessExclusive() // 解除独占
 	}
 	if c.downstreamSide != nil {
-		c.downstreamSide.ChannelSide.wsConn.Close()
+		c.downstreamSide.ChannelSide.WsConn.Close()
 		c.downstreamSide.ClearBusinessExclusive() // 解除独占
 	}
 	if c.payCustomer != nil {
@@ -402,17 +401,17 @@ func (c *ChannelPayActionInstance) GetUpOrDownStreamNegativeDirection(upOrDownSt
 	var conn *websocket.Conn = nil
 	if upOrDownStream {
 		if c.downstreamSide != nil {
-			conn = c.downstreamSide.ChannelSide.wsConn
+			conn = c.downstreamSide.ChannelSide.WsConn
 		}
 		if c.collectCustomer != nil {
-			conn = c.collectCustomer.ChannelSide.wsConn
+			conn = c.collectCustomer.ChannelSide.WsConn
 		}
 	} else {
 		if c.upstreamSide != nil {
-			conn = c.upstreamSide.ChannelSide.wsConn
+			conn = c.upstreamSide.ChannelSide.WsConn
 		}
 		if c.payCustomer != nil {
-			conn = c.payCustomer.ChannelSide.wsConn
+			conn = c.payCustomer.ChannelSide.WsConn
 		}
 	}
 	return conn

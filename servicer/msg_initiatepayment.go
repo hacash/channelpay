@@ -2,25 +2,24 @@ package servicer
 
 import (
 	"fmt"
-	"github.com/hacash/channelpay/payroutes"
+	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
-	"math/rand"
 )
 
 /**
  * 发起支付
  */
-func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, upstreamSide *RelayPaySettleNoder, msg *protocol.MsgRequestInitiatePayment) {
+func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, upstreamSide *chanpay.RelayPaySettleNoder, msg *protocol.MsgRequestInitiatePayment) {
 
 	// 创建side
 
 	var originWsConn *websocket.Conn = nil
 	if payuser != nil {
-		originWsConn = payuser.ChannelSide.wsConn
+		originWsConn = payuser.ChannelSide.WsConn
 	} else if upstreamSide != nil {
-		originWsConn = upstreamSide.ChannelSide.wsConn
+		originWsConn = upstreamSide.ChannelSide.WsConn
 	} else {
 		return // 错误
 	}
@@ -54,6 +53,7 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, upstreamS
 	// 检查路由
 	nids := msg.TargetPath.NodeIdPath
 	if len(nids) > 8 {
+		localnode.Size()
 		// 路由中继最多8层
 		errorReturn(fmt.Errorf("Routing distance cannot be more than 8"))
 		return
@@ -83,14 +83,16 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *Customer, upstreamS
 	}
 }
 
+/*
+
 // 开始本地支付
-func (s *Servicer) launchLocalPay(localnode *payroutes.PayRelayNode, payuser *Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
+func (s *Servicer) launchLocalPay(localnode *payroutes.PayRelayNode, payuser *chanpay.Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
 
 	// 取出收款目标地址的连接
-	targetCuntomers := make([]*Customer, 0)
+	targetCuntomers := make([]*chanpay.Customer, 0)
 	s.customerChgLock.RLock()
 	for _, v := range s.customers {
-		if v.ChannelSide.remoteAddress.Equal(targetAddr.Address) {
+		if v.ChannelSide.RemoteAddress.Equal(targetAddr.Address) {
 			targetCuntomers = append(targetCuntomers, v)
 		}
 	}
@@ -250,7 +252,7 @@ func (s *Servicer) launchLocalPay(localnode *payroutes.PayRelayNode, payuser *Cu
 }
 
 // 开始远程支付
-func (s *Servicer) launchRemotePay(localnode *payroutes.PayRelayNode, newcur *Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
+func (s *Servicer) launchRemotePay(localnode *payroutes.PayRelayNode, newcur *chanpay.Customer, msg *protocol.MsgRequestInitiatePayment, targetAddr *protocol.ChannelAccountAddress) error {
 
 	// 展开路由节点并检查路径是否有效
 	nids := msg.TargetPath.NodeIdPath
@@ -295,3 +297,5 @@ func (s *Servicer) launchRemotePay(localnode *payroutes.PayRelayNode, newcur *Cu
 
 	return nil
 }
+
+*/

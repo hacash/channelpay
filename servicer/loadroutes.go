@@ -138,7 +138,7 @@ func (s *Servicer) checkInitLoadRoutes() {
 		// 所有节点
 		d1 = []byte(obj1.AllNodesBytes.Value())
 		s.payRouteMng.RebuildNodesAndRelationshipUnsafe(payroutes.NodeRoutesDataFileNameOfNodes, d1)
-		fmt.Printf("Got Routes Nodes len %d lastest page %d.\n",
+		fmt.Printf("Got Routes Nodes bytes(%d) lastest page %d.\n",
 			obj1.AllNodesBytes.Len, obj1.LastestUpdatePageNum)
 	}
 	obj2 := msgres2.(*protocol.MsgPayRouteResponseNodeRelationship)
@@ -146,7 +146,7 @@ func (s *Servicer) checkInitLoadRoutes() {
 		// 全部关系
 		d2 = []byte(obj2.AllRelationships.Value())
 		s.payRouteMng.RebuildNodesAndRelationshipUnsafe(payroutes.NodeRoutesDataFileNameOfGraph, d2)
-		fmt.Printf("Got Routes Relationship len %d.\n", obj2.AllRelationships.Len)
+		fmt.Printf("Got Routes Relationship bytes(%d).\n", obj2.AllRelationships.Len)
 	}
 
 	// 全部建立完成，保存到磁盘

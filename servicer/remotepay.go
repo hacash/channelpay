@@ -41,6 +41,7 @@ func (s *Servicer) dealRemoteRelayPay(wsconn *websocket.Conn, msg *protocol.MsgR
 			return e // 地址不在线等错误
 		}
 		// 通道已经被锁定
+		curcus.IsInBusinessExclusive()
 
 	} else {
 		return fmt.Errorf("msg format error.")

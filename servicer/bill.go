@@ -1,19 +1,12 @@
 package servicer
 
-import (
-	"fmt"
-	"github.com/hacash/core/channel"
-	"github.com/hacash/core/fields"
-	"time"
-)
-
 /**
  * 票据相关
- */
+ *
 
 // 创建对账单
 // cusispay 客户方支付还是收款
-func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fields.Amount, cusispay bool) (*channel.ChannelChainTransferProveBodyInfo, error) {
+func (s *Servicer) CreateChannelPayTransferProveBody(usr *chanpay.Customer, trsAmt *fields.Amount, cusispay bool) (*channel.ChannelChainTransferProveBodyInfo, error) {
 	// 创建支付方对账单
 	var autoNumber1 = fields.VarUint8(1)
 	usrbill := usr.ChannelSide.GetReconciliationBill()
@@ -21,7 +14,7 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fiel
 		autoNumber1 = fields.VarUint8(usrbill.ChannelAutoNumber() + 1)
 	}
 	trsbody := &channel.ChannelChainTransferProveBodyInfo{
-		ChannelId:      usr.ChannelSide.channelId,
+		GetChannelId:      usr.ChannelSide.channelId,
 		ReuseVersion:   usr.ChannelSide.channelInfo.ReuseVersion,
 		BillAutoNumber: autoNumber1,
 		PayDirection:   1, // 后续判断支付方向
@@ -66,7 +59,7 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *Customer, trsAmt *fiel
 }
 
 // 创建通道支付票据
-func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *Customer, collectusr *Customer, trsAmt *fields.Amount, realpayamtwithfee *fields.Amount, orderHashCheck fields.HashHalfChecker) (*channel.ChannelPayCompleteDocuments, error) {
+func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *chanpay.Customer, collectusr *chanpay.Customer, trsAmt *fields.Amount, realpayamtwithfee *fields.Amount, orderHashCheck fields.HashHalfChecker) (*channel.ChannelPayCompleteDocuments, error) {
 
 	// 创建支付方对账单
 	ispay1 := true
@@ -131,3 +124,7 @@ func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *Custom
 
 	return allbill, nil
 }
+
+
+
+*/

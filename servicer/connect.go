@@ -2,6 +2,7 @@ package servicer
 
 import (
 	"fmt"
+	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
@@ -12,7 +13,7 @@ import (
 func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 
 	// 创建客户连接
-	customer := NewCustomer(ws)
+	customer := chanpay.NewCustomer(ws)
 
 	// 如果 5 秒钟之内还未注册，则关闭连接
 	time.AfterFunc(time.Second*5, func() {
@@ -56,14 +57,15 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 				}
 				// 发送对账单消息
 				billmsg := &protocol.MsgLoginCheckLastestBill{
-					IsNonExistent: fields.CreateBool(false),
+					ProtocolVersion: fields.VarUint2(protocol.LatestProtocolVersion),
+					BillIsExistent:  fields.CreateBool(false),
 				}
 				cusbill := customer.ChannelSide.GetReconciliationBill()
 				if cusbill != nil {
-					billmsg.IsNonExistent = fields.CreateBool(true)
+					billmsg.BillIsExistent = fields.CreateBool(true)
 					billmsg.LastBill = cusbill
 				}
-				protocol.SendMsg(customer.ChannelSide.wsConn, billmsg)
+				protocol.SendMsg(customer.ChannelSide.WsConn, billmsg)
 				// 继续接受消息
 				continue
 			} else {

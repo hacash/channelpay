@@ -17,8 +17,15 @@ func (p *PayRoutesPublish) listen(port int) {
 
 	mux := http.NewServeMux()
 
-	// 处理顾客连接
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"server":"HacashChannelPayRoutesPublish"}`))
+	})
+
+	// websocket 下载分发通道路由数据
 	mux.Handle("/routesdata/distribute", websocket.Handler(p.connectHandler))
+
+	// 通道链用户登录解析
+	mux.HandleFunc("/customer/login_resolution", p.customerLoginResolution)
 
 	// 设置监听的端口
 	portstr := strconv.Itoa(port)

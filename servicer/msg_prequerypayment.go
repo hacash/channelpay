@@ -2,6 +2,7 @@ package servicer
 
 import (
 	"fmt"
+	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 )
@@ -9,7 +10,7 @@ import (
 /**
  * 预查询支付处理
  */
-func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *Customer, msg *protocol.MsgRequestPrequeryPayment) {
+func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, msg *protocol.MsgRequestPrequeryPayment) {
 
 	// 返回错误消息
 	errorReturn := func(e error) {
@@ -17,7 +18,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *Customer, msg *proto
 			ErrCode: 0,
 			ErrTip:  fields.CreateStringMax65535(e.Error()),
 		}
-		protocol.SendMsg(newcur.ChannelSide.wsConn, errmsg)
+		protocol.SendMsg(newcur.ChannelSide.WsConn, errmsg)
 	}
 
 	// 查询支付路径
@@ -45,7 +46,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *Customer, msg *proto
 			PathForms: forms,
 		}
 		// 消息返回
-		protocol.SendMsg(newcur.ChannelSide.wsConn, resmsg)
+		protocol.SendMsg(newcur.ChannelSide.WsConn, resmsg)
 		// 成功
 		return
 	}
@@ -76,7 +77,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *Customer, msg *proto
 		PathForms: forms,
 	}
 	// 消息返回
-	protocol.SendMsg(newcur.ChannelSide.wsConn, resmsg)
+	protocol.SendMsg(newcur.ChannelSide.WsConn, resmsg)
 	// 成功
 	return
 

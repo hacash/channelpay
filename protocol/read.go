@@ -60,7 +60,7 @@ func ReceiveMsgOfTimeout(wsconn *websocket.Conn, timeoutsec int) (Message, []byt
 
 	// 等待
 	err := <-resErrChan
-	if err == nil {
+	if err != nil {
 		return nil, nil, err
 	}
 

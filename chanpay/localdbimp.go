@@ -1,4 +1,4 @@
-package datasources
+package chanpay
 
 import (
 	"bytes"
@@ -65,7 +65,7 @@ func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.Bytes16)
 	// save
 	data, e := l.ldb.Get(l.key("bill", channelId), nil)
 	if e != nil {
-		return nil, e
+		return nil, nil // 不存在，未找到
 	}
 	// parse
 	return channel.ParseReconciliationBalanceBillByPrefixTypeCode(data, 0)
