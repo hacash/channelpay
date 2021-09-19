@@ -23,6 +23,16 @@ type PayRelayNode struct {
 
 }
 
+// 是否为合法的节点名称
+func IsValidServicerIdentificationName(name string) bool {
+	for _, v := range name {
+		if false == (v > 'a' && v < 'z' || v > 'A' && v < 'Z' || v > '0' && v < '9') {
+			return false
+		}
+	}
+	return true
+}
+
 func (m PayRelayNode) Copy() *PayRelayNode {
 	newnode := &PayRelayNode{
 		ID:                 m.ID,

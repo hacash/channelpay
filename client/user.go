@@ -8,6 +8,7 @@ import (
 	"github.com/hacash/core/channel"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/core/sys"
+	"github.com/hacash/mint/event"
 	"github.com/hacash/node/websocket"
 	"io/ioutil"
 	"os"
@@ -33,6 +34,12 @@ type ChannelPayUser struct {
 
 	// 通道链
 	upstreamSide *chanpay.RelayPaySettleNoder
+
+	// 消息订阅
+	msgSubObj event.Subscription
+
+	// 是否已经关闭
+	isClosed bool
 }
 
 func CreateChannelPayUser(acc *account.Account, addr *protocol.ChannelAccountAddress, cinfo *protocol.RpcDataChannelInfo) *ChannelPayUser {
@@ -40,6 +47,7 @@ func CreateChannelPayUser(acc *account.Account, addr *protocol.ChannelAccountAdd
 		selfAcc:  acc,
 		selfAddr: addr,
 		chanInfo: cinfo,
+		isClosed: false,
 	}
 }
 
@@ -59,7 +67,12 @@ func (c *ChannelPayUser) ClearBusinessExclusive() {
 }
 
 // 退出
+func (c *ChannelPayUser) IsClosed() bool {
+	return c.isClosed // 是否已经退出、关闭
+}
+
 func (c *ChannelPayUser) Logout() {
+	c.isClosed = true
 	if c.upstreamSide != nil {
 		wsconn := c.upstreamSide.ChannelSide.WsConn
 		// 发送退出消息
@@ -67,6 +80,11 @@ func (c *ChannelPayUser) Logout() {
 			PostBack: fields.CreateStringMax255(""),
 		})
 		wsconn.Close()
+	}
+	// 关闭订阅
+	if c.msgSubObj != nil {
+		c.msgSubObj.Unsubscribe()
+		c.msgSubObj = nil
 	}
 }
 
@@ -182,7 +200,8 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 	csobj.ChannelId = c.selfAddr.ChannelId
 	csobj.ChannelInfo = c.chanInfo
 	csobj.OurAddress = c.selfAddr.Address
-	if c.selfAddr.Address.Equal(c.chanInfo.LeftAddress) {
+	ourIsLeft := c.selfAddr.Address.Equal(c.chanInfo.LeftAddress)
+	if ourIsLeft {
 		csobj.RemoteAddress = c.chanInfo.RightAddress
 	} else {
 		csobj.RemoteAddress = c.chanInfo.LeftAddress
@@ -192,7 +211,7 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 	}
 
 	// 通道端
-	c.upstreamSide = chanpay.NewRelayPayNodeConnect(c.selfAddr.ServicerName.Value(), csobj)
+	c.upstreamSide = chanpay.NewRelayPayNodeConnect(c.selfAddr.ServicerName.Value(), csobj.ChannelId, ourIsLeft, csobj)
 
 	// 成功
 	return nil

@@ -225,6 +225,12 @@ func handlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 		return e
 	}
 
+	// 打开消息监听
+	client.startMsgHandler()
+
+	// 开始监听消息
+	userObj.upstreamSide.ChannelSide.StartMessageListen()
+
 	// 成功完成
 	return nil
 }

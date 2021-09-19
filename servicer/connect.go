@@ -17,7 +17,7 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 
 	// 如果 5 秒钟之内还未注册，则关闭连接
 	time.AfterFunc(time.Second*5, func() {
-		if customer.IsRegistered == false {
+		if customer.RegisteredID == 0 {
 			ws.Close() // 超时未注册，关闭
 		}
 	})
@@ -30,11 +30,12 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 			break
 		}
 		// 首条消息必须为注册消息
-		if customer.IsRegistered == false {
+		if customer.RegisteredID == 0 {
 			if msgobj.Type() == protocol.MsgTypeLogin {
 				tarobj := msgobj.(*protocol.MsgLogin)
 				customer.DoRegister(tarobj.ChannelId, tarobj.CustomerAddress) // 执行注册
-				old, _ := s.AddCustomerToPool(customer)                       // 添加到管理池
+				// 找出旧连接
+				old := s.FindCustomersByChannel(tarobj.ChannelId)
 				// 处理旧的客户端连接
 				if old != nil {
 					// 从管理池里移除
@@ -55,6 +56,8 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 						break
 					}
 				}
+				// 添加新连接
+				s.AddCustomerToPool(customer)
 				// 发送对账单消息
 				billmsg := &protocol.MsgLoginCheckLastestBill{
 					ProtocolVersion: fields.VarUint2(protocol.LatestProtocolVersion),

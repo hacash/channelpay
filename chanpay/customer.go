@@ -4,10 +4,11 @@ import (
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
+	"math/rand"
 )
 
 type Customer struct {
-	IsRegistered bool // 是否已完成注册
+	RegisteredID uint64 // 是否已完成注册，完成时分配一个随机编号
 
 	LanguageSet fields.StringMax255 // 语言设置 en_US zh_CN
 
@@ -35,7 +36,7 @@ type Customer struct {
 func NewCustomer(ws *websocket.Conn) *Customer {
 	side := NewChannelSideConn(ws)
 	return &Customer{
-		IsRegistered: false,
+		RegisteredID: 0,
 		ChannelSide:  side,
 	}
 }
@@ -50,7 +51,7 @@ func CreateChannelSideConnWrapForCustomer(list []*Customer) ChannelSideConnListB
 
 // 执行注册
 func (c *Customer) DoRegister(channelId fields.ChannelId, address fields.Address) {
-	c.IsRegistered = true
+	c.RegisteredID = rand.Uint64()
 	c.ChannelSide.ChannelId = channelId
 	c.ChannelSide.RemoteAddress = address
 }
@@ -63,6 +64,7 @@ func (c *Customer) DoDisplacementOffline(newcur *Customer) {
 	// 发送被顶替消息，被顶替者自动下线
 	protocol.SendMsg(c.ChannelSide.WsConn, &protocol.MsgDisplacementOffline{})
 	// 关闭连接
+	//fmt.Println("protocol.SendMsg(c.ChannelSide.WsConn, &protocol.MsgDisplacementOffline{})", c.ChannelSide.WsConn.RemoteAddr())
 	c.ChannelSide.WsConn.Close()
 }
 

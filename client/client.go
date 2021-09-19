@@ -44,6 +44,10 @@ func (c *ChannelPayClient) ShowWindow() error {
 
 	// 拦截关闭事件
 	c.window.SetCloseIntercept(func() {
+		if c.user == nil || c.user.IsClosed() {
+			c.window.Close() // 未登录直接关闭
+			return
+		}
 		// 询问是否关闭
 		dia := dialog.NewConfirm("Attention", "You can't collect after closing. Do you want to close the window and logout?", func(b bool) {
 			if b {

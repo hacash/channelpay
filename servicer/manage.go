@@ -8,39 +8,48 @@ import (
 )
 
 // 添加客户到连接管理池，返回旧的
-func (s *Servicer) AddCustomerToPool(newcur *chanpay.Customer) (*chanpay.Customer, error) {
-	if newcur.IsRegistered == false {
-		return nil, fmt.Errorf("Customer unregistered")
+func (s *Servicer) AddCustomerToPool(newcur *chanpay.Customer) error {
+	if newcur.RegisteredID == 0 {
+		return fmt.Errorf("Customer unregistered")
 	}
 	// 并发锁
 	s.customerChgLock.Lock()
 	defer s.customerChgLock.Unlock()
 	//
-	var oldcur *chanpay.Customer = nil
-	// 查找旧的
-	pkey := string(newcur.ChannelSide.ChannelId)
-	if old, hav := s.customers[pkey]; hav {
-		oldcur = old
-	}
 	// 插入新的
-	s.customers[pkey] = newcur
+	s.customers[newcur.RegisteredID] = newcur
 	// 添加成功
-	return oldcur, nil
+	return nil
 }
 
 // 从管理池移除
 func (s *Servicer) RemoveCustomerFromPool(cur *chanpay.Customer) {
-	if cur.IsRegistered == false {
+	if cur.RegisteredID == 0 {
 		return
 	}
 	// 并发锁
 	s.customerChgLock.Lock()
 	defer s.customerChgLock.Unlock()
 	// 移除
-	pkey := string(cur.ChannelSide.ChannelId)
-	delete(s.customers, pkey)
+	delete(s.customers, cur.RegisteredID)
 	// ok
 	return
+}
+
+// 查询客户端连接
+func (s *Servicer) FindCustomersByChannel(cid fields.ChannelId) *chanpay.Customer {
+
+	// 并发锁
+	s.customerChgLock.RLock()
+	defer s.customerChgLock.RUnlock()
+
+	// 搜索
+	for _, v := range s.customers {
+		if v.ChannelSide.ChannelId.Equal(cid) {
+			return v
+		}
+	}
+	return nil
 }
 
 // 查询客户端连接

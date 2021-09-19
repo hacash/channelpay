@@ -9,14 +9,17 @@ type RelayPaySettleNoder struct {
 
 	// 服务名称
 	identificationName string
-	channelId          fields.ChannelID
+	channelId          fields.ChannelId
+	ourAddressIsLeft   bool
 
 	ChannelSide *ChannelSideConn
 }
 
-func NewRelayPayNodeConnect(name string, side *ChannelSideConn) *RelayPaySettleNoder {
+func NewRelayPayNodeConnect(name string, cid fields.ChannelId, ourIsLeft bool, side *ChannelSideConn) *RelayPaySettleNoder {
 	return &RelayPaySettleNoder{
 		identificationName: name,
+		channelId:          cid,
+		ourAddressIsLeft:   ourIsLeft,
 		ChannelSide:        side,
 	}
 }

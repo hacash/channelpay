@@ -18,3 +18,5 @@
 go_build_github_com_*
 
 test_*.go
+
+hacash_relay_settlement_channels_json_file.json

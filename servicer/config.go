@@ -21,9 +21,9 @@ type ServicerConfig struct {
 	// 数据修改
 	ServiceCustomerChannelsAdd    string // 要添加的客户服务通道列表
 	ServiceCustomerChannelsCancel string // 取消服务
-	RelaySettlementChannelsAdd    string // 节点间结算通道添加
-	RelaySettlementChannelsCancel string // 结算通道取消
 
+	// 节点结算通道配置文件
+	RelaySettlementChannelsJsonFile string
 }
 
 func NewEmptyServicerConfig() *ServicerConfig {
@@ -65,10 +65,8 @@ func NewServicerConfig(cnffile *sys.Inicnf) *ServicerConfig {
 	cnf.ServiceCustomerChannelsAdd = section2.Key("service_customer_channels_add").MustString("")
 	// 取消服务
 	cnf.ServiceCustomerChannelsCancel = section2.Key("service_customer_channels_cancel").MustString("")
-	// 节点间结算通道添加
-	cnf.RelaySettlementChannelsAdd = section2.Key("relay_settlement_channels_add").MustString("")
-	// 结算通道取消
-	cnf.RelaySettlementChannelsCancel = section2.Key("relay_settlement_channels_cancel").MustString("")
+	// 节点间结算通道
+	cnf.RelaySettlementChannelsJsonFile = section2.Key("relay_settlement_channels_json_file").MustString("./hacash_relay_settlement_channels_json_file.json")
 
 	// ok
 	return cnf

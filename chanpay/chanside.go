@@ -5,6 +5,7 @@ import (
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/channel"
 	"github.com/hacash/core/fields"
+	"github.com/hacash/mint/event"
 	"github.com/hacash/node/websocket"
 	"sync/atomic"
 )
@@ -32,6 +33,9 @@ type ChannelSideConn struct {
 	// 支付收款状态锁 0:未占用  1:占用状态
 	businessExclusiveStatus uint32 //
 
+	// 消息订阅
+	msgFeed     event.Feed
+	msgFeedErrs []event.Subscription
 }
 
 func NewChannelSideConn(conn *websocket.Conn) *ChannelSideConn {
@@ -40,7 +44,34 @@ func NewChannelSideConn(conn *websocket.Conn) *ChannelSideConn {
 		ChannelInfo:                     nil,
 		LatestReconciliationBalanceBill: nil,
 		businessExclusiveStatus:         0,
+		msgFeedErrs:                     make([]event.Subscription, 0),
 	}
+}
+
+// 启动消息监听
+func (c *ChannelSideConn) StartMessageListen() {
+	go func() {
+		//defer fmt.Printf("ChannelSideConn %s message listen end.\n", c.WsConn.RemoteAddr())
+		for {
+			msg, _, e := protocol.ReceiveMsg(c.WsConn)
+			if e != nil {
+				for _, v := range c.msgFeedErrs {
+					v.Unsubscribe() // 连接断开，自动取消订阅
+				}
+				c.msgFeedErrs = make([]event.Subscription, 0) // 清空
+				return                                        // 发生错误，结束
+			}
+			// 广播消息
+			c.msgFeed.Send(msg)
+		}
+	}()
+}
+
+// 订阅消息处理
+func (c *ChannelSideConn) SubscribeMessage(chanobj chan protocol.Message) event.Subscription {
+	subobj := c.msgFeed.Subscribe(chanobj) // 订阅消息处理
+	c.msgFeedErrs = append(c.msgFeedErrs, subobj)
+	return subobj
 }
 
 func (c *ChannelSideConn) SetChannelId(id fields.ChannelId) {

@@ -17,7 +17,7 @@ type Servicer struct {
 
 	// 客户连接池
 	customerChgLock sync.RWMutex
-	customers       map[string]*chanpay.Customer // 客户端
+	customers       map[uint64]*chanpay.Customer // 客户端
 
 	// 结算通道连接池
 	settlenoderChgLock sync.RWMutex
@@ -32,7 +32,7 @@ func NewServicer(cnf *ServicerConfig) *Servicer {
 
 	ser := &Servicer{
 		config:      cnf,
-		customers:   make(map[string]*chanpay.Customer, 0),
+		customers:   make(map[uint64]*chanpay.Customer, 0),
 		settlenoder: make(map[string][]*chanpay.RelayPaySettleNoder, 0),
 		payRouteMng: payroutes.NewRoutingManager(),
 	}
@@ -44,6 +44,9 @@ func NewServicer(cnf *ServicerConfig) *Servicer {
 func (s *Servicer) Start() {
 
 	var e error
+
+	// 初始化结算通道
+	s.setupRelaySettlementChannelDataSettings()
 
 	// 设置服务客户通道
 	s.modifyChannelDataSettings()
