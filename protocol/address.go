@@ -15,7 +15,7 @@ import (
 
 type ChannelAccountAddress struct {
 	Address      fields.Address      // 地址
-	ChannelId    fields.Bytes16      // 通道链id
+	ChannelId    fields.ChannelId    // 通道链id
 	ServicerName fields.StringMax255 // 服务商名称
 
 }

@@ -56,7 +56,7 @@ func ParseRpcDataChannelInfoByJSON(bytes []byte) (*RpcDataChannelInfo, error) {
 }
 
 // 向全节点请求数据
-func RequestRpcReqChannelInfo(fullNodeRpcUrl string, cid fields.Bytes16) (*RpcDataChannelInfo, error) {
+func RequestRpcReqChannelInfo(fullNodeRpcUrl string, cid fields.ChannelId) (*RpcDataChannelInfo, error) {
 
 	rurl := fullNodeRpcUrl +
 		"/query?action=channel&id=" + hex.EncodeToString(cid)
@@ -86,7 +86,7 @@ type RpcDataSernodeInfo struct {
 }
 
 // 向全节点请求数据
-func RequestChannelAndSernodeInfoFromLoginResolutionApi(apiUrl string, cid fields.Bytes16, sername string) (*RpcDataChannelInfo, *RpcDataSernodeInfo, error) {
+func RequestChannelAndSernodeInfoFromLoginResolutionApi(apiUrl string, cid fields.ChannelId, sername string) (*RpcDataChannelInfo, *RpcDataSernodeInfo, error) {
 
 	requrl := apiUrl + fmt.Sprintf("/customer/login_resolution?channel_id=%s&servicer_name=%s", hex.EncodeToString(cid), sername)
 	//fmt.Println(requrl)

@@ -65,8 +65,10 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 			errorshow.SetText(e.Error())
 		} else {
 			// 登录成功，清空数据
-			inputAddr.SetText("")
-			inputPrikey.SetText("")
+			if DevDebug == false {
+				inputAddr.SetText("")
+				inputPrikey.SetText("")
+			}
 			errorshow.SetText("")
 		}
 		errorshow.Refresh()

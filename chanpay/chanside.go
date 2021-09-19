@@ -20,7 +20,7 @@ type ChannelSideConn struct {
 	WsConn *websocket.Conn
 
 	// 数据
-	ChannelId   fields.Bytes16               // 通道链 ID
+	ChannelId   fields.ChannelId             // 通道链 ID
 	ChannelInfo *protocol.RpcDataChannelInfo // 通道当前的信息
 
 	OurAddress    fields.Address // 我方地址
@@ -43,11 +43,11 @@ func NewChannelSideConn(conn *websocket.Conn) *ChannelSideConn {
 	}
 }
 
-func (c *ChannelSideConn) SetChannelId(id fields.Bytes16) {
+func (c *ChannelSideConn) SetChannelId(id fields.ChannelId) {
 	c.ChannelId = id
 }
 
-func (c *ChannelSideConn) GetChannelId() fields.Bytes16 {
+func (c *ChannelSideConn) GetChannelId() fields.ChannelId {
 	return c.ChannelId
 }
 

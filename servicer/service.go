@@ -43,10 +43,15 @@ func NewServicer(cnf *ServicerConfig) *Servicer {
 // 启动
 func (s *Servicer) Start() {
 
+	var e error
+
+	// 设置服务客户通道
+	s.modifyChannelDataSettings()
+
 	// 从本地磁盘读取路由
 	var d1 []byte
 	var d2 []byte
-	e := s.payRouteMng.LoadAllNodesAndRelationshipFormDisk(s.config.RoutesSourceDataDir, &d1, &d2)
+	e = s.payRouteMng.LoadAllNodesAndRelationshipFormDisk(s.config.RoutesSourceDataDir, &d1, &d2)
 	if e != nil {
 		fmt.Println(e)
 	}

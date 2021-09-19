@@ -50,7 +50,7 @@ func (l *LocalDBImpOfDataSource) Init() error {
 }
 
 // 储存通用对账票据，检查对账单据的合法性
-func (l *LocalDBImpOfDataSource) UpdateStoreBalanceBill(channelId fields.Bytes16, bill channel.ReconciliationBalanceBill) error {
+func (l *LocalDBImpOfDataSource) UpdateStoreBalanceBill(channelId fields.ChannelId, bill channel.ReconciliationBalanceBill) error {
 	// data
 	data, e := bill.SerializeWithTypeCode()
 	if e != nil {
@@ -61,7 +61,7 @@ func (l *LocalDBImpOfDataSource) UpdateStoreBalanceBill(channelId fields.Bytes16
 }
 
 // 读取最新票据
-func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.Bytes16) (channel.ReconciliationBalanceBill, error) {
+func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.ChannelId) (channel.ReconciliationBalanceBill, error) {
 	// save
 	data, e := l.ldb.Get(l.key("bill", channelId), nil)
 	if e != nil {
@@ -74,7 +74,7 @@ func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.Bytes16)
 /********************************************************************/
 
 // 设定服务通道
-func (l *LocalDBImpOfDataSource) setupChannel(channelId fields.Bytes16, weAreRightSide bool) error {
+func (l *LocalDBImpOfDataSource) setupChannel(channelId fields.ChannelId, weAreRightSide bool) error {
 	key := l.key("chanset", channelId)
 	vside := uint8(1)
 	if weAreRightSide {
@@ -84,7 +84,7 @@ func (l *LocalDBImpOfDataSource) setupChannel(channelId fields.Bytes16, weAreRig
 }
 
 // 查询服务通道
-func (l *LocalDBImpOfDataSource) checkChannel(channelId fields.Bytes16) (bool, bool) {
+func (l *LocalDBImpOfDataSource) checkChannel(channelId fields.ChannelId) (bool, bool) {
 	key := l.key("chanset", channelId)
 	data, e := l.ldb.Get(key, nil)
 	if e == nil && len(data) > 0 {
@@ -99,40 +99,42 @@ func (l *LocalDBImpOfDataSource) checkChannel(channelId fields.Bytes16) (bool, b
 }
 
 // 取消服务通道
-func (l *LocalDBImpOfDataSource) cancelChannel(channelId fields.Bytes16) error {
+func (l *LocalDBImpOfDataSource) cancelChannel(channelId fields.ChannelId) error {
 	key := l.key("chanset", channelId)
 	return l.ldb.Delete(key, nil)
 }
 
 // 设定服务通道
-func (l *LocalDBImpOfDataSource) SetupCustomerPayChannel(channelId fields.Bytes16, weAreRightSide bool) error {
+func (l *LocalDBImpOfDataSource) SetupCustomerPayChannel(channelId fields.ChannelId) error {
+	weAreRightSide := true
 	return l.setupChannel(channelId, weAreRightSide)
 }
 
 // 查询服务通道
-func (l *LocalDBImpOfDataSource) CheckCustomerPayChannel(channelId fields.Bytes16) (bool, bool) {
-	return l.checkChannel(channelId)
+func (l *LocalDBImpOfDataSource) CheckCustomerPayChannel(channelId fields.ChannelId) bool {
+	ok, _ := l.checkChannel(channelId)
+	return ok
 }
 
 // 取消服务通道
-func (l *LocalDBImpOfDataSource) CancelCustomerPayChannel(channelId fields.Bytes16) error {
+func (l *LocalDBImpOfDataSource) CancelCustomerPayChannel(channelId fields.ChannelId) error {
 	return l.cancelChannel(channelId)
 }
 
 /********************************************************************/
 
 // 设定服务商结算通道，weAreRightSide 本方地址是否为右侧
-func (l *LocalDBImpOfDataSource) SetupRelaySettlementPayChannel(channelId fields.Bytes16, weAreRightSide bool) error {
+func (l *LocalDBImpOfDataSource) SetupRelaySettlementPayChannel(channelId fields.ChannelId, weAreRightSide bool) error {
 	return l.setupChannel(channelId, weAreRightSide)
 }
 
 // 查询服务商结算通道是否存在，前一个bool 表示是否存在，后一个bool=weIsRightSide
-func (l *LocalDBImpOfDataSource) CheckRelaySettlementPayChannel(channelId fields.Bytes16) (bool, bool) {
+func (l *LocalDBImpOfDataSource) CheckRelaySettlementPayChannel(channelId fields.ChannelId) (bool, bool) {
 	return l.checkChannel(channelId)
 }
 
 // 取消服务商结算通道
-func (l *LocalDBImpOfDataSource) CancelRelaySettlementPayChannel(channelId fields.Bytes16) error {
+func (l *LocalDBImpOfDataSource) CancelRelaySettlementPayChannel(channelId fields.ChannelId) error {
 	return l.cancelChannel(channelId)
 }
 
@@ -177,8 +179,8 @@ func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *c
 	bodys := paydocs.ProveBodys.ProveBodys
 	for i := 0; i < len(bodys)-1; i++ {
 		// 必须两个连续的通道
-		if hav1, _ := s.CheckCustomerPayChannel(bodys[i].ChannelId); hav1 {
-			if hav2, _ := s.CheckCustomerPayChannel(bodys[i+1].ChannelId); hav2 {
+		if hav1 := s.CheckCustomerPayChannel(bodys[i].ChannelId); hav1 {
+			if hav2 := s.CheckCustomerPayChannel(bodys[i+1].ChannelId); hav2 {
 				paychan1 = bodys[i]
 				paychan2 = bodys[i+1]
 			}

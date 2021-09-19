@@ -18,7 +18,7 @@ type Customer struct {
 	//wsConn *websocket.Conn
 	//
 	//// 数据
-	//channelId   fields.Bytes16      // 通道链 ID
+	//channelId   fields.ChannelId      // 通道链 ID
 	//channelInfo *RpcDataChannelInfo // 通道当前的信息
 	//
 	//servicerAddress fields.Address // 服务节点地址
@@ -49,7 +49,7 @@ func CreateChannelSideConnWrapForCustomer(list []*Customer) ChannelSideConnListB
 }
 
 // 执行注册
-func (c *Customer) DoRegister(channelId fields.Bytes16, address fields.Address) {
+func (c *Customer) DoRegister(channelId fields.ChannelId, address fields.Address) {
 	c.IsRegistered = true
 	c.ChannelSide.ChannelId = channelId
 	c.ChannelSide.RemoteAddress = address

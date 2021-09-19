@@ -9,14 +9,23 @@ import (
 // 全新登录一个客户端
 func (s *Servicer) LoginNewCustomer(newcur *chanpay.Customer) error {
 
+	cid := newcur.ChannelSide.GetChannelId()
+
+	// 查询是否在channel服务列表内
+	serhav := s.chanset.CheckCustomerPayChannel(cid)
+	if serhav == false {
+		// 不在服务列表内
+		return fmt.Errorf("channel %s is not in the service list.", cid.ToHex())
+	}
+
 	// 读取通道状态
 	chanInfo, e := protocol.RequestRpcReqChannelInfo(s.config.FullNodeRpcUrl, newcur.ChannelSide.ChannelId)
 	if e != nil || chanInfo == nil {
-		return fmt.Errorf("load channel info fail: %s", e.Error())
+		return fmt.Errorf("request channel info fail: %s", e.Error())
 	}
 
 	// 读取最新对账单
-	bill, e := s.billstore.GetLastestBalanceBill(newcur.ChannelSide.ChannelId)
+	bill, e := s.billstore.GetLastestBalanceBill(cid)
 	if e != nil {
 		return e
 	}

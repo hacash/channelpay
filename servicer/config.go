@@ -18,6 +18,12 @@ type ServicerConfig struct {
 
 	FullNodeRpcUrl string // Hacash 全节点数据接口地址
 
+	// 数据修改
+	ServiceCustomerChannelsAdd    string // 要添加的客户服务通道列表
+	ServiceCustomerChannelsCancel string // 取消服务
+	RelaySettlementChannelsAdd    string // 节点间结算通道添加
+	RelaySettlementChannelsCancel string // 结算通道取消
+
 }
 
 func NewEmptyServicerConfig() *ServicerConfig {
@@ -52,6 +58,18 @@ func NewServicerConfig(cnffile *sys.Inicnf) *ServicerConfig {
 	cnf.LoadRoutesUrl = section.Key("load_routes_data_url").MustString("wss://channelroutes.hacash.org/routesdata/distribute")
 
 	cnf.FullNodeRpcUrl = section.Key("full_node_rpc_url").MustString("http://127.0.0.1:3381")
+
+	// 数据节点
+	section2 := cnffile.Section("channel")
+	// 要添加的客户服务通道列表
+	cnf.ServiceCustomerChannelsAdd = section2.Key("service_customer_channels_add").MustString("")
+	// 取消服务
+	cnf.ServiceCustomerChannelsCancel = section2.Key("service_customer_channels_cancel").MustString("")
+	// 节点间结算通道添加
+	cnf.RelaySettlementChannelsAdd = section2.Key("relay_settlement_channels_add").MustString("")
+	// 结算通道取消
+	cnf.RelaySettlementChannelsCancel = section2.Key("relay_settlement_channels_cancel").MustString("")
+
 	// ok
 	return cnf
 }

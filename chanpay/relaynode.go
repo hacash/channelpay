@@ -9,6 +9,7 @@ type RelayPaySettleNoder struct {
 
 	// 服务名称
 	identificationName string
+	channelId          fields.ChannelID
 
 	ChannelSide *ChannelSideConn
 }

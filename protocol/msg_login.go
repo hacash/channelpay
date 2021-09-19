@@ -11,7 +11,7 @@ import (
 
 type MsgLogin struct {
 	ProtocolVersion fields.VarUint2     // 客户端协议版本号，用于升级和向前兼容
-	ChannelId       fields.Bytes16      // 通道id
+	ChannelId       fields.ChannelId    // 通道id
 	CustomerAddress fields.Address      // 客户侧地址
 	LanguageSet     fields.StringMax255 // 语言设置
 }
