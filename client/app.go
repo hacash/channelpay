@@ -6,8 +6,8 @@ import (
 	"fyne.io/fyne/theme"
 )
 
-const (
-	DevDebug bool = true // 全局开发者测试模式
+var (
+	DevDebug bool = false // 全局开发者测试模式
 )
 
 func MainNewAppRun() fyne.App {

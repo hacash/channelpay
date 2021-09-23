@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sync"
 )
 
 const (
@@ -23,6 +24,7 @@ const (
  * 通道链支付用户端
  */
 type ChannelPayUser struct {
+	changeMux sync.Mutex
 
 	// 账户地址
 	selfAcc  *account.Account
@@ -72,6 +74,11 @@ func (c *ChannelPayUser) IsClosed() bool {
 }
 
 func (c *ChannelPayUser) Logout() {
+	c.changeMux.Lock()
+	defer c.changeMux.Unlock()
+	if c.isClosed {
+		return // 已经退出
+	}
 	c.isClosed = true
 	if c.upstreamSide != nil {
 		wsconn := c.upstreamSide.ChannelSide.WsConn

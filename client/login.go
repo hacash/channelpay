@@ -60,7 +60,7 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 	// 点击登录按钮
 	loginBtn.OnTapped = func() {
 		// 执行登录
-		e := handlerLogin(inputAddr.Text, inputPrikey.Text, app, window)
+		e := HandlerLogin(inputAddr.Text, inputPrikey.Text, app, window)
 		if e != nil {
 			errorshow.SetText(e.Error())
 		} else {
@@ -78,7 +78,7 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 }
 
 // 执行登录
-func handlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Window) error {
+func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Window) error {
 
 	// 必填
 	if len(addr) == 0 {
@@ -218,7 +218,7 @@ func handlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 	}
 
 	// 打开通道支付界面
-	client := CreateChannelPayClient(app, userObj)
+	client := CreateChannelPayClient(app, userObj, window)
 	e = client.ShowWindow()
 	if e != nil {
 		userObj.Logout() // 显示发生错误，退出
@@ -230,6 +230,11 @@ func handlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 
 	// 开始监听消息
 	userObj.upstreamSide.ChannelSide.StartMessageListen()
+
+	// 登录窗口影藏
+	if DevDebug == false {
+		window.Hide()
+	}
 
 	// 成功完成
 	return nil

@@ -24,7 +24,10 @@ func init() {
 
 }
 
-func main() {
+func main_() {
+
+	// 开发者模式
+	client.DevDebug = true
 
 	// 启动
 	client.MainNewAppRun()

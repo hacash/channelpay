@@ -2,9 +2,9 @@ package client
 
 import (
 	"fyne.io/fyne"
-	"fyne.io/fyne/container"
-	"fyne.io/fyne/dialog"
-	"fyne.io/fyne/widget"
+	"github.com/zserge/lorca"
+	"log"
+	"net/url"
 )
 
 /**
@@ -12,35 +12,96 @@ import (
  */
 
 type ChannelPayClient struct {
-	app    fyne.App
-	window fyne.Window
-	user   *ChannelPayUser // 用户端
+	app         fyne.App
+	loginWindow fyne.Window
+	payui       lorca.UI
+	//window fyne.Window
+	user *ChannelPayUser // 用户端
 
 }
 
-func CreateChannelPayClient(app fyne.App, user *ChannelPayUser) *ChannelPayClient {
+func CreateChannelPayClient(app fyne.App, user *ChannelPayUser, lgwd fyne.Window) *ChannelPayClient {
 	return &ChannelPayClient{
-		app:  app,
-		user: user,
+		app:         app,
+		loginWindow: lgwd,
+		user:        user,
 	}
 }
 
 // 显示界面
 func (c *ChannelPayClient) ShowWindow() error {
 
+	// Create UI with basic HTML passed via data URI
+	ui, err := lorca.New("data:text/html,"+url.PathEscape(AccUIhtmlContent),
+		"", 960, 640)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//fmt.Println(ui.Eval("2+2").Int())
+
+	go func() {
+		<-ui.Done()
+		// 退出
+		c.user.Logout()
+		if c.loginWindow != nil {
+			c.loginWindow.Show() // 重新显示登录窗口
+		}
+	}()
+
+	c.payui = ui // ui
+
+	return nil
+}
+
+/* 显示界面
+func (c *ChannelPayClient) ShowWindow_old() error {
+
+	if c.user == nil {
+		panic("user   *ChannelPayUser == nil")
+	}
+
 	// 显示登录窗口
-	objs := container.NewVBox()
+	objsleft := container.NewVBox()
+	objsright := container.NewVBox()
+	sizevb := fyne.Size{
+		Width:  400,
+		Height: 660,
+	}
+
+
+
+	balance := canvas.NewText("Balance: ", theme.TextColor())
+	balance.Color = theme.PrimaryColorNamed("green")
+	balance.TextSize = 18
+	objsleft.Add(balance)
+
+
+
+
+	objsright.Add(widget.NewLabel("123"))
+
+	// 左右布局
+	objsleft.Resize(sizevb)
+	objsleft.Move(fyne.Position{40,40})
+	objsright.Resize(sizevb)
+	objsright.Move(fyne.Position{40,40})
+	wraply := fyne.NewContainerWithLayout(layout.NewGridLayout(2),
+		objsleft, objsright)
+
+
+	wraply.Refresh()
 
 	// 窗口布局
-	objs.Add(widget.NewLabel("balance: ㄜ1:248"))
-
+	// 尺寸
 	wsize := &fyne.Size{
-		Width:  800,
-		Height: 600,
+		Width:  960,
+		Height: 740,
 	}
 
 	// 创建并显示窗口
-	c.window = NewVScrollWindowAndShow(c.app, wsize, objs, "Channel pay and collect")
+	c.window = NewVScrollWindowAndShow(c.app, wsize, wraply, "Channel pay and collect")
+	c.window.SetPadded(true)
 
 	// 拦截关闭事件
 	c.window.SetCloseIntercept(func() {
@@ -60,3 +121,4 @@ func (c *ChannelPayClient) ShowWindow() error {
 
 	return nil
 }
+*/
