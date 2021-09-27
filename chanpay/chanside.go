@@ -30,6 +30,9 @@ type ChannelSideConn struct {
 	// 最新的对账票据
 	LatestReconciliationBalanceBill channel.ReconciliationBalanceBill
 
+	// 关闭收款标记
+	businessCloseAutoCollectionStatus uint32
+
 	// 支付收款状态锁 0:未占用  1:占用状态
 	businessExclusiveStatus uint32 //
 
@@ -40,11 +43,12 @@ type ChannelSideConn struct {
 
 func NewChannelSideConn(conn *websocket.Conn) *ChannelSideConn {
 	return &ChannelSideConn{
-		WsConn:                          conn,
-		ChannelInfo:                     nil,
-		LatestReconciliationBalanceBill: nil,
-		businessExclusiveStatus:         0,
-		msgFeedErrs:                     make([]event.Subscription, 0),
+		WsConn:                            conn,
+		ChannelInfo:                       nil,
+		LatestReconciliationBalanceBill:   nil,
+		businessExclusiveStatus:           0,
+		businessCloseAutoCollectionStatus: 0,
+		msgFeedErrs:                       make([]event.Subscription, 0),
 	}
 }
 
@@ -117,7 +121,7 @@ func (c *ChannelSideConn) IsInBusinessExclusive() bool {
 	return atomic.LoadUint32(&c.businessExclusiveStatus) == 1
 }
 
-// 其中状态独占
+// 启用状态独占
 func (c *ChannelSideConn) StartBusinessExclusive() bool {
 	return atomic.CompareAndSwapUint32(&c.businessExclusiveStatus, 0, 1)
 }
@@ -127,9 +131,41 @@ func (c *ChannelSideConn) ClearBusinessExclusive() {
 	atomic.CompareAndSwapUint32(&c.businessExclusiveStatus, 1, 0)
 }
 
+// 检查是否关闭自动收款
+func (c *ChannelSideConn) IsInCloseAutoCollectionStatus() bool {
+	// 检查状态
+	return atomic.LoadUint32(&c.businessCloseAutoCollectionStatus) == 1
+}
+
+// 启用关闭自动收款
+func (c *ChannelSideConn) StartCloseAutoCollectionStatus() bool {
+	return atomic.CompareAndSwapUint32(&c.businessCloseAutoCollectionStatus, 0, 1)
+}
+
+// 解除关闭自动收款
+func (c *ChannelSideConn) ClearCloseAutoCollectionStatus() {
+	atomic.CompareAndSwapUint32(&c.businessCloseAutoCollectionStatus, 1, 0)
+}
+
 // 判断
 func (c *ChannelSideConn) RemoteAddressIsLeft() bool {
 	return c.RemoteAddress.Equal(c.ChannelInfo.LeftAddress)
+}
+
+// 获取通道数据
+func (c *ChannelSideConn) GetAvailableReuseVersion() uint32 {
+	var bill = c.LatestReconciliationBalanceBill
+	if bill != nil {
+		return bill.GetReuseVersion()
+	}
+	return uint32(c.ChannelInfo.ReuseVersion)
+}
+func (c *ChannelSideConn) GetAvailableAutoNumber() uint64 {
+	var bill = c.LatestReconciliationBalanceBill
+	if bill != nil {
+		return bill.GetAutoNumber()
+	}
+	return uint64(0)
 }
 
 // 获取通道容量

@@ -2,32 +2,79 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="google" content="notranslate" />
+
     <title>Hacash channel pay client</title>
-
-    <style>
-
-    /*=*csscon*=*/
     
+    <style>
+    /*=*csscon*=*/
     </style>
+    <link rel="stylesheet" href="pay.css" />
 
 </head>
 <body>
 
+<div class="wbox"><div class="box l">
+
+    <div class="blsw">
+        <table>
+            <tr><td><label>Channel Balance: </label></td><td><b class="amt" id="blsamt">ㄜ91,616,204:240</b></td></tr>
+            <tr><td><label>Collection capacity: </label></td><td><b class="cap" id="blscap">ㄜ132:247</b></td></tr>
+        </table>
+    </div>
+
+    <div class="cid">
+
+        <table>
+            <tr><td><label>Channel ID: </label></td><td><a href="https://explorer.hacash.org/channel/7ff377a442250bbd0de17ce8d2e6ba08" target="_blank" id="cid">7ff377a442250bbd0de17ce8d2e6ba08</a></td></tr>
+            <tr><td><label>Collection address:</label></td><td><b class="addr" id=addr>12fEmV9HBRZfnfhypxmtW82TNHbCiHfkzU_HCPN1</b><b id=ufadr title="View target path address">↵</b></td></tr>
+        </table>
+    </div>
+
+    <div class="bill">
+        <h6 class="meta">[Reconciliation meta info] Reuse version: <b id="blrun">1</b>, Bill serial number: <b id="blanb">1234</b></h6>
+        <p id="nobill">bill not exist yet.</p>
+        <textarea readonly="true" class="bdts" id="bdts">b38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6be</textarea>
+
+    </div>
 
 
+    <h3 class="tt">Collection:</h3>
+    <div class="clct">
+        <div class="tap open" id="clctt"><b></b></div>
+        <span class="open" id="clctt1">✓ Enabled automatic collection</span>
+        <span class="close" id="clctt2" style="display: none;">✗ Collection has been closed, you cannot receive funds</span>
+    </div>
+
+    <h3 class="tt">Payment:</h3>
+    <div id="dopay" class="dopay">
+        <input class="addr" id="payaddr" placeholder="Target channel collection address" />
+        <input class="amt" id="payamt" placeholder="Amount: ㄜ125:246 or 1.25" />
+        <button class="trsbtn" id="paybtn">Start transfer</button>
+        <div class="err" id="payerr">// Note regarding lock implemented in function Hash()
+// The lock obtained works on the assumption that the call to block.HashFresh() will always be made from Hash()
+// If future code changes this relationship by calling block.HashFresh() directly,
+// such a change will necessitate that the locks be changed in order to properly searialize access to variable block.hash</div>
+    </div>
+    
 
 
+</div><div class="box r">
 
+    <h5 class="logt">Log printing:</h5>
+    <div class="logw" id="logw">
+        <p>connect to server successfully!</p>
+    </div>
+
+</div></div>
 
 
 
 
 <script>
-
 /*=*jscon*=*/
-
 </script>
-
+<script src="pay.js"></script>
 
 </body>
 </html>

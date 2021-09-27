@@ -14,11 +14,9 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 
 	// 返回错误消息
 	errorReturn := func(e error) {
-		errmsg := &protocol.MsgError{
-			ErrCode: 0,
-			ErrTip:  fields.CreateStringMax65535(e.Error()),
-		}
-		protocol.SendMsg(newcur.ChannelSide.WsConn, errmsg)
+		errobj := protocol.NewMsgResponsePrequeryPayment(1)
+		errobj.ErrTip = fields.CreateStringMax65535(e.Error())
+		protocol.SendMsg(newcur.ChannelSide.WsConn, errobj)
 	}
 
 	// 查询支付路径
@@ -27,6 +25,12 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 	if e != nil {
 		// 地址格式错误，发送错误信息
 		errorReturn(e)
+		return
+	}
+
+	// 不能自己转给自己
+	if chanAddr.Address.Equal(newcur.ChannelSide.RemoteAddress) {
+		errorReturn(fmt.Errorf("You can't transfer money to yourself."))
 		return
 	}
 
@@ -41,10 +45,9 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 	if chanAddr.CompareServiceName(localServicerName) {
 		// 本地支付
 		forms := CreatePayPathFormsBySingleNodePath(localnode, &msg.PayAmount)
-		resmsg := &protocol.MsgResponsePrequeryPayment{
-			Notes:     fields.CreateStringMax65535(""),
-			PathForms: forms,
-		}
+		resmsg := protocol.NewMsgResponsePrequeryPayment(0)
+		resmsg.Notes = fields.CreateStringMax65535("")
+		resmsg.PathForms = forms
 		// 消息返回
 		protocol.SendMsg(newcur.ChannelSide.WsConn, resmsg)
 		// 成功
@@ -72,10 +75,10 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 		return
 	}
 	forms := CreatePayPathForms(pathResults, &msg.PayAmount) // 路径列表
-	resmsg := &protocol.MsgResponsePrequeryPayment{
-		Notes:     fields.CreateStringMax65535(""),
-		PathForms: forms,
-	}
+	// 消息
+	resmsg := protocol.NewMsgResponsePrequeryPayment(0)
+	resmsg.Notes = fields.CreateStringMax65535("")
+	resmsg.PathForms = forms
 	// 消息返回
 	protocol.SendMsg(newcur.ChannelSide.WsConn, resmsg)
 	// 成功

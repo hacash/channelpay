@@ -1,10 +1,15 @@
 package client
 
 import (
+	"encoding/hex"
+	"fmt"
 	"fyne.io/fyne"
+	"github.com/hacash/channelpay/protocol"
+	"github.com/hacash/core/fields"
 	"github.com/zserge/lorca"
 	"log"
 	"net/url"
+	"strings"
 )
 
 /**
@@ -28,17 +33,97 @@ func CreateChannelPayClient(app fyne.App, user *ChannelPayUser, lgwd fyne.Window
 	}
 }
 
+// 更新界面显示
+func (c *ChannelPayClient) UpdateBalanceShow() {
+	cside := c.user.upstreamSide.ChannelSide
+	bill := cside.GetReconciliationBill()
+	billhex := ""
+	if bill != nil {
+		bts, _ := bill.SerializeWithTypeCode()
+		billhex = hex.EncodeToString(bts)
+	}
+	c.payui.Eval(fmt.Sprintf(`UpdateBalance("%s","%s",%d,%d,"%s")`,
+		cside.GetChannelCapacityAmountOfOur().ToFinString(),
+		cside.GetChannelCapacityAmountOfRemote().ToFinString(),
+		cside.GetAvailableReuseVersion(),
+		cside.GetAvailableAutoNumber(),
+		billhex,
+	))
+}
+
+// 启动交易
+func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
+	//fmt.Println("BindFuncInitiatePayment:", addr, amt)
+	if len(addr) == 0 {
+		return "Please enter the address."
+	}
+	if len(amt) == 0 {
+		return "Please enter the amount."
+	}
+	_, e := protocol.ParseChannelAccountAddress(addr)
+	if e != nil {
+		return fmt.Sprintf("Address format error: %s", e.Error()) // 错误
+	}
+	amount, e := fields.NewAmountFromStringUnsafe(amt)
+	if e != nil {
+		return fmt.Sprintf("Amount format error: %s", e.Error()) // 错误
+	}
+	// 发送预查询支付信息
+	//fmt.Println(addrobj, amount)
+	msg := &protocol.MsgRequestPrequeryPayment{
+		PayAmount:        *amount,
+		PayeeChannelAddr: fields.CreateStringMax255(addr),
+	}
+	err := protocol.SendMsg(c.user.upstreamSide.ChannelSide.WsConn, msg)
+	if err != nil {
+		return "SendMsg Error: " + err.Error()
+	}
+	// no error
+	return ""
+}
+
+// 是否关闭自动收款
+func (c *ChannelPayClient) BindFuncChangeAutoCollection(isopen int) {
+	if isopen == 0 {
+		// 关闭收款
+		c.user.upstreamSide.ChannelSide.StartCloseAutoCollectionStatus() // 启用状态
+	} else {
+		// 开启收款
+		c.user.upstreamSide.ChannelSide.ClearCloseAutoCollectionStatus() // 清除标记
+	}
+}
+
+// 显示支付错误
+func (c *ChannelPayClient) ShowPaymentErrorString(err string) {
+	c.payui.Eval(fmt.Sprintf(`ShowPaymentError("%s")`, strings.Replace(err, `"`, ``, -1)))
+}
+
 // 显示界面
 func (c *ChannelPayClient) ShowWindow() error {
 
 	// Create UI with basic HTML passed via data URI
 	ui, err := lorca.New("data:text/html,"+url.PathEscape(AccUIhtmlContent),
-		"", 960, 640)
+		"", 962, 642)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	c.payui = ui // ui
+
+	// 绑定操作函数
+
+	// 开关自动收款
+	ui.Bind("ChangeAutoCollection", c.BindFuncChangeAutoCollection)
+	// 预查询支付
+	ui.Bind("PrequeryPayment", c.BindFuncPrequeryPayment)
+
+	// 初始化账户信息
+	ui.Eval(fmt.Sprintf(`InitAccount("%s","%s")`,
+		c.user.selfAddr.ChannelId.ToHex(), c.user.selfAddr.ToReadable(false)))
 	//fmt.Println(ui.Eval("2+2").Int())
+
+	// 更新余额
+	c.UpdateBalanceShow()
 
 	go func() {
 		<-ui.Done()
@@ -48,8 +133,6 @@ func (c *ChannelPayClient) ShowWindow() error {
 			c.loginWindow.Show() // 重新显示登录窗口
 		}
 	}()
-
-	c.payui = ui // ui
 
 	return nil
 }

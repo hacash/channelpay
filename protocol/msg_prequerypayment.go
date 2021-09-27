@@ -71,6 +71,7 @@ func (m PayPathDescribe) Size() uint32 {
 
 func (m *PayPathDescribe) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
+	m.NodeIdPath = &NodeIdPath{}
 	seek, e = m.NodeIdPath.Parse(buf, seek)
 	if e != nil {
 		return 0, e
@@ -174,7 +175,7 @@ type MsgRequestPrequeryPayment struct {
 }
 
 func (m MsgRequestPrequeryPayment) Type() uint8 {
-	return MsgTypeResponsePrequeryPayment
+	return MsgTypeRequestPrequeryPayment
 }
 
 func (m MsgRequestPrequeryPayment) Size() uint32 {
@@ -226,8 +227,16 @@ func (m MsgRequestPrequeryPayment) SerializeWithType() ([]byte, error) {
 
 // 支付预查询 响应
 type MsgResponsePrequeryPayment struct {
+	ErrCode   fields.VarUint2       // 当有错误时的错误码 > 0
+	ErrTip    fields.StringMax65535 // 错误消息
 	Notes     fields.StringMax65535 // 描述信息
 	PathForms *PayPathForms         // 可选择的支付通道列表
+}
+
+func NewMsgResponsePrequeryPayment(ecode uint16) *MsgResponsePrequeryPayment {
+	return &MsgResponsePrequeryPayment{
+		ErrCode: fields.VarUint2(ecode),
+	}
 }
 
 func (m MsgResponsePrequeryPayment) Type() uint8 {
@@ -235,20 +244,38 @@ func (m MsgResponsePrequeryPayment) Type() uint8 {
 }
 
 func (m MsgResponsePrequeryPayment) Size() uint32 {
-	return m.Notes.Size() +
-		m.PathForms.Size()
-
+	size := m.ErrCode.Size()
+	ecode := int(m.ErrCode)
+	if ecode == 0 {
+		size += m.Notes.Size() +
+			m.PathForms.Size()
+	} else {
+		size += m.ErrTip.Size()
+	}
+	return size
 }
 
 func (m *MsgResponsePrequeryPayment) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
-	seek, e = m.Notes.Parse(buf, seek)
+	seek, e = m.ErrCode.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
-	seek, e = m.PathForms.Parse(buf, seek)
-	if e != nil {
-		return 0, e
+	if int(m.ErrCode) == 0 {
+		seek, e = m.Notes.Parse(buf, seek)
+		if e != nil {
+			return 0, e
+		}
+		m.PathForms = &PayPathForms{}
+		seek, e = m.PathForms.Parse(buf, seek)
+		if e != nil {
+			return 0, e
+		}
+	} else {
+		seek, e = m.ErrTip.Parse(buf, seek)
+		if e != nil {
+			return 0, e
+		}
 	}
 	return seek, nil
 }
@@ -257,16 +284,29 @@ func (m MsgResponsePrequeryPayment) Serialize() ([]byte, error) {
 	var e error
 	var bt []byte
 	buf := bytes.NewBuffer(nil)
-	bt, e = m.Notes.Serialize()
+	bt, e = m.ErrCode.Serialize()
 	if e != nil {
 		return nil, e
 	}
 	buf.Write(bt)
-	bt, e = m.PathForms.Serialize()
-	if e != nil {
-		return nil, e
+	if int(m.ErrCode) == 0 {
+		bt, e = m.Notes.Serialize()
+		if e != nil {
+			return nil, e
+		}
+		buf.Write(bt)
+		bt, e = m.PathForms.Serialize()
+		if e != nil {
+			return nil, e
+		}
+		buf.Write(bt)
+	} else {
+		bt, e = m.ErrTip.Serialize()
+		if e != nil {
+			return nil, e
+		}
+		buf.Write(bt)
 	}
-	buf.Write(bt)
 	// ok
 	return buf.Bytes(), nil
 }

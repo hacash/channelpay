@@ -105,6 +105,8 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 		msg = &MsgCustomerLogout{}
 	case MsgTypeRequestPrequeryPayment:
 		msg = &MsgRequestPrequeryPayment{}
+	case MsgTypeResponsePrequeryPayment:
+		msg = &MsgResponsePrequeryPayment{}
 	case MsgTypeInitiatePayment:
 		msg = &MsgRequestInitiatePayment{}
 

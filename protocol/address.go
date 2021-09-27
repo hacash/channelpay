@@ -42,6 +42,16 @@ func (c *ChannelAccountAddress) CompareServiceName(sname string) bool {
 	return false
 }
 
+// 可读地址
+func (c *ChannelAccountAddress) ToReadable(isstrict bool) string {
+	addr := c.Address.ToReadable()
+	if isstrict {
+		addr += "_" + c.ChannelId.ToHex()
+	}
+	addr += "_" + c.ServicerName.Value()
+	return addr
+}
+
 // 解析地址
 func (c *ChannelAccountAddress) Parse(addrstr string) error {
 	addrstr1 := regexp.MustCompile(`^_+|_+$`).ReplaceAllString(addrstr, "")

@@ -24,8 +24,14 @@ func init() {
 
 }
 
-func main_() {
+func main() {
 
+	mainRelease()
+	//mainDev1()
+
+}
+
+func mainRelease() {
 	// 开发者模式
 	client.DevDebug = true
 
@@ -34,5 +40,4 @@ func main_() {
 
 	//回退字体设置
 	os.Unsetenv("FYNE_FONT")
-
 }
