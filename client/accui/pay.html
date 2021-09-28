@@ -47,14 +47,11 @@
     </div>
 
     <h3 class="tt">Payment:</h3>
-    <div id="dopay" class="dopay">
+    <div id="gopay" class="gopay">
         <input class="addr" id="payaddr" placeholder="Target channel collection address" />
         <input class="amt" id="payamt" placeholder="Amount: ㄜ125:246 or 1.25" />
         <button class="trsbtn" id="paybtn">Start transfer</button>
-        <div class="err" id="payerr">// Note regarding lock implemented in function Hash()
-// The lock obtained works on the assumption that the call to block.HashFresh() will always be made from Hash()
-// If future code changes this relationship by calling block.HashFresh() directly,
-// such a change will necessitate that the locks be changed in order to properly searialize access to variable block.hash</div>
+        <div class="err" id="payerr"></div>
     </div>
     
 
@@ -69,6 +66,21 @@
 </div></div>
 
 
+<!-- 选择支付渠道 -->
+<div id="dopay" class="dopay">
+    <div class="conb">
+        <h3 class="ttt">Select and confirm your payment</h3>
+        <p class="check"></p>
+        <p class="note">Note: Please select a payment path. If it fails, you can try to select another path to initiate payment again. Once the payment is successful, it is irrevocable.</p>
+        <form id="slctps"> 
+            <label class="pil"><input name="ptitem" type="radio" value="1" /></label> 
+        </form>
+        <div class="btns">
+            <button class="cancel">Cancel</button>
+            <button class="submit">Confirm payment</button>
+        </div>
+    </div>
+</div>
 
 
 <script>

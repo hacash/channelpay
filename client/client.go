@@ -10,26 +10,38 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"sync"
 )
+
+// 待支付结构
+type pendingPayment struct {
+	address     fields.Address
+	amount      fields.Amount
+	prequeryMsg *protocol.MsgResponsePrequeryPayment
+}
 
 /**
  * 通道链支付客户端
  */
-
 type ChannelPayClient struct {
 	app         fyne.App
 	loginWindow fyne.Window
 	payui       lorca.UI
 	//window fyne.Window
 	user *ChannelPayUser // 用户端
+	// 待支付缓存数据
+	pendingPaymentObj *pendingPayment
 
+	// 状态锁定
+	statusMutex sync.Mutex
 }
 
 func CreateChannelPayClient(app fyne.App, user *ChannelPayUser, lgwd fyne.Window) *ChannelPayClient {
 	return &ChannelPayClient{
-		app:         app,
-		loginWindow: lgwd,
-		user:        user,
+		app:               app,
+		loginWindow:       lgwd,
+		user:              user,
+		pendingPaymentObj: nil,
 	}
 }
 
@@ -60,13 +72,19 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	if len(amt) == 0 {
 		return "Please enter the amount."
 	}
-	_, e := protocol.ParseChannelAccountAddress(addr)
+	acc, e := protocol.ParseChannelAccountAddress(addr)
 	if e != nil {
 		return fmt.Sprintf("Address format error: %s", e.Error()) // 错误
 	}
 	amount, e := fields.NewAmountFromStringUnsafe(amt)
 	if e != nil {
 		return fmt.Sprintf("Amount format error: %s", e.Error()) // 错误
+	}
+	// 余额检查
+	amtcap := c.user.upstreamSide.ChannelSide.GetChannelCapacityAmountOfOur()
+	if amtcap.LessThan(amount) {
+		return fmt.Sprintf("Balance %s not enough for transfer %s",
+			amtcap.ToFinString(), amount.ToFinString()) // 余额不足
 	}
 	// 发送预查询支付信息
 	//fmt.Println(addrobj, amount)
@@ -78,6 +96,14 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	if err != nil {
 		return "SendMsg Error: " + err.Error()
 	}
+	c.statusMutex.Lock()
+	c.pendingPaymentObj = &pendingPayment{
+		address:     acc.Address,
+		amount:      *amount,
+		prequeryMsg: nil,
+	}
+	c.statusMutex.Unlock()
+
 	// no error
 	return ""
 }
@@ -102,8 +128,11 @@ func (c *ChannelPayClient) ShowPaymentErrorString(err string) {
 func (c *ChannelPayClient) ShowWindow() error {
 
 	// Create UI with basic HTML passed via data URI
-	ui, err := lorca.New("data:text/html,"+url.PathEscape(AccUIhtmlContent),
-		"", 962, 642)
+	ui, err := lorca.New("", "", 962, 642)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ui.Load("data:text/html," + url.PathEscape(AccUIhtmlContent))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -116,6 +145,9 @@ func (c *ChannelPayClient) ShowWindow() error {
 	ui.Bind("ChangeAutoCollection", c.BindFuncChangeAutoCollection)
 	// 预查询支付
 	ui.Bind("PrequeryPayment", c.BindFuncPrequeryPayment)
+	// 确认或取消启动支付
+	ui.Bind("ConfirmPayment", c.BindFuncConfirmPayment)
+	ui.Bind("CancelPayment", c.BindFuncCancelPayment)
 
 	// 初始化账户信息
 	ui.Eval(fmt.Sprintf(`InitAccount("%s","%s")`,
@@ -127,6 +159,7 @@ func (c *ChannelPayClient) ShowWindow() error {
 
 	go func() {
 		<-ui.Done()
+		//fmt.Println("!!!!!!!!!!!!!!!!!!")
 		// 退出
 		c.user.Logout()
 		if c.loginWindow != nil {

@@ -41,8 +41,9 @@ func (c *ChannelPayClient) dealMsg(msg protocol.Message) {
 			c.ShowPaymentErrorString("Prequery payment error: " + msgobj.ErrTip.Value())
 			return
 		}
-
-		fmt.Println("PayPathCount: ", msgobj.PathForms.PayPathCount)
+		// 调用前端界面，开始支付
+		//fmt.Println("PayPathCount: ", msgobj.PathForms.PayPathCount)
+		c.dealPrequeryPaymentResult(msgobj)
 
 	// 被顶下线
 	case protocol.MsgTypeDisplacementOffline:

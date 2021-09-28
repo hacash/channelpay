@@ -30,7 +30,7 @@ func CreatePayPathForms(nodepaths [][]*payroutes.PayRelayNode, payamt *fields.Am
 				ttfee = feeadd // 手续费累加
 			}
 			dscs[n] = fmt.Sprintf(`%s(fee:%.2f‰)`,
-				node.IdentificationName, float64(node.FeeRatio)/100000)
+				node.IdentificationName.Value(), float64(node.FeeRatio)/100000)
 		}
 		dscsall := fmt.Sprintf(`Pay relay: %s`, strings.Join(dscs, " -> "))
 		ids := &protocol.NodeIdPath{
@@ -39,7 +39,7 @@ func CreatePayPathForms(nodepaths [][]*payroutes.PayRelayNode, payamt *fields.Am
 		}
 		paths := &protocol.PayPathDescribe{
 			NodeIdPath:     ids,
-			PredictPathFee: *ttfee, // 手续费
+			PredictPathFee: *ttfee, // 预估手续费
 			Describe:       fields.CreateStringMax65535(dscsall),
 		}
 		pathdscs[i] = paths

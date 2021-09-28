@@ -1,7 +1,9 @@
 /**
  * // 绑定的函数
  * ChangeAutoCollection(int)
- * PrequeryPayment(string,string)
+ * PrequeryPayment(string,string) string
+ * ConfirmPayment(pathselect) string
+ * CancelPayment()
  * 
  * // 调用的函数
  * Logout()
@@ -69,9 +71,64 @@ function UpdateBalance(bls, cap, reusenum, billno, billbodyhex) {
 
 /* 显示支付错误 */
 var payerr = document.getElementById("payerr")
+, payaddr = document.getElementById("payaddr")
+, payamt = document.getElementById("payamt")
 ;
 function ShowPaymentError(errmsg) {
     payerr.innerText = errmsg;
+}
+
+/* 选择支付渠道、选择支付路径 */
+var dopay = document.getElementById("dopay")
+, slctps = document.getElementById("slctps")
+, slpcheck = dopay.getElementsByClassName("check")[0]
+, slpcancel = dopay.getElementsByClassName("cancel")[0]
+, slpsubmit = dopay.getElementsByClassName("submit")[0]
+, slpvalue = 0
+;
+slpcancel.onclick = function(){
+    dopay.style.display = "none" // 关闭窗口
+    CancelPayment() // 取消支付
+}
+slpsubmit.onclick = async function(){
+    // 确认支付
+    if(slpvalue == 0){
+        return alert("Please select payment path")
+    }
+    // alert("发起支付！" + slpvalue)
+    var err = await ConfirmPayment(slpvalue)
+    if(err) {
+        return alert("Do payment error: " + err)
+    }
+}
+function SelectPaymentPaths(noteinfo, paths) {
+    slpvalue = 0 // 重置
+    dopay.style.display = "block"
+    var itemshtml = ""
+    for(var i in paths){
+        var v = parseInt(i) + 1
+        , one = paths[i];
+        itemshtml += '<label class="pil"><input name="ptitem" type="radio" value="'+v+'" />'+one+'</label>';
+    }
+    slctps.innerHTML = itemshtml; // 填充
+    slpcheck.innerText = "Check: " + noteinfo;
+    var items = slctps.getElementsByClassName("pil")
+    , clearActives = function(){
+        for(var i in items){
+            items[i].className = "pil"
+        }
+    }
+    var vanum = 1
+    for(var i in items){
+        (function(vn){
+            items[i].onclick = function(){
+                clearActives()
+                this.className = "pil active"
+                slpvalue = vn
+            }
+        })(vanum)
+        vanum++
+    }
 }
 
 
@@ -120,14 +177,19 @@ function ShowPaymentError(errmsg) {
 
     /* 点击开始支付 */
     var paybtn = document.getElementById("paybtn")
-    , payaddr = document.getElementById("payaddr")
-    , payamt = document.getElementById("payamt")
     , clearErr = function(){
         ShowPaymentError("") // 清除错误
     };
     payaddr.onchange = clearErr
     payamt.onchange = clearErr
     paybtn.onclick = async function() {
+        if(paybtn.className.indexOf("ban") > 0){
+            return
+        }
+        paybtn.className = "trsbtn ban"
+        setTimeout(function(){
+            paybtn.className = "trsbtn" // 按钮状态回退
+        }, 2000)
         var errmsg = await PrequeryPayment(payaddr.value, payamt.value)
         if(errmsg) {
             // 显示错误
@@ -136,9 +198,9 @@ function ShowPaymentError(errmsg) {
         }
         // 成功发起支付
         clearErr()
-        
+        // 回退状态
+        paybtn.className = "trsbtn"
     }
-
 
 
 })();
