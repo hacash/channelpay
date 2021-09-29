@@ -42,8 +42,10 @@ button{
 .box {
     display: inline-block;
     vertical-align: top;
-    width: 560px;
-    height: 620px;
+    width: 600px;
+    height: 640px;
+}
+.box>div {
     padding: 10px;
 }
 
@@ -130,16 +132,28 @@ h3.tt {
     color: cadetblue;
     margin-bottom: 10px;
 }
+
+@keyframes logPrintBackgroundFlicker {
+    from { background-color:rgb(248, 248, 201); }
+    50%{background-color:#fff;}
+    to { background-color:rgb(248, 248, 201); }
+}
 .logw {
     height: 590px;
     overflow-y: scroll;
 }
+.flicker {
+    animation: logPrintBackgroundFlicker 400ms infinite;
+}
 .logw p{
     font-size: 12px;
-    color: darkseagreen;
+    color: #888;
     line-height: 14px;
+    word-break: break-all;
 }
-
+.logw p.ok{
+    color: rgb(107, 182, 107);
+}
 .logw p.e{
     color: indianred;
 }

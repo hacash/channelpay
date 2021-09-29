@@ -54,8 +54,10 @@ button{
 .box {
     display: inline-block;
     vertical-align: top;
-    width: 560px;
-    height: 620px;
+    width: 600px;
+    height: 640px;
+}
+.box>div {
     padding: 10px;
 }
 
@@ -142,16 +144,28 @@ h3.tt {
     color: cadetblue;
     margin-bottom: 10px;
 }
+
+@keyframes logPrintBackgroundFlicker {
+    from { background-color:rgb(248, 248, 201); }
+    50%{background-color:#fff;}
+    to { background-color:rgb(248, 248, 201); }
+}
 .logw {
     height: 590px;
     overflow-y: scroll;
 }
+.flicker {
+    animation: logPrintBackgroundFlicker 400ms infinite;
+}
 .logw p{
     font-size: 12px;
-    color: darkseagreen;
+    color: #888;
     line-height: 14px;
+    word-break: break-all;
 }
-
+.logw p.ok{
+    color: rgb(107, 182, 107);
+}
 .logw p.e{
     color: indianred;
 }
@@ -359,54 +373,54 @@ h3.tt {
 <body>
 
 <div class="wbox"><div class="box l">
+    <div class="pay">
+        <div class="blsw">
+            <table>
+                <tr><td><label>Channel Balance: </label></td><td><b class="amt" id="blsamt">ㄜ91,616,204:240</b></td></tr>
+                <tr><td><label>Collection capacity: </label></td><td><b class="cap" id="blscap">ㄜ132:247</b></td></tr>
+            </table>
+        </div>
 
-    <div class="blsw">
-        <table>
-            <tr><td><label>Channel Balance: </label></td><td><b class="amt" id="blsamt">ㄜ91,616,204:240</b></td></tr>
-            <tr><td><label>Collection capacity: </label></td><td><b class="cap" id="blscap">ㄜ132:247</b></td></tr>
-        </table>
+        <div class="cid">
+
+            <table>
+                <tr><td><label>Channel ID: </label></td><td><a href="https://explorer.hacash.org/channel/7ff377a442250bbd0de17ce8d2e6ba08" target="_blank" id="cid">7ff377a442250bbd0de17ce8d2e6ba08</a></td></tr>
+                <tr><td><label>Collection address:</label></td><td><b class="addr" id=addr>12fEmV9HBRZfnfhypxmtW82TNHbCiHfkzU_HCPN1</b><b id=ufadr title="View target path address">↵</b></td></tr>
+            </table>
+        </div>
+
+        <div class="bill">
+            <h6 class="meta">[Reconciliation meta info] Reuse version: <b id="blrun">1</b>, Bill serial number: <b id="blanb">1234</b></h6>
+            <p id="nobill">bill not exist yet.</p>
+            <textarea readonly="true" class="bdts" id="bdts"></textarea>
+
+        </div>
+
+
+        <h3 class="tt">Collection:</h3>
+        <div class="clct">
+            <div class="tap open" id="clctt"><b></b></div>
+            <span class="open" id="clctt1">✓ Enabled automatic collection</span>
+            <span class="close" id="clctt2" style="display: none;">✗ Collection has been closed, you cannot receive funds</span>
+        </div>
+
+        <h3 class="tt">Payment:</h3>
+        <div id="gopay" class="gopay">
+            <input class="addr" id="payaddr" placeholder="Target channel collection address" value="1G4Zedb4H5uKHS58aNbWEMbKV3fEyMFZVS_HCPN1" />
+            <input class="amt" id="payamt" placeholder="Amount: ㄜ125:246 or 1.25" value="0.5" />
+            <button class="trsbtn" id="paybtn">Start transfer</button>
+            <div class="err" id="payerr"></div>
+        </div>
     </div>
-
-    <div class="cid">
-
-        <table>
-            <tr><td><label>Channel ID: </label></td><td><a href="https://explorer.hacash.org/channel/7ff377a442250bbd0de17ce8d2e6ba08" target="_blank" id="cid">7ff377a442250bbd0de17ce8d2e6ba08</a></td></tr>
-            <tr><td><label>Collection address:</label></td><td><b class="addr" id=addr>12fEmV9HBRZfnfhypxmtW82TNHbCiHfkzU_HCPN1</b><b id=ufadr title="View target path address">↵</b></td></tr>
-        </table>
-    </div>
-
-    <div class="bill">
-        <h6 class="meta">[Reconciliation meta info] Reuse version: <b id="blrun">1</b>, Bill serial number: <b id="blanb">1234</b></h6>
-        <p id="nobill">bill not exist yet.</p>
-        <textarea readonly="true" class="bdts" id="bdts">b38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6beb38aa1b37411567d4313de346864749d3dce9bf3b8ba157d272b41899312f6be</textarea>
-
-    </div>
-
-
-    <h3 class="tt">Collection:</h3>
-    <div class="clct">
-        <div class="tap open" id="clctt"><b></b></div>
-        <span class="open" id="clctt1">✓ Enabled automatic collection</span>
-        <span class="close" id="clctt2" style="display: none;">✗ Collection has been closed, you cannot receive funds</span>
-    </div>
-
-    <h3 class="tt">Payment:</h3>
-    <div id="gopay" class="gopay">
-        <input class="addr" id="payaddr" placeholder="Target channel collection address" />
-        <input class="amt" id="payamt" placeholder="Amount: ㄜ125:246 or 1.25" />
-        <button class="trsbtn" id="paybtn">Start transfer</button>
-        <div class="err" id="payerr"></div>
-    </div>
-    
 
 
 </div><div class="box r">
-
-    <h5 class="logt">Log printing:</h5>
-    <div class="logw" id="logw">
-        <p>connect to server successfully!</p>
+    <div id="logbg" class="">
+        <h5 class="logt">Log printing:</h5>
+        <div class="logw" id="logw">
+            <p>connect to server successfully!</p>
+        </div>
     </div>
-
 </div></div>
 
 
@@ -437,7 +451,7 @@ h3.tt {
  * 
  * // 调用的函数
  * Logout()
- * LogPrint(string, bool)
+ * ShowLogOnPrint(string, bool)
  * InitAccount(...)
  * UpdateBalance(...)
  * ShowPaymentError(string)
@@ -453,12 +467,23 @@ function Logout(tip) {
 }
 
 /* 日志输出 */
-var logw = document.getElementById("logw");
-function LogPrint(log, iserr) {
+var logw = document.getElementById("logw")
+, logbg = document.getElementById("logbg")
+;
+function noticeLog() {
+    // 吸引注意
+    logbg.className = "flicker"
+    setTimeout(function(){
+        logbg.className = ""
+    }, 1600)
+}
+function ShowLogOnPrint(log, isok, iserr) {
     var p = document.createElement("p");
-    p.innerText = log;
+    p.innerHTML = log;
     if(iserr){
         p.setAttribute("class", "e")
+    }else if(isok) {
+        p.setAttribute("class", "ok")
     }
     logw.appendChild(p);
     logw.scrollTop = logw.scrollHeight;
@@ -530,6 +555,9 @@ slpsubmit.onclick = async function(){
     if(err) {
         return alert("Do payment error: " + err)
     }
+    // 成功发起支付
+    dopay.style.display = "none" // 关闭窗口
+    noticeLog() // 吸引目光到日志
 }
 function SelectPaymentPaths(noteinfo, paths) {
     slpvalue = 0 // 重置

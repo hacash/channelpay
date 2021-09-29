@@ -45,7 +45,7 @@ func (c *ChannelAccountAddress) CompareServiceName(sname string) bool {
 // 可读地址
 func (c *ChannelAccountAddress) ToReadable(isstrict bool) string {
 	addr := c.Address.ToReadable()
-	if isstrict {
+	if isstrict && len(c.ChannelId) == stores.ChannelIdLength {
 		addr += "_" + c.ChannelId.ToHex()
 	}
 	addr += "_" + c.ServicerName.Value()

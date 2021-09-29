@@ -7,7 +7,7 @@
  * 
  * // 调用的函数
  * Logout()
- * LogPrint(string, bool)
+ * ShowLogOnPrint(string, bool)
  * InitAccount(...)
  * UpdateBalance(...)
  * ShowPaymentError(string)
@@ -23,12 +23,23 @@ function Logout(tip) {
 }
 
 /* 日志输出 */
-var logw = document.getElementById("logw");
-function LogPrint(log, iserr) {
+var logw = document.getElementById("logw")
+, logbg = document.getElementById("logbg")
+;
+function noticeLog() {
+    // 吸引注意
+    logbg.className = "flicker"
+    setTimeout(function(){
+        logbg.className = ""
+    }, 1600)
+}
+function ShowLogOnPrint(log, isok, iserr) {
     var p = document.createElement("p");
-    p.innerText = log;
+    p.innerHTML = log;
     if(iserr){
         p.setAttribute("class", "e")
+    }else if(isok) {
+        p.setAttribute("class", "ok")
     }
     logw.appendChild(p);
     logw.scrollTop = logw.scrollHeight;
@@ -100,6 +111,9 @@ slpsubmit.onclick = async function(){
     if(err) {
         return alert("Do payment error: " + err)
     }
+    // 成功发起支付
+    dopay.style.display = "none" // 关闭窗口
+    noticeLog() // 吸引目光到日志
 }
 function SelectPaymentPaths(noteinfo, paths) {
     slpvalue = 0 // 重置

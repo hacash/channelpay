@@ -15,7 +15,7 @@ import (
 
 // 待支付结构
 type pendingPayment struct {
-	address     fields.Address
+	address     protocol.ChannelAccountAddress
 	amount      fields.Amount
 	prequeryMsg *protocol.MsgResponsePrequeryPayment
 }
@@ -98,7 +98,7 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	}
 	c.statusMutex.Lock()
 	c.pendingPaymentObj = &pendingPayment{
-		address:     acc.Address,
+		address:     *acc,
 		amount:      *amount,
 		prequeryMsg: nil,
 	}
@@ -122,6 +122,19 @@ func (c *ChannelPayClient) BindFuncChangeAutoCollection(isopen int) {
 // 显示支付错误
 func (c *ChannelPayClient) ShowPaymentErrorString(err string) {
 	c.payui.Eval(fmt.Sprintf(`ShowPaymentError("%s")`, strings.Replace(err, `"`, ``, -1)))
+}
+
+// 显示日志
+func (c *ChannelPayClient) ShowLogString(log string, isok bool, iserr bool) {
+	okmark := "0"
+	if isok {
+		okmark = "1"
+	}
+	errmark := "0"
+	if iserr {
+		errmark = "1"
+	}
+	c.payui.Eval(fmt.Sprintf(`ShowLogOnPrint("%s", %s, %s)`, strings.Replace(log, `"`, ``, -1), okmark, errmark))
 }
 
 // 显示界面
