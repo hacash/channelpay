@@ -121,44 +121,47 @@ func (s *Servicer) connectRelayPayHandler(ws *websocket.Conn) {
 			ErrTip:  fields.CreateStringMax65535(e.Error()),
 		}
 		protocol.SendMsg(ws, errmsg)
+		ws.Close() // 断开
 	}
 
 	isLaunchPay := false
 
-	// 如果 3 秒钟之内还未收到发起支付消息，则关闭连接
-	time.AfterFunc(time.Second*4, func() {
+	// 如果 5 秒钟之内还未收到发起支付消息，则关闭连接
+	time.AfterFunc(time.Second*5, func() {
 		if isLaunchPay == false {
 			ws.Close() // 超时未注册，关闭
 		}
 	})
 
-	// 循环读取消息
-	for {
-		// 读取消息，解析消息错误，断开连接
-		msgobj, _, err := protocol.ReceiveMsg(ws)
-		if err != nil {
-			break // 断开
+	// 读取消息，解析消息错误，断开连接
+	msgobj, _, err := protocol.ReceiveMsg(ws)
+	if err != nil {
+		ws.Close()
+		return // 断开
+	}
+
+	mty := msgobj.Type()
+	if mty == protocol.MsgTypeRelayInitiatePayment {
+		// 发起支付消息
+		initpaymsg, ok := msgobj.(*protocol.MsgRequestRelayInitiatePayment)
+		if !ok {
+			errorReturn(fmt.Errorf("MsgRequestRelayInitiatePayment format error"))
+			return // 消息解析错误
 		}
 
-		mty := msgobj.Type()
-		if mty == protocol.MsgTypeRequestLaunchRemoteChannelPayment {
-			// 发起支付消息
-			initpaymsg, ok := msgobj.(*protocol.MsgRequestLaunchRemoteChannelPayment)
-			if !ok {
-				errorReturn(fmt.Errorf("MsgRequestInitiatePayment format error"))
-				break // 消息解析错误
-			}
-			isLaunchPay = true // 成功发起支付
-			// 处理远程支付
-			e := s.dealRemoteRelayPay(ws, initpaymsg)
-			if e != nil {
-				errorReturn(fmt.Errorf("DealRemotePay error: %s", e.Error()))
-				break
-			}
+		isLaunchPay = true                              // 标记已经调起
+		e := s.dealRelayInitiatePayment(ws, initpaymsg) // 处理支付
+		if e != nil {
+			errorReturn(fmt.Errorf("DealRelayInitiatePayment error: %s", e.Error()))
+			return // 错误
 		}
+
+	} else {
+
+		// 只接受远程支付消息
+		errorReturn(fmt.Errorf("Msg type error"))
+		return // 错误
 
 	}
 
-	// 断开连接
-	ws.Close()
 }

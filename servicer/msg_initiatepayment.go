@@ -88,6 +88,10 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 			errorReturn(fmt.Errorf("Upstream side payment channel is being occupied, please try again later"))
 			return
 		}
+
+		// 监听消息
+		upstreamSide.ChannelSide.StartMessageListen()
+
 		// 设置上游
 		upChannelSide = upstreamSide.ChannelSide
 		payins.SetUpstreamSide(upstreamSide) // 设置上游通道
@@ -241,7 +245,14 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 			wsptl = "ws://" // 开发测试
 		}
 		wsUrl := wsptl + nextNode.Gateway1.Value() + "/relaypay/connect"
-		newconn, e := protocol.OpenConnectAndSendMsg(wsUrl, msg)
+		// 中继支付消息
+		relaypaymsg := &protocol.MsgRequestRelayInitiatePayment{
+			InitPayMsg:         *msg,
+			IdentificationName: fields.CreateStringMax255(localnode.IdentificationName.Value()),
+			ChannelId:          tarokNode.ChannelSide.ChannelId,
+		}
+		// 发起连接并发送消息
+		newconn, e := protocol.OpenConnectAndSendMsg(wsUrl, relaypaymsg)
 		if e != nil {
 			errorReturn(fmt.Errorf("Connect relay node  %s error : %s.", wsUrl, e.Error()))
 			return
@@ -249,6 +260,8 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 
 		// 连接赋值
 		tarokNode.ChannelSide.WsConn = newconn
+		// 监听消息
+		tarokNode.ChannelSide.StartMessageListen()
 
 		// 设置下游
 		downChannelSide = tarokNode.ChannelSide

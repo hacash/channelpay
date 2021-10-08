@@ -1,14 +1,8 @@
 package servicer
 
-import (
-	"fmt"
-	"github.com/hacash/channelpay/protocol"
-	"github.com/hacash/node/websocket"
-)
-
 /**
  * 处理远程支付
- */
+ *
 
 // 开始远程中继支付
 func (s *Servicer) dealRemoteRelayPay(wsconn *websocket.Conn, msg *protocol.MsgRequestLaunchRemoteChannelPayment) error {
@@ -50,3 +44,6 @@ func (s *Servicer) dealRemoteRelayPay(wsconn *websocket.Conn, msg *protocol.MsgR
 	// 全部支付动作完成
 	return nil
 }
+
+
+*/

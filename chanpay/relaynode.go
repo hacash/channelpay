@@ -8,18 +8,18 @@ import (
 type RelayPaySettleNoder struct {
 
 	// 服务名称
-	identificationName string
-	channelId          fields.ChannelId
-	ourAddressIsLeft   bool
+	IdentificationName string
+	ChannelId          fields.ChannelId
+	OurAddressIsLeft   bool
 
 	ChannelSide *ChannelSideConn
 }
 
 func NewRelayPayNodeConnect(name string, cid fields.ChannelId, ourIsLeft bool, side *ChannelSideConn) *RelayPaySettleNoder {
 	return &RelayPaySettleNoder{
-		identificationName: name,
-		channelId:          cid,
-		ourAddressIsLeft:   ourIsLeft,
+		IdentificationName: name,
+		ChannelId:          cid,
+		OurAddressIsLeft:   ourIsLeft,
 		ChannelSide:        side,
 	}
 }

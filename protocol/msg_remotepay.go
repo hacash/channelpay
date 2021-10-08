@@ -7,7 +7,7 @@ import (
 )
 
 // 发起远程支付消息
-
+/*
 type MsgRequestLaunchRemoteChannelPayment struct {
 	OrderNoteHashHalfChecker fields.HashHalfChecker // 订单详情数据哈希
 
@@ -107,7 +107,7 @@ func (m *MsgRequestLaunchRemoteChannelPayment) CopyFromInitiatePayment(msg *MsgR
 	m.PayeeChannelAddr = msg.PayeeChannelAddr
 	m.TargetPath = msg.TargetPath
 }
-
+*/
 //////////////////////////////////////////////////////
 
 // 终端节点响应支付消息

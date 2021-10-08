@@ -29,12 +29,13 @@ const (
 	MsgTypeLogout                 uint8 = 5 // 客户端主动下线
 	MsgTypeRequestPrequeryPayment uint8 = 6 // 预查询支付信息
 	MsgTypeInitiatePayment        uint8 = 7 // 发起支付
+	MsgTypeRelayInitiatePayment   uint8 = 8 // 中继节点支付消息
 
 	// 支付相关
-	MsgTypeBroadcastChannelStatementProveBody uint8 = 8  // 广播对账单
-	MsgTypeBroadcastChannelStatementSignature uint8 = 9  // 广播通道支付签名
-	MsgTypeBroadcastChannelStatementError     uint8 = 10 // 广播通道支付错误
-	MsgTypeBroadcastChannelStatementSuccessed uint8 = 11 // 广播通道支付成功完成
+	MsgTypeBroadcastChannelStatementProveBody uint8 = 9  // 广播对账单
+	MsgTypeBroadcastChannelStatementSignature uint8 = 10 // 广播通道支付签名
+	MsgTypeBroadcastChannelStatementError     uint8 = 11 // 广播通道支付错误
+	MsgTypeBroadcastChannelStatementSuccessed uint8 = 12 // 广播通道支付成功完成
 
 	//////////////////////////////////////////
 
@@ -44,7 +45,6 @@ const (
 	MsgTypeResponseChannelPayPaymentSign                 uint8 = 104 // 获得签名
 	MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 105 // 发送完整票据给支付下游
 
-	MsgTypeRequestLaunchRemoteChannelPayment      uint8 = 106 // 发起远程支付消息
 	MsgTypeResponseRemoteChannelPayment           uint8 = 107 // 远程支付由目标终端最终响应
 	MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 108 // 向远程请求收款签名
 	MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 109 // 远程签名回复

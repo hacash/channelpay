@@ -116,9 +116,15 @@ func (c *ChannelPayActionInstance) startTimeoutControl() {
 }
 
 // 全部完成，销毁所有资源
+
 func (c *ChannelPayActionInstance) Destroy() {
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
+	c.destroyUnsafe()
+}
+
+func (c *ChannelPayActionInstance) destroyUnsafe() {
+
 	if c.isBeDestroyed {
 		return // 已经被销毁
 	}
@@ -585,7 +591,7 @@ func (c *ChannelPayActionInstance) StartOneSideMessageSubscription(upOrDownStrea
 				if msgobj == nil {
 					return // 终止监听
 				}
-				fmt.Println("msgobj := <-msgchanobj:", msgobj.Type())
+				//fmt.Println("msgobj := <-msgchanobj:", msgobj.Type())
 				var e error = nil
 				switch msgobj.Type() {
 				// 错误到达
@@ -766,7 +772,7 @@ func (c *ChannelPayActionInstance) channelPayErrorArrive(upOrDownStream bool, ms
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
 
-	fmt.Println("channelPayErrorArrive:", msg.ErrTip.Value())
+	//fmt.Println("channelPayErrorArrive:", msg.ErrTip.Value())
 
 	// 将错误转发给另一方
 	otherside := c.getUpOrDownStreamNegativeDirection(upOrDownStream)
@@ -778,7 +784,7 @@ func (c *ChannelPayActionInstance) channelPayErrorArrive(upOrDownStream bool, ms
 	c.logError(msg.ErrTip.Value())
 
 	// 全部结束
-	c.Destroy()
+	c.destroyUnsafe()
 }
 
 // 支付成功完成
@@ -793,5 +799,5 @@ func (c *ChannelPayActionInstance) channelPaySuccessArrive(upOrDownStream bool, 
 	}
 
 	// 全部结束
-	c.Destroy()
+	c.destroyUnsafe()
 }
