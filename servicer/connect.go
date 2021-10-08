@@ -25,7 +25,7 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 	// 循环读取消息
 	for {
 		// 读取消息，解析消息错误，断开连接
-		msgobj, msgdata, err := protocol.ReceiveMsg(ws)
+		msgobj, _, err := protocol.ReceiveMsg(ws)
 		if err != nil {
 			break
 		}
@@ -69,16 +69,15 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 					billmsg.LastBill = cusbill
 				}
 				protocol.SendMsg(customer.ChannelSide.WsConn, billmsg)
-				// 继续接受消息
-				continue
+				// 继续接受消息，订阅消息
+				s.dealOtherMessage(customer, customer.ChannelSide)
+				// 成功返回
+				return
 			} else {
 				// 消息类型错误，直接退出
 				break
 			}
 		}
-
-		// 处理其它类型消息
-		s.msgHandler(customer, msgobj, msgdata)
 
 	}
 
@@ -87,6 +86,29 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 
 	// 断开连接
 	ws.Close()
+}
+
+// 中继支付服务连接
+func (s *Servicer) dealOtherMessage(customer *chanpay.Customer, customerSide *chanpay.ChannelSideConn) {
+
+	msgch := make(chan protocol.Message, 2)
+	subobj := customerSide.SubscribeMessage(msgch) // 订阅消息
+
+	// 处理其它类型消息
+	for {
+		select {
+		case <-subobj.Err(): // 消息订阅错误
+			// 从管理池里移除
+			s.RemoveCustomerFromPool(customer)
+			// 断开连接
+			customerSide.WsConn.Close()
+		case msg := <-msgch:
+			// 处理其他消息
+			go s.msgHandler(customer, msg)
+		}
+
+	}
+
 }
 
 // 中继支付服务连接

@@ -9,6 +9,7 @@ import (
 	"github.com/hacash/core/stores"
 	"github.com/hacash/core/sys"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 )
@@ -27,16 +28,20 @@ func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 	s.settlenoderChgLock.Lock()
 	defer s.settlenoderChgLock.Unlock()
 	// 解析json
+	var chnumcount = 0
+	fmt.Printf("[InitializeChannelSide]")
 	jsonparser.ObjectEach(jsonfilecon, func(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
 		k := string(key)
 		if payroutes.IsValidServicerIdentificationName(k) {
 			if s.settlenoder[k] == nil {
 				s.settlenoder[k] = make([]*chanpay.RelayPaySettleNoder, 0)
 			}
+			fmt.Printf(" " + k + ":")
 			// 循环多个通道
 			jsonparser.ArrayEach(value, func(item []byte, dataType jsonparser.ValueType, offset int, err error) {
 				if len(item) == 32+2 {
-					cid, _ := hex.DecodeString(string(item[2:]))
+					cidstr := string(item[2:])
+					cid, _ := hex.DecodeString(cidstr)
 					if len(cid) != stores.ChannelIdLength {
 						return // 错误
 					}
@@ -44,12 +49,25 @@ func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 					if item[0] == 'r' {
 						weLeft = false
 					}
-					node := chanpay.NewRelayPayNodeConnect(k, cid, weLeft, nil)
+					// 新建通道
+					sise := chanpay.NewChannelSideById(cid)
+					e := s.InitializeChannelSide(sise, nil, weLeft)
+					if e != nil {
+						// 初始化结算通道错误
+						fmt.Printf("InitializeChannelSide %s error:\n", cidstr)
+						fmt.Println(e.Error())
+						os.Exit(0)
+						return
+					}
+					fmt.Printf(" %s", cidstr)
+					node := chanpay.NewRelayPayNodeConnect(k, cid, weLeft, sise)
 					// 添加一个通道
 					s.settlenoder[k] = append(s.settlenoder[k], node)
+					chnumcount++
 				}
 			})
 		}
+		fmt.Printf(" all %d ok.\n", chnumcount)
 		return nil
 	})
 

@@ -20,7 +20,7 @@ func (c *ChannelPayClient) startMsgHandler() {
 		for {
 			select {
 			case v := <-chanobj:
-				c.dealMsg(v)
+				go c.dealMsg(v)
 			case <-subObj.Err():
 				c.logoutConnectWindowShow("Network exception. You have logged out") // 退出
 				return                                                              // 订阅关闭
@@ -33,6 +33,11 @@ func (c *ChannelPayClient) startMsgHandler() {
 func (c *ChannelPayClient) dealMsg(msg protocol.Message) {
 	ty := msg.Type()
 	switch ty {
+	// 发起收款
+	case protocol.MsgTypeInitiatePayment:
+		msgobj := msg.(*protocol.MsgRequestInitiatePayment)
+		c.dealInitiatePayment(msgobj)
+
 	// 支付预查询返回
 	case protocol.MsgTypeResponsePrequeryPayment:
 		msgobj := msg.(*protocol.MsgResponsePrequeryPayment)

@@ -21,8 +21,12 @@ type PayActionLog struct {
 }
 
 /**
- * 单次支付行为操作
- */
+* 单次支付行为操作
+* 初始化调用：
+1. InitCreateEmptyBillDocumentsByInitPayMsg
+2. StartOneSideMessageSubscription
+*
+*/
 type ChannelPayActionInstance struct {
 	isBeDestroyed bool // 已经被销毁
 
@@ -581,6 +585,7 @@ func (c *ChannelPayActionInstance) StartOneSideMessageSubscription(upOrDownStrea
 				if msgobj == nil {
 					return // 终止监听
 				}
+				fmt.Println("msgobj := <-msgchanobj:", msgobj.Type())
 				var e error = nil
 				switch msgobj.Type() {
 				// 错误到达
@@ -605,6 +610,8 @@ func (c *ChannelPayActionInstance) StartOneSideMessageSubscription(upOrDownStrea
 						ErrTip:  fields.CreateStringMax65535(e.Error()),
 					}
 					c.BroadcastMessage(msg)
+					// 全部结束
+					c.Destroy()
 				}
 			case <-subobj.Err():
 				return // 终止监听
@@ -759,11 +766,16 @@ func (c *ChannelPayActionInstance) channelPayErrorArrive(upOrDownStream bool, ms
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
 
+	fmt.Println("channelPayErrorArrive:", msg.ErrTip.Value())
+
 	// 将错误转发给另一方
 	otherside := c.getUpOrDownStreamNegativeDirection(upOrDownStream)
 	if otherside != nil {
 		protocol.SendMsg(otherside, msg)
 	}
+
+	// 打印错误日志
+	c.logError(msg.ErrTip.Value())
 
 	// 全部结束
 	c.Destroy()

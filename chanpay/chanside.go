@@ -41,7 +41,18 @@ type ChannelSideConn struct {
 	msgFeedErrs []event.Subscription
 }
 
-func NewChannelSideConn(conn *websocket.Conn) *ChannelSideConn {
+func NewChannelSideById(cid fields.ChannelId) *ChannelSideConn {
+	return &ChannelSideConn{
+		WsConn:                            nil,
+		ChannelId:                         cid,
+		ChannelInfo:                       nil,
+		LatestReconciliationBalanceBill:   nil,
+		businessExclusiveStatus:           0,
+		businessCloseAutoCollectionStatus: 0,
+		msgFeedErrs:                       make([]event.Subscription, 0),
+	}
+}
+func NewChannelSideByConn(conn *websocket.Conn) *ChannelSideConn {
 	return &ChannelSideConn{
 		WsConn:                            conn,
 		ChannelInfo:                       nil,

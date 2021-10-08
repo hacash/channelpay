@@ -29,11 +29,11 @@ type DataSourceOfServicerPayChannelSetup interface {
 	CancelCustomerPayChannel(channelId fields.ChannelId) error
 
 	// 设定服务商结算通道，weIsRightSide 本方地址是否为右侧
-	SetupRelaySettlementPayChannel(channelId fields.ChannelId, weIsRightSide bool) error
+	//SetupRelaySettlementPayChannel(channelId fields.ChannelId, weIsRightSide bool) error
 	// 查询服务商结算通道是否存在，前一个bool 表示是否存在，后一个bool=weIsRightSide
-	CheckRelaySettlementPayChannel(channelId fields.ChannelId) (bool, bool)
+	//CheckRelaySettlementPayChannel(channelId fields.ChannelId) (bool, bool)
 	// 取消服务商结算通道
-	CancelRelaySettlementPayChannel(channelId fields.ChannelId) error
+	//CancelRelaySettlementPayChannel(channelId fields.ChannelId) error
 }
 
 // 签名机

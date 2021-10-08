@@ -1,5 +1,4 @@
 package client
-
 const AccUIhtmlContent = `
 <html>
 <head>
@@ -672,4 +671,4 @@ function SelectPaymentPaths(noteinfo, paths) {
 </body>
 </html>
 
-`
+`;

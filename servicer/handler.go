@@ -6,7 +6,7 @@ import (
 )
 
 // 消息处理
-func (s *Servicer) msgHandler(customer *chanpay.Customer, msgobj protocol.Message, msgdata []byte) {
+func (s *Servicer) msgHandler(customer *chanpay.Customer, msgobj protocol.Message) {
 
 	switch msgobj.Type() {
 

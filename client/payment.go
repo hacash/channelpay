@@ -112,7 +112,7 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	isupordown := false // 下游
 	payaction.StartOneSideMessageSubscription(isupordown, c.user.upstreamSide.ChannelSide)
 
-	//
+	// 等待支付响应
 
 	// 暂无错误
 	return ""

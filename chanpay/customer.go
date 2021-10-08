@@ -34,7 +34,7 @@ type Customer struct {
 }
 
 func NewCustomer(ws *websocket.Conn) *Customer {
-	side := NewChannelSideConn(ws)
+	side := NewChannelSideByConn(ws)
 	return &Customer{
 		RegisteredID: 0,
 		ChannelSide:  side,

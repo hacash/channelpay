@@ -48,3 +48,22 @@ func OpenConnectAndSendMsgForResponseTimeout(wsurl string, msg Message, timeouts
 	// 完成
 	return wsconn, msgobj, msgdata, nil
 }
+
+// 连接
+func OpenConnectAndSendMsg(wsurl string, msg Message) (*websocket.Conn, error) {
+
+	// 发起连接
+	conn, e := websocket.Dial(wsurl, "", "")
+	if e != nil {
+		return nil, e
+	}
+
+	// 发送消息
+	e = SendMsg(conn, msg)
+	if e != nil {
+		return nil, e
+	}
+
+	// 完成
+	return conn, nil
+}

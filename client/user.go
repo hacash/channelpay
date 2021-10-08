@@ -203,7 +203,7 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 	}
 
 	// 创建 upstreamChannelSide
-	csobj := chanpay.NewChannelSideConn(wsconn)
+	csobj := chanpay.NewChannelSideByConn(wsconn)
 	csobj.ChannelId = c.selfAddr.ChannelId
 	csobj.ChannelInfo = c.chanInfo
 	csobj.OurAddress = c.selfAddr.Address
