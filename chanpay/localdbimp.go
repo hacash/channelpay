@@ -146,6 +146,7 @@ func (s *LocalDBImpOfDataSource) TemporaryStoragePrivateKeyForSign(privatekeyOrP
 	defer s.accMapLock.Unlock()
 	acc := account.GetAccountByPrivateKeyOrPassword(privatekeyOrPassword)
 	s.tempPrivateKeys[string(acc.Address)] = acc
+	//fmt.Println(acc.AddressReadable)
 }
 
 // 移除私钥
@@ -212,7 +213,7 @@ func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *c
 			signs.Append(*sign)
 		} else {
 			// 私钥没找到
-			return nil, fmt.Errorf("Must sign address %s not find in sign machine.")
+			return nil, fmt.Errorf("Must sign address %s not find in sign machine account server list.", v.ToReadable())
 		}
 	}
 

@@ -28,7 +28,9 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 	// 创建支付操作包
 	payact := chanpay.NewChannelPayActionInstance()
 	payact.SetUpstreamSide(c.user.upstreamSide)
-
+	// 设置签名机
+	signmch := NewSignatureMachine(c.user.selfAcc)
+	payact.SetSignatureMachine(signmch)
 	// 设置我必须签名的地址
 	payact.SetMustSignAddresses([]fields.Address{c.user.upstreamSide.ChannelSide.OurAddress})
 
@@ -55,7 +57,7 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 	}()
 	logschan <- &chanpay.PayActionLog{
 		IsSuccess: true,
-		Content:   fmt.Sprintf("---- new collecting %s at %s ----", msg.PayAmount.ToFinString(), time.Now().Format("2006-01-02 15:04:05")),
+		Content:   fmt.Sprintf("---- new collecting %s at %s ----", msg.PayAmount.ToFinString(), time.Now().Format("2006-01-02 15:04:05.999")),
 	}
 	payact.SubscribeLogs(logschan) // 日志订阅
 

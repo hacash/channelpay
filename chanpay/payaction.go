@@ -8,6 +8,7 @@ import (
 	"github.com/hacash/core/fields"
 	"github.com/hacash/mint/event"
 	"github.com/hacash/node/websocket"
+	"strings"
 	"sync"
 	"time"
 )
@@ -297,7 +298,11 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 	mysigns, e := c.signMachine.CheckPaydocumentAndFillNeedSignature(c.billDocuments, c.ourMustSignAddresses)
 	if e != nil {
 		// 返回签名错误
-		return false, fmt.Errorf("signature fail: %s", e.Error())
+		nodemark := ""
+		if c.localServicerNode != nil {
+			nodemark = "(relay node: " + c.localServicerNode.IdentificationName.Value() + ") "
+		}
+		return false, fmt.Errorf("%ssignature fail: %s", nodemark, e.Error())
 	}
 
 	// 广播我的签名
@@ -307,7 +312,6 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 	}
 	// 广播消息
 	c.BroadcastMessage(sgmsg)
-
 	// 填充我的签名
 	for _, v := range mysigns.Signs {
 		e := c.billDocuments.ChainPayment.FillSignByPosition(v)
@@ -316,7 +320,7 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 			return false, fmt.Errorf("fill signature fail: %s", e.Error())
 		}
 	}
-
+	c.log("my signnature already broadcast")
 	// 我签名成功
 	c.ourSignCompleted = true // 标记
 	return true, nil
@@ -501,9 +505,9 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 	// 日志
 	c.log(fmt.Sprintf("prove body %d/%d created and broadcast...", bodyindex+1, c.channelLength))
 	// 在指定位置填充我的票据
-	c.billDocuments.ProveBodys.ProveBodys[bodyindex] = bodyinfo
-	c.billDocuments.ChainPayment.ChannelTransferProveHashHalfCheckers[bodyindex] = bodyinfo.GetSignStuffHashHalfChecker() // 填充
-	// 广播
+	// 填充票据
+	c.fillBillDocumentsUseProveBody(bodyindex, bodyinfo)
+
 	msgbd := &protocol.MsgBroadcastChannelStatementProveBody{
 		TransactionDistinguishId: c.transactionDistinguishId,
 		ProveBodyIndex:           fields.VarUint1(bodyindex),
@@ -688,8 +692,6 @@ func (c *ChannelPayActionInstance) channelPayProveBodyArrive(upOrDownStream bool
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
 
-	// 检查body
-	bodychecker := msg.ProveBodyInfo.GetSignStuffHashHalfChecker()
 	// 填入
 	checkerlist := c.billDocuments.ChainPayment.ChannelTransferProveHashHalfCheckers
 	cid := int(msg.ProveBodyIndex)
@@ -698,21 +700,9 @@ func (c *ChannelPayActionInstance) channelPayProveBodyArrive(upOrDownStream bool
 	}
 	// 日志
 	c.log(fmt.Sprintf("prove body %d/%d arrived...", cid+1, len(checkerlist)))
-	checkerlist[cid] = bodychecker                                 // 填充
-	c.billDocuments.ProveBodys.ProveBodys[cid] = msg.ProveBodyInfo // 填充
-	// 添加地址
-	addrlist := make([]fields.Address, 2)
-	addrlist[0] = msg.ProveBodyInfo.GetLeftAddress()
-	addrlist[1] = msg.ProveBodyInfo.GetRightAddress()
-	addrlen, addrs := fields.CleanAddressListByCharacterSort(c.billDocuments.ChainPayment.MustSignAddresses, addrlist)
+
 	// 填充票据
-	c.billDocuments.ChainPayment.MustSignCount = fields.VarUint1(addrlen)
-	c.billDocuments.ChainPayment.MustSignAddresses = addrs
-	allsigns := make([]fields.Sign, addrlen)
-	for i := 0; i < int(addrlen); i++ {
-		allsigns[i] = fields.CreateEmptySign()
-	}
-	c.billDocuments.ChainPayment.MustSigns = allsigns
+	c.fillBillDocumentsUseProveBody(cid, msg.ProveBodyInfo)
 
 	// 向另一方转发交易体
 	otherside := c.getUpOrDownStreamNegativeDirection(upOrDownStream)
@@ -745,7 +735,9 @@ func (c *ChannelPayActionInstance) channelPaySignatureArrive(upOrDownStream bool
 	defer c.statusUpdateMux.Unlock()
 
 	// 填充签名，不做检查，忽略错误
-	for _, v := range msg.Signs.Signs {
+	addrs := make([]string, msg.Signs.Count)
+	for i, v := range msg.Signs.Signs {
+		addrs[i] = v.GetAddress().ToReadable()
 		e := c.billDocuments.ChainPayment.FillSignByPosition(v)
 		if e != nil {
 			return e
@@ -759,7 +751,10 @@ func (c *ChannelPayActionInstance) channelPaySignatureArrive(upOrDownStream bool
 		protocol.SendMsg(otherside, msg)
 	}
 
-	// 是否可以签名
+	// 日志
+	c.log(fmt.Sprintf("received signatures of %s", strings.Join(addrs, ", ")))
+
+	// 我自己是否可以签名
 	_, e := c.checkMaybeCanDoSign()
 	if e != nil {
 		return e
@@ -769,15 +764,14 @@ func (c *ChannelPayActionInstance) channelPaySignatureArrive(upOrDownStream bool
 	if c.downstreamSide == nil && c.collectCustomer == nil {
 		e := c.billDocuments.ChainPayment.CheckMustAddressAndSigns()
 		if e == nil {
+			c.logSuccess(fmt.Sprintf("collect successfully finished at %s.", time.Now().Format("04:05.999")))
 			// 所有签名全部完成，广播完成消息
 			okmsg := &protocol.MsgBroadcastChannelStatementSuccessed{
 				SuccessTip: fields.CreateStringMax65535(""),
 			}
 			c.BroadcastMessage(okmsg)
-			// 断开
-			if otherside != nil {
-				otherside.Close() // 断开连接
-			}
+			// 销毁支付操作包
+			c.destroyUnsafe()
 		}
 	}
 
@@ -810,12 +804,47 @@ func (c *ChannelPayActionInstance) channelPaySuccessArrive(upOrDownStream bool, 
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
 
+	// 检查签名
+	e := c.billDocuments.ChainPayment.CheckMustAddressAndSigns()
+	if e != nil {
+		// 日志检查失败但却收到了支付成功完成的消息
+		c.logError(fmt.Sprintf("sign check failed but got successed message."))
+		c.destroyUnsafe()
+		return
+	}
+
 	// 将成功转发给上游，单向消息
 	otherside := c.getUpOrDownStreamNegativeDirection(false)
 	if otherside != nil {
 		protocol.SendMsg(otherside, msg)
 	}
 
+	// 日志
+	c.logSuccess(fmt.Sprintf("payment finished successfully at %s.", time.Now().Format("04:05.999")))
+
 	// 全部结束
 	c.destroyUnsafe()
+}
+
+// 填充票据
+func (c *ChannelPayActionInstance) fillBillDocumentsUseProveBody(bodyIndex int, proveBodyInfo *channel.ChannelChainTransferProveBodyInfo) {
+	// 填充
+	c.billDocuments.ProveBodys.ProveBodys[bodyIndex] = proveBodyInfo // 填充
+	c.billDocuments.ChainPayment.ChannelTransferProveHashHalfCheckers[bodyIndex] = proveBodyInfo.GetSignStuffHashHalfChecker()
+	// 添加地址
+	addrlist := make([]fields.Address, 2)
+	addrlist[0] = proveBodyInfo.GetLeftAddress()
+	addrlist[1] = proveBodyInfo.GetRightAddress()
+	addrlen, addrs := fields.CleanAddressListByCharacterSort(c.billDocuments.ChainPayment.MustSignAddresses, addrlist)
+	// 填充票据
+	c.billDocuments.ChainPayment.MustSignCount = fields.VarUint1(addrlen)
+	c.billDocuments.ChainPayment.MustSignAddresses = addrs
+	allsigns := make([]fields.Sign, addrlen)
+	for i := 0; i < int(addrlen); i++ {
+		allsigns[i] = fields.CreateEmptySign()
+	}
+	c.billDocuments.ChainPayment.MustSigns = allsigns
+
+	// 成功完成
+	return
 }

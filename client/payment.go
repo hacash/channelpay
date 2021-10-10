@@ -75,12 +75,6 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 		TargetPath:               *tarpath.NodeIdPath,
 	}
 
-	// 发送消息并创建支付状态机
-	se := protocol.SendMsg(c.user.upstreamSide.ChannelSide.WsConn, paymsg)
-	if se != nil {
-		return "Initiate payment send msg error: " + se.Error()
-	}
-
 	// 创建支付状态机
 	payaction := chanpay.NewChannelPayActionInstance()
 	// 启动日志订阅
@@ -97,12 +91,18 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	}()
 	logschan <- &chanpay.PayActionLog{
 		IsSuccess: true,
-		Content:   fmt.Sprintf("---- start new payment at %s ----", time.Now().Format("2006-01-02 15:04:05")),
+		Content:   fmt.Sprintf("---- start new payment at %s ----", time.Now().Format("2006-01-02 15:04:05.999")),
 	}
 	payaction.SubscribeLogs(logschan) // 日志订阅
 
 	// 我发起的支付，我是源头，服务商设置为下游
 	payaction.SetDownstreamSide(c.user.upstreamSide)
+
+	// 设置签名机
+	signmch := NewSignatureMachine(c.user.selfAcc)
+	payaction.SetSignatureMachine(signmch)
+	// 设置我必须签名的地址
+	payaction.SetMustSignAddresses([]fields.Address{c.user.upstreamSide.ChannelSide.OurAddress})
 
 	// 启动消息监听
 	isupordown := false // 下游
@@ -113,6 +113,13 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	if be != nil {
 		payaction.Destroy() // 终止支付，自动解除状态独占
 		return "Initiate payment create bill documents error: " + be.Error()
+	}
+
+	// 发送消息并创建支付状态机
+	se := protocol.SendMsg(c.user.upstreamSide.ChannelSide.WsConn, paymsg)
+	if se != nil {
+		payaction.Destroy() // 终止支付，自动解除状态独占
+		return "Initiate payment send msg error: " + se.Error()
 	}
 
 	// 等待支付响应

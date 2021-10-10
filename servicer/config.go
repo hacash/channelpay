@@ -24,6 +24,9 @@ type ServicerConfig struct {
 
 	// 节点结算通道配置文件
 	RelaySettlementChannelsJsonFile string
+
+	// 签名机私钥列表
+	SignatureMachinePrivateKeySetupList string
 }
 
 func NewEmptyServicerConfig() *ServicerConfig {
@@ -68,6 +71,10 @@ func NewServicerConfig(cnffile *sys.Inicnf) *ServicerConfig {
 	// 节点间结算通道
 	cnf.RelaySettlementChannelsJsonFile = section2.Key("relay_settlement_channels_json_file").MustString("./hacash_relay_settlement_channels_json_file.json")
 
+	// 密码
+	section3 := cnffile.Section("password")
+	// 签名机私钥
+	cnf.SignatureMachinePrivateKeySetupList = section3.Key("signature_machine_password_setup_list").MustString("")
 	// ok
 	return cnf
 }

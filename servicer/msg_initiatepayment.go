@@ -283,6 +283,16 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 	payins.StartOneSideMessageSubscription(true, upChannelSide)
 	payins.StartOneSideMessageSubscription(false, downChannelSide)
 
+	// 设置我必须签名的地址
+	mustaddrs := []fields.Address{upChannelSide.OurAddress}
+	if upChannelSide.OurAddress.NotEqual(downChannelSide.OurAddress) {
+		mustaddrs = append(mustaddrs, downChannelSide.OurAddress) // 两个不同地址
+	}
+	payins.SetMustSignAddresses(mustaddrs)
+
+	// 设置签名机
+	payins.SetSignatureMachine(s.signmachine)
+
 	// 如果是测试环境则打印日志
 	if s.config.DebugTest {
 		// 订阅日志，启动日志订阅
@@ -294,15 +304,7 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 					return // 订阅结束
 				}
 				// 显示日志
-				okm := ""
-				if log.IsSuccess {
-					okm = "[SUCCESS] "
-				}
-				errm := ""
-				if log.IsSuccess {
-					errm = "[ERROR] "
-				}
-				fmt.Println(okm + errm + log.Content)
+				fmt.Println(log.Content)
 			}
 		}()
 		logschan <- &chanpay.PayActionLog{

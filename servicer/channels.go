@@ -14,6 +14,29 @@ import (
 	"strings"
 )
 
+// 初始化密码
+func (s *Servicer) setupPasswordSettings() {
+	var passwordstr string = s.config.SignatureMachinePrivateKeySetupList
+	if path.Ext(s.config.SignatureMachinePrivateKeySetupList) == ".txt" {
+		// 读取文件
+		fpth := sys.AbsDir(s.config.SignatureMachinePrivateKeySetupList)
+		bts, e := ioutil.ReadFile(fpth)
+		if e == nil {
+			passwordstr = string(bts)
+		}
+	}
+	s.settlenoderChgLock.Lock()
+	defer s.settlenoderChgLock.Unlock()
+	// 取出换行和空格
+	passwordstr = strings.Replace(passwordstr, " ", "", -1)
+	passwordstr = strings.Replace(passwordstr, "\n", "", -1)
+	// 解析密码
+	//fmt.Println(passwordstr)
+	for _, v := range strings.Split(passwordstr, ",") {
+		s.signmachine.TemporaryStoragePrivateKeyForSign(v)
+	}
+}
+
 // 初始化结算通道
 func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 	var jsonfilecon []byte = []byte(s.config.RelaySettlementChannelsJsonFile)

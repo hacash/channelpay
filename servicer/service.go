@@ -48,6 +48,9 @@ func (s *Servicer) Start() {
 	// 初始化结算通道
 	s.setupRelaySettlementChannelDataSettings()
 
+	// 初始化结算通道
+	s.setupPasswordSettings()
+
 	// 设置服务客户通道
 	s.modifyChannelDataSettings()
 
