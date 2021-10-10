@@ -35,6 +35,7 @@ func (m *MsgBroadcastChannelStatementProveBody) Parse(buf []byte, seek uint32) (
 	if e != nil {
 		return 0, e
 	}
+	m.ProveBodyInfo = new(channel.ChannelChainTransferProveBodyInfo)
 	seek, e = m.ProveBodyInfo.Parse(buf, seek)
 	if e != nil {
 		return 0, e

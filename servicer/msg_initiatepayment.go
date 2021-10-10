@@ -6,6 +6,7 @@ import (
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
+	"time"
 )
 
 /**
@@ -17,6 +18,7 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 	var upChannelSide *chanpay.ChannelSideConn = nil
 	var downChannelSide *chanpay.ChannelSideConn = nil
 	var originWsConn *websocket.Conn = nil
+	var downInitPayMsg protocol.Message = nil
 	if payuser != nil {
 		upChannelSide = payuser.ChannelSide
 		originWsConn = payuser.ChannelSide.WsConn
@@ -68,6 +70,7 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 
 	// 创建支付操作包
 	payins = chanpay.NewChannelPayActionInstance()
+	payins.SetLocalServicerNode(localnode)
 
 	// 锁定和设置上游
 	if payuser != nil {
@@ -161,12 +164,8 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 			return
 		}
 
-		// 向收款方发送调起支付消息
-		e = protocol.SendMsg(receiveCustomer.ChannelSide.WsConn, msg)
-		if e != nil {
-			errorReturn(fmt.Errorf("Send msg to receive customer error: %s", e.Error()))
-			return
-		}
+		// 向收款方发送的调起支付消息
+		downInitPayMsg = msg
 
 		// 设置收款方下游
 		downChannelSide = receiveCustomer.ChannelSide
@@ -246,13 +245,13 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 		}
 		wsUrl := wsptl + nextNode.Gateway1.Value() + "/relaypay/connect"
 		// 中继支付消息
-		relaypaymsg := &protocol.MsgRequestRelayInitiatePayment{
+		downInitPayMsg = &protocol.MsgRequestRelayInitiatePayment{
 			InitPayMsg:         *msg,
 			IdentificationName: fields.CreateStringMax255(localnode.IdentificationName.Value()),
 			ChannelId:          tarokNode.ChannelSide.ChannelId,
 		}
 		// 发起连接并发送消息
-		newconn, e := protocol.OpenConnectAndSendMsg(wsUrl, relaypaymsg)
+		newconn, e := protocol.OpenConnect(wsUrl)
 		if e != nil {
 			errorReturn(fmt.Errorf("Connect relay node  %s error : %s.", wsUrl, e.Error()))
 			return
@@ -268,6 +267,11 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 		payins.SetDownstreamSide(tarokNode)
 	}
 
+	if downInitPayMsg == nil {
+		errorReturn(fmt.Errorf("downInitPayMsg is nil."))
+		return
+	}
+
 	// 初始化
 	e = payins.InitCreateEmptyBillDocumentsByInitPayMsg(msg)
 	if e != nil {
@@ -278,6 +282,42 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 	// 监听上下游消息
 	payins.StartOneSideMessageSubscription(true, upChannelSide)
 	payins.StartOneSideMessageSubscription(false, downChannelSide)
+
+	// 如果是测试环境则打印日志
+	if s.config.DebugTest {
+		// 订阅日志，启动日志订阅
+		logschan := make(chan *chanpay.PayActionLog, 2)
+		go func() {
+			for {
+				log := <-logschan
+				if log == nil || log.IsEnd {
+					return // 订阅结束
+				}
+				// 显示日志
+				okm := ""
+				if log.IsSuccess {
+					okm = "[SUCCESS] "
+				}
+				errm := ""
+				if log.IsSuccess {
+					errm = "[ERROR] "
+				}
+				fmt.Println(okm + errm + log.Content)
+			}
+		}()
+		logschan <- &chanpay.PayActionLog{
+			IsSuccess: true,
+			Content:   fmt.Sprintf("---- new collecting %s at %s ----", msg.PayAmount.ToFinString(), time.Now().Format("2006-01-02 15:04:05")),
+		}
+		payins.SubscribeLogs(logschan) // 日志订阅
+	}
+
+	// 向下游发送的调起支付消息
+	e = protocol.SendMsg(downChannelSide.WsConn, downInitPayMsg)
+	if e != nil {
+		errorReturn(fmt.Errorf("Send msg to receive customer error: %s", e.Error()))
+		return
+	}
 
 	// OK 支付操作初始化成功
 	return

@@ -48,7 +48,18 @@ func (s *Servicer) dealRelayInitiatePayment(ws *websocket.Conn, msg *protocol.Ms
 	// 调起支付
 	s.MsgHandlerRequestInitiatePayment(nil, node, &msg.InitPayMsg)
 
-	// 成功
-	return nil
+	// 监听消息并等待
+	msgch := make(chan protocol.Message, 1)
+	subobj := side.SubscribeMessage(msgch)
+
+	// 等待
+	for {
+		select {
+		case <-subobj.Err():
+			return nil
+		case <-msgch:
+			continue // 等待
+		}
+	}
 
 }

@@ -67,3 +67,9 @@ func OpenConnectAndSendMsg(wsurl string, msg Message) (*websocket.Conn, error) {
 	// 完成
 	return conn, nil
 }
+
+// 连接
+func OpenConnect(wsurl string) (*websocket.Conn, error) {
+	// 发起连接
+	return websocket.Dial(wsurl, "", "")
+}

@@ -23,8 +23,10 @@ type PayActionLog struct {
 /**
 * 单次支付行为操作
 * 初始化调用：
-1. InitCreateEmptyBillDocumentsByInitPayMsg
+0. SetUpstreamSide or ...
+1. SetMustSignAddresses
 2. StartOneSideMessageSubscription
+3. InitCreateEmptyBillDocumentsByInitPayMsg
 *
 */
 type ChannelPayActionInstance struct {
@@ -116,11 +118,15 @@ func (c *ChannelPayActionInstance) startTimeoutControl() {
 }
 
 // 全部完成，销毁所有资源
-
 func (c *ChannelPayActionInstance) Destroy() {
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
 	c.destroyUnsafe()
+}
+
+// 设置本地服务节点
+func (c *ChannelPayActionInstance) SetLocalServicerNode(localnode *payroutes.PayRelayNode) {
+	c.localServicerNode = localnode
 }
 
 func (c *ChannelPayActionInstance) destroyUnsafe() {
@@ -255,11 +261,14 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 	for i, v := range c.billDocuments.ProveBodys.ProveBodys {
 		chr := c.billDocuments.ChainPayment.ChannelTransferProveHashHalfCheckers[i]
 		if v == nil || chr == nil {
-			return false, fmt.Errorf("ProveBodys not complete.")
+			//fmt.Println("checkMaybeCanDoSign: ProveBodys not complete.", i)
+			return false, nil
+			// 交易体还未准备好
 		}
 		// 检查
+		// 如果从右往左支付
 		var a1, a2 = v.LeftAddress, v.RightAddress
-		if uint8(v.PayDirection) == channel.ChannelTransferDirectionRightToLeft { // 如果从又往左支付
+		if uint8(v.PayDirection) == channel.ChannelTransferDirectionRightToLeft {
 			a2, a1 = a1, a2
 		}
 		if prevlast.Equal(a1) {
@@ -485,10 +494,15 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 		}
 	}
 
-	// 是否广播对账单
 	if bodyinfo == nil {
 		return false, nil
 	}
+
+	// 日志
+	c.log(fmt.Sprintf("prove body %d/%d created and broadcast...", bodyindex+1, c.channelLength))
+	// 在指定位置填充我的票据
+	c.billDocuments.ProveBodys.ProveBodys[bodyindex] = bodyinfo
+	c.billDocuments.ChainPayment.ChannelTransferProveHashHalfCheckers[bodyindex] = bodyinfo.GetSignStuffHashHalfChecker() // 填充
 	// 广播
 	msgbd := &protocol.MsgBroadcastChannelStatementProveBody{
 		TransactionDistinguishId: c.transactionDistinguishId,
@@ -533,10 +547,11 @@ func (c *ChannelPayActionInstance) InitCreateEmptyBillDocumentsByInitPayMsg(msg 
 		},
 	}
 
+	c.log("bill documents created...")
+
 	// 如果我是最终收款方，我需要第一个报告我的交易体
 	_, e := c.checkMaybeReportMyProveBody(msg)
 	if e == nil {
-		c.log("bill created successfully and wait to do next...")
 	}
 	return e
 }
@@ -681,6 +696,8 @@ func (c *ChannelPayActionInstance) channelPayProveBodyArrive(upOrDownStream bool
 	if len(checkerlist) < cid {
 		return fmt.Errorf("ProveBodyIndex overflow pay channel chain length.")
 	}
+	// 日志
+	c.log(fmt.Sprintf("prove body %d/%d arrived...", cid+1, len(checkerlist)))
 	checkerlist[cid] = bodychecker                                 // 填充
 	c.billDocuments.ProveBodys.ProveBodys[cid] = msg.ProveBodyInfo // 填充
 	// 添加地址
@@ -711,6 +728,7 @@ func (c *ChannelPayActionInstance) channelPayProveBodyArrive(upOrDownStream bool
 	}
 
 	// 是否可以签名
+	//fmt.Println("channelPayProveBodyArrive   _, e = c.checkMaybeCanDoSign()")
 	_, e = c.checkMaybeCanDoSign()
 	if e != nil {
 		return e
@@ -772,7 +790,7 @@ func (c *ChannelPayActionInstance) channelPayErrorArrive(upOrDownStream bool, ms
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
 
-	//fmt.Println("channelPayErrorArrive:", msg.ErrTip.Value())
+	fmt.Println("channelPayErrorArrive:", msg.ErrTip.Value())
 
 	// 将错误转发给另一方
 	otherside := c.getUpOrDownStreamNegativeDirection(upOrDownStream)

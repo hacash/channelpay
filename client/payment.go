@@ -100,17 +100,20 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 		Content:   fmt.Sprintf("---- start new payment at %s ----", time.Now().Format("2006-01-02 15:04:05")),
 	}
 	payaction.SubscribeLogs(logschan) // 日志订阅
+
 	// 我发起的支付，我是源头，服务商设置为下游
 	payaction.SetDownstreamSide(c.user.upstreamSide)
+
+	// 启动消息监听
+	isupordown := false // 下游
+	payaction.StartOneSideMessageSubscription(isupordown, c.user.upstreamSide.ChannelSide)
+
 	// 初始化票据信息
 	be := payaction.InitCreateEmptyBillDocumentsByInitPayMsg(paymsg)
 	if be != nil {
 		payaction.Destroy() // 终止支付，自动解除状态独占
 		return "Initiate payment create bill documents error: " + be.Error()
 	}
-	// 启动消息监听
-	isupordown := false // 下游
-	payaction.StartOneSideMessageSubscription(isupordown, c.user.upstreamSide.ChannelSide)
 
 	// 等待支付响应
 
