@@ -32,8 +32,8 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 	// 返回错误消息
 	var payins *chanpay.ChannelPayActionInstance = nil
 	errorReturn := func(e error) {
-		errmsg := &protocol.MsgError{
-			ErrCode: 0,
+		errmsg := &protocol.MsgBroadcastChannelStatementError{
+			ErrCode: 1,
 			ErrTip:  fields.CreateStringMax65535(e.Error()),
 		}
 		protocol.SendMsg(originWsConn, errmsg)
@@ -278,6 +278,9 @@ func (s *Servicer) MsgHandlerRequestInitiatePayment(payuser *chanpay.Customer, u
 		errorReturn(fmt.Errorf("InitCreateEmptyBillDocumentsByInitPayMsg error: %s.", e.Error()))
 		return
 	}
+
+	// 设置支付成功回调
+	payins.SetSuccessedBackCall(s.callbackPaymentSuccessed)
 
 	// 监听上下游消息
 	payins.StartOneSideMessageSubscription(true, upChannelSide)

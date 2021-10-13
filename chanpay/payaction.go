@@ -21,6 +21,15 @@ type PayActionLog struct {
 	Content   string
 }
 
+// 实例类型
+type PayActionInstanceType uint8
+
+const (
+	PaySide     PayActionInstanceType = 1
+	RelayNode   PayActionInstanceType = 2
+	CollectSide PayActionInstanceType = 3
+)
+
 /**
 * 单次支付行为操作
 * 初始化调用：
@@ -48,8 +57,13 @@ type ChannelPayActionInstance struct {
 	collectCustomer *Customer // 收款端客户端
 
 	// 通道长度
-	channelLength         int  // 通道路径长度
-	ourProveBodyCompleted bool // 我们自己是否已经完成签名
+	channelLength                    int  // 通道路径长度
+	ourProveBodyIndex                int  // 我的通道路径排列位置
+	ourProveBodyCompleted            bool // 我们自己是否已经完成签名
+	downstreamSubmitProveBodyCheckOK bool // 下游提交的对账单检查ok
+
+	// 交易调起信息
+	payInitMsg *protocol.MsgRequestInitiatePayment //
 
 	// 目标交易票据
 	billDocuments            *channel.ChannelPayCompleteDocuments
@@ -69,6 +83,9 @@ type ChannelPayActionInstance struct {
 	logFeeds    event.Feed
 	logFeedObjs []event.Subscription
 
+	// 支付成功的回调
+	successedBackCall []func(newbill *channel.OffChainCrossNodeSimplePaymentReconciliationBill)
+
 	// 超时处理
 	clearTimeout chan bool
 }
@@ -77,19 +94,22 @@ type ChannelPayActionInstance struct {
 func NewChannelPayActionInstance() *ChannelPayActionInstance {
 	// 创建
 	ins := &ChannelPayActionInstance{
-		isBeDestroyed:            false,
-		channelLength:            0,
-		localServicerNode:        nil,
-		allSignsCompleted:        false,
-		transactionDistinguishId: 0,
-		signMachine:              nil,
-		ourMustSignAddresses:     nil, // 必须签名地址
-		ourSignCompleted:         false,
-		ourProveBodyCompleted:    false,
-		msgFeedObjs:              make([]event.Subscription, 0),
-		logFeedObjs:              make([]event.Subscription, 0),
-		logFeeds:                 event.Feed{},
-		clearTimeout:             make(chan bool, 1), // 清除超时监控
+		isBeDestroyed:                    false,
+		channelLength:                    0,
+		ourProveBodyIndex:                0,
+		localServicerNode:                nil,
+		allSignsCompleted:                false,
+		transactionDistinguishId:         0,
+		signMachine:                      nil,
+		ourMustSignAddresses:             nil, // 必须签名地址
+		ourSignCompleted:                 false,
+		ourProveBodyCompleted:            false,
+		downstreamSubmitProveBodyCheckOK: false,
+		msgFeedObjs:                      make([]event.Subscription, 0),
+		logFeedObjs:                      make([]event.Subscription, 0),
+		logFeeds:                         event.Feed{},
+		clearTimeout:                     make(chan bool, 1), // 清除超时监控
+		successedBackCall:                make([]func(newbill *channel.OffChainCrossNodeSimplePaymentReconciliationBill), 0),
 	}
 	// 自动超时处理
 	ins.startTimeoutControl()
@@ -123,6 +143,11 @@ func (c *ChannelPayActionInstance) Destroy() {
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
 	c.destroyUnsafe()
+}
+
+// 支付成功的回调
+func (c *ChannelPayActionInstance) SetSuccessedBackCall(fc func(newbill *channel.OffChainCrossNodeSimplePaymentReconciliationBill)) {
+	c.successedBackCall = append(c.successedBackCall, fc)
 }
 
 // 设置本地服务节点
@@ -204,6 +229,21 @@ func (c *ChannelPayActionInstance) logError(con string) {
 	})
 }
 
+// 判断我的节点类型 1,2,3
+func (c *ChannelPayActionInstance) GetPayActionInstanceType() PayActionInstanceType {
+	havup := c.payCustomer != nil || c.upstreamSide != nil
+	havdown := c.collectCustomer != nil || c.downstreamSide != nil
+	if havup && havdown {
+		return RelayNode // 既有上游，又有下游，则为中间节点
+	}
+	if havup {
+		return CollectSide // 收款端
+	} else {
+		return PaySide // 支付端
+	}
+
+}
+
 // 设定连接各方
 func (c *ChannelPayActionInstance) SetUpstreamSide(side *RelayPaySettleNoder) {
 	c.statusUpdateMux.Lock()
@@ -280,6 +320,11 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 		prevlast = a2 // 记录
 	}
 
+	// 检查对账单检测是否通过
+	if c.downstreamSubmitProveBodyCheckOK == false {
+		return false, fmt.Errorf("Downstream submit prove body NOT check OK.")
+	}
+
 	// 检查签名
 	for i := len(mustSignList) - 1; i >= 0; i-- {
 		one := mustSignList[i]
@@ -349,10 +394,12 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	chaninfo := chanSide.ChannelInfo
 	reuseversion := uint32(chaninfo.ReuseVersion)
 	billautonumber := uint64(1)
-	lastbill := chanSide.LatestReconciliationBalanceBill
+	lastbill := chanSide.GetReconciliationBill()
+	//fmt.Printf("1:%p, 2:%p\n", chanSide, lastbill)
 	oldleftamt := chaninfo.LeftAmount
 	oldrightamt := chaninfo.RightAmount
 	if lastbill != nil {
+		//fmt.Println("chanSide.GetReconciliationBill()", lastbill.GetAutoNumber())
 		oldleftamt = lastbill.GetLeftBalance()
 		oldrightamt = lastbill.GetRightBalance()
 		blrn, blan := lastbill.GetReuseVersionAndAutoNumber()
@@ -371,14 +418,14 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 		oldpayamt, oldcollectamt = oldcollectamt, oldpayamt        // 反向
 	}
 	// 计算最新分配
-	newpayamt, e := oldpayamt.Sub(collectAmt)
+	newpayamt, e := oldpayamt.Sub(collectAmt) // 支付端扣除
 	if e != nil {
 		return nil, fmt.Errorf("pay error: %s", e.Error())
 	}
 	if newpayamt == nil || newpayamt.IsNegative() {
 		return nil, fmt.Errorf("pay error: balance not enough.")
 	}
-	newcollectamt, e := oldcollectamt.Sub(collectAmt)
+	newcollectamt, e := oldcollectamt.Add(collectAmt) // 收款段增加
 	if e != nil {
 		return nil, fmt.Errorf("collect error: %s", e.Error())
 	}
@@ -390,6 +437,7 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	if remoteisleft {
 		newleftamt, newrightamt = newrightamt, newleftamt // 反向
 	}
+	//fmt.Println("createMyProveBodyByRemotePay: billautonumber=", billautonumber)
 	// 创建
 	body := &channel.ChannelChainTransferProveBodyInfo{
 		ChannelId:      chanSide.ChannelId,
@@ -429,6 +477,13 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 		if e != nil {
 			return false, fmt.Errorf("create my prove body by remote pay error: %s", e.Error())
 		}
+		// 我是最终收款方，我不需要检查别人提交的对账单
+		c.downstreamSubmitProveBodyCheckOK = true // ok
+	} else if c.upstreamSide == nil && c.payCustomer == nil {
+		// 我是源头付款端，不用生成交易体，由我的服务商生成
+		c.ourProveBodyIndex = 0
+		c.ourProveBodyCompleted = true
+		return true, nil
 
 	} else {
 
@@ -502,6 +557,9 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 		return false, nil
 	}
 
+	// 我的通道位置
+	c.ourProveBodyIndex = bodyindex
+
 	// 日志
 	c.log(fmt.Sprintf("prove body %d/%d created and broadcast...", bodyindex+1, c.channelLength))
 	// 在指定位置填充我的票据
@@ -552,6 +610,9 @@ func (c *ChannelPayActionInstance) InitCreateEmptyBillDocumentsByInitPayMsg(msg 
 	}
 
 	c.log("bill documents created...")
+
+	// 消息缓存
+	c.payInitMsg = msg
 
 	// 如果我是最终收款方，我需要第一个报告我的交易体
 	_, e := c.checkMaybeReportMyProveBody(msg)
@@ -628,11 +689,21 @@ func (c *ChannelPayActionInstance) StartOneSideMessageSubscription(upOrDownStrea
 				}
 				// 错误处理
 				if e != nil {
-					c.logError("do payment got error: " + e.Error())
+					// 广播错误
+					errkind := ""
+					if c.localServicerNode != nil {
+						errkind = c.localServicerNode.IdentificationName.Value()
+					} else if c.downstreamSide == nil && c.collectCustomer == nil {
+						errkind = "collect side"
+					} else if c.upstreamSide == nil && c.payCustomer == nil {
+						errkind = "pay side"
+					}
+					errorMsg := "(" + errkind + ") " + "do payment got error: " + e.Error()
+					c.logError(errorMsg)
 					// 广播错误
 					msg := &protocol.MsgBroadcastChannelStatementError{
 						ErrCode: 1,
-						ErrTip:  fields.CreateStringMax65535(e.Error()),
+						ErrTip:  fields.CreateStringMax65535(errorMsg),
 					}
 					c.BroadcastMessage(msg)
 					// 全部结束
@@ -674,9 +745,17 @@ func (c *ChannelPayActionInstance) delete___startOneSideMessageListen(upOrDownSt
 				// 错误处理
 				if e != nil {
 					// 广播错误
+					errkind := ""
+					if c.localServicerNode != nil {
+						errkind = c.localServicerNode.IdentificationName.Value()
+					} else if c.downstreamSide == nil && c.collectCustomer == nil {
+						errkind = "collect side"
+					} else if c.upstreamSide == nil && c.payCustomer == nil {
+						errkind = "pay side"
+					}
 					msg := &protocol.MsgBroadcastChannelStatementError{
 						ErrCode: 1,
-						ErrTip:  fields.CreateStringMax65535(e.Error()),
+						ErrTip:  fields.CreateStringMax65535("<" + errkind + "> " + e.Error()),
 					}
 					c.BroadcastMessage(msg)
 				}
@@ -698,6 +777,73 @@ func (c *ChannelPayActionInstance) channelPayProveBodyArrive(upOrDownStream bool
 	if len(checkerlist) < cid {
 		return fmt.Errorf("ProveBodyIndex overflow pay channel chain length.")
 	}
+
+	// 检查对方报告的交易体流水号是否跟我的票据一致
+	var downside *ChannelSideConn = nil
+	if c.downstreamSide != nil {
+		downside = c.downstreamSide.ChannelSide
+	} else if c.collectCustomer != nil {
+		downside = c.collectCustomer.ChannelSide
+	}
+	if downside != nil && downside.ChannelId.Equal(msg.ProveBodyInfo.ChannelId) {
+		// 检查报告的交易对账体是否满足需求
+		ckn1 := uint32(downside.ChannelInfo.ReuseVersion)
+		ckn2 := uint64(1)
+		oldamtl := downside.ChannelInfo.LeftAmount
+		oldamtr := downside.ChannelInfo.RightAmount
+		oldbill := downside.GetReconciliationBill()
+		//fmt.Printf("1:%p, 2:%p\n", downside, oldbill)
+		if oldbill != nil {
+			ckn1 = oldbill.GetReuseVersion()
+			ckn2 = oldbill.GetAutoNumber() + 1
+			oldamtl = oldbill.GetLeftBalance()
+			oldamtr = oldbill.GetRightBalance()
+		}
+		num1 := msg.ProveBodyInfo.GetReuseVersion()
+		num2 := msg.ProveBodyInfo.GetAutoNumber()
+		if ckn1 != num1 {
+			return fmt.Errorf("ProveBody arrive check reuseVersion need %d but got %d.", ckn1, num1)
+		}
+		if ckn2 != num2 {
+			return fmt.Errorf("ProveBody arrive check autoNumber need %d but got %d.", ckn2, num2)
+		}
+		// 检查通道总数量
+		needcap := downside.ChannelInfo.GetLeftAndRightTotalAmount()
+		namtl := msg.ProveBodyInfo.GetLeftBalance()
+		namtr := msg.ProveBodyInfo.GetRightBalance()
+		newcap, _ := namtl.Add(&namtr)
+		if newcap.NotEqual(needcap) {
+			oldamtl.ToFinString()
+			oldamtr.ToFinString()
+			return fmt.Errorf("ProveBody arrive check LeftAndRightTotalAmount need %d but got %d.",
+				needcap.ToFinString(), newcap.ToFinString())
+		}
+		// 标记检查完成
+		c.downstreamSubmitProveBodyCheckOK = true
+	}
+
+	// 我作为源头付款方检查交易体的内容和支付金额
+	if c.upstreamSide == nil && c.payCustomer == nil && msg.ProveBodyIndex == 0 {
+		// 检查金额
+		if c.payInitMsg == nil {
+			return fmt.Errorf("c.payInitMsg is nil")
+		}
+		feeup := c.payInitMsg.HighestAcceptanceFee
+		feemax, _ := feeup.Add(&feeup)
+		amtmaxset, _ := c.payInitMsg.PayAmount.Add(feemax)
+		amtbd := msg.ProveBodyInfo.PayAmount
+		amtinit := c.payInitMsg.PayAmount
+		if amtbd.LessThan(&amtinit) {
+			return fmt.Errorf("payment prove body amount %s less than init msg amount %s",
+				amtbd.ToFinString(), amtinit.ToFinString())
+		}
+		if amtbd.MoreThan(amtmaxset) {
+			return fmt.Errorf("payment prove body amount %s more than max set amount %s",
+				amtbd.ToFinString(), amtmaxset.ToFinString())
+		}
+		// 支付金额检查成功
+	}
+
 	// 日志
 	c.log(fmt.Sprintf("prove body %d/%d arrived...", cid+1, len(checkerlist)))
 
@@ -706,7 +852,7 @@ func (c *ChannelPayActionInstance) channelPayProveBodyArrive(upOrDownStream bool
 
 	// 向另一方转发交易体
 	otherside := c.getUpOrDownStreamNegativeDirection(upOrDownStream)
-	if otherside != nil {
+	if otherside != nil { //
 		// 转发
 		protocol.SendMsg(otherside, msg)
 	}
@@ -764,7 +910,10 @@ func (c *ChannelPayActionInstance) channelPaySignatureArrive(upOrDownStream bool
 	if c.downstreamSide == nil && c.collectCustomer == nil {
 		e := c.billDocuments.ChainPayment.CheckMustAddressAndSigns()
 		if e == nil {
-			c.logSuccess(fmt.Sprintf("collect successfully finished at %s.", time.Now().Format("04:05.999")))
+			// 支付完成的回调
+			go c.doCallbackOfSuccessed() // 回调
+			// 成功日志
+			c.logSuccess(fmt.Sprintf("collect successfully finished at %s.", time.Now().Format("15:04:05.999")))
 			// 所有签名全部完成，广播完成消息
 			okmsg := &protocol.MsgBroadcastChannelStatementSuccessed{
 				SuccessTip: fields.CreateStringMax65535(""),
@@ -819,11 +968,41 @@ func (c *ChannelPayActionInstance) channelPaySuccessArrive(upOrDownStream bool, 
 		protocol.SendMsg(otherside, msg)
 	}
 
+	// 支付完成的回调
+	go c.doCallbackOfSuccessed() // 回调
+
 	// 日志
-	c.logSuccess(fmt.Sprintf("payment finished successfully at %s.", time.Now().Format("04:05.999")))
+	c.logSuccess(fmt.Sprintf("payment finished successfully at %s.", time.Now().Format("15:04:05.999")))
 
 	// 全部结束
 	c.destroyUnsafe()
+}
+
+// 支付成功回调
+func (c *ChannelPayActionInstance) doCallbackOfSuccessed() {
+
+	doCall := func(provebody *channel.ChannelChainTransferProveBodyInfo) {
+		bill := &channel.OffChainCrossNodeSimplePaymentReconciliationBill{
+			ChannelChainTransferTargetProveBody: *provebody,
+			ChannelChainTransferData:            *c.billDocuments.ChainPayment,
+		}
+		for _, f := range c.successedBackCall {
+			f(bill) // 回调
+		}
+	}
+
+	// 找出对账票据
+	bdlist := c.billDocuments.ProveBodys.ProveBodys
+	// 调用
+	provebody := bdlist[c.ourProveBodyIndex]
+	go doCall(provebody)
+
+	// 如果我是中间节点，则再次调用成功对账单
+	if RelayNode == c.GetPayActionInstanceType() {
+		// 再次调用下一个通道位置
+		provebody = bdlist[c.ourProveBodyIndex+1]
+		go doCall(provebody)
+	}
 }
 
 // 填充票据

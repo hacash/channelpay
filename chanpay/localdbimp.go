@@ -68,7 +68,8 @@ func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.ChannelI
 		return nil, nil // 不存在，未找到
 	}
 	// parse
-	return channel.ParseReconciliationBalanceBillByPrefixTypeCode(data, 0)
+	bill, _, e := channel.ParseReconciliationBalanceBillByPrefixTypeCode(data, 0)
+	return bill, e
 }
 
 /********************************************************************/

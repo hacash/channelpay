@@ -12,7 +12,7 @@ import (
 func (c *ChannelPayClient) startMsgHandler() {
 	// 订阅消息处理，
 	chanobj := make(chan protocol.Message, 1)
-	subObj := c.user.upstreamSide.ChannelSide.SubscribeMessage(chanobj)
+	subObj := c.user.servicerStreamSide.ChannelSide.SubscribeMessage(chanobj)
 	c.user.msgSubObj = subObj
 	// 循环处理消息
 	go func() {

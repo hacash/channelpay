@@ -7,6 +7,7 @@ import (
 	"github.com/hacash/core/fields"
 	"github.com/hacash/mint/event"
 	"github.com/hacash/node/websocket"
+	"sync"
 	"sync/atomic"
 )
 
@@ -16,6 +17,7 @@ import (
 
 // 通道连接方
 type ChannelSideConn struct {
+	statusMux sync.RWMutex
 
 	// ws长连接
 	WsConn *websocket.Conn
@@ -119,10 +121,16 @@ func (c *ChannelSideConn) GetRemoteAddress() fields.Address {
 }
 
 func (c *ChannelSideConn) SetReconciliationBill(bill channel.ReconciliationBalanceBill) {
+	c.statusMux.Lock()
+	defer c.statusMux.Unlock()
+
 	c.LatestReconciliationBalanceBill = bill
 }
 
 func (c *ChannelSideConn) GetReconciliationBill() channel.ReconciliationBalanceBill {
+	c.statusMux.RLock()
+	defer c.statusMux.RUnlock()
+
 	return c.LatestReconciliationBalanceBill
 }
 
@@ -165,6 +173,9 @@ func (c *ChannelSideConn) RemoteAddressIsLeft() bool {
 
 // 获取通道数据
 func (c *ChannelSideConn) GetAvailableReuseVersion() uint32 {
+	c.statusMux.RLock()
+	defer c.statusMux.RUnlock()
+
 	var bill = c.LatestReconciliationBalanceBill
 	if bill != nil {
 		return bill.GetReuseVersion()
@@ -172,6 +183,9 @@ func (c *ChannelSideConn) GetAvailableReuseVersion() uint32 {
 	return uint32(c.ChannelInfo.ReuseVersion)
 }
 func (c *ChannelSideConn) GetAvailableAutoNumber() uint64 {
+	c.statusMux.RLock()
+	defer c.statusMux.RUnlock()
+
 	var bill = c.LatestReconciliationBalanceBill
 	if bill != nil {
 		return bill.GetAutoNumber()
@@ -182,6 +196,9 @@ func (c *ChannelSideConn) GetAvailableAutoNumber() uint64 {
 // 获取通道容量
 // side = our, remote
 func (c *ChannelSideConn) GetChannelCapacityAmount(side string) fields.Amount {
+	c.statusMux.RLock()
+	defer c.statusMux.RUnlock()
+
 	leftAmt := c.ChannelInfo.LeftAmount
 	rightAmt := c.ChannelInfo.RightAmount
 	// 判断是否有收据
@@ -191,6 +208,7 @@ func (c *ChannelSideConn) GetChannelCapacityAmount(side string) fields.Amount {
 		rightAmt = bill.GetRightBalance()
 	}
 	remoteIsLeft := c.RemoteAddress.Equal(c.ChannelInfo.LeftAddress)
+	//fmt.Println(leftAmt.ToFinString(), rightAmt.ToFinString())
 	// 返回容量
 	if (side == "remote" && remoteIsLeft) ||
 		(side == "our" && !remoteIsLeft) {
@@ -227,7 +245,7 @@ func (c *ChannelSideConn) CreateNewProveBodyByDoPayFromSide(side string, payamt 
 }
 
 // 直接保存（不做检查）支付对账票据
-func (c *ChannelSideConn) UncheckSignSaveChannelPayReconciliationBalanceBill(bills *channel.ChannelPayCompleteDocuments) error {
+func (c *ChannelSideConn) UncheckSignSaveBillByCompleteDocuments(bills *channel.ChannelPayCompleteDocuments) error {
 
 	// 找出对账单
 	var proveBody *channel.ChannelChainTransferProveBodyInfo = nil
@@ -254,10 +272,10 @@ func (c *ChannelSideConn) UncheckSignSaveChannelPayReconciliationBalanceBill(bil
 	}
 
 	// 保存
-	c.LatestReconciliationBalanceBill = &channel.OffChainCrossNodeSimplePaymentReconciliationBill{
+	c.SetReconciliationBill(&channel.OffChainCrossNodeSimplePaymentReconciliationBill{
 		ChannelChainTransferTargetProveBody: *proveBody,
 		ChannelChainTransferData:            *bills.ChainPayment,
-	}
+	})
 
 	// 成功
 	return nil

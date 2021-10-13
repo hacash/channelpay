@@ -35,7 +35,7 @@ type ChannelPayUser struct {
 	localLatestReconciliationBalanceBill channel.ReconciliationBalanceBill
 
 	// 通道链
-	upstreamSide *chanpay.RelayPaySettleNoder
+	servicerStreamSide *chanpay.RelayPaySettleNoder
 
 	// 消息订阅
 	msgSubObj event.Subscription
@@ -55,17 +55,17 @@ func CreateChannelPayUser(acc *account.Account, addr *protocol.ChannelAccountAdd
 
 // 检查收款通道是否被占用
 func (c *ChannelPayUser) IsInBusinessExclusive() bool {
-	return c.upstreamSide.IsInBusinessExclusive()
+	return c.servicerStreamSide.IsInBusinessExclusive()
 }
 
 // 其中状态独占
 func (c *ChannelPayUser) StartBusinessExclusive() bool {
-	return c.upstreamSide.StartBusinessExclusive()
+	return c.servicerStreamSide.StartBusinessExclusive()
 }
 
 // 解除状态独占
 func (c *ChannelPayUser) ClearBusinessExclusive() {
-	c.upstreamSide.ClearBusinessExclusive()
+	c.servicerStreamSide.ClearBusinessExclusive()
 }
 
 // 退出
@@ -80,8 +80,8 @@ func (c *ChannelPayUser) Logout() {
 		return // 已经退出
 	}
 	c.isClosed = true
-	if c.upstreamSide != nil {
-		wsconn := c.upstreamSide.ChannelSide.WsConn
+	if c.servicerStreamSide != nil {
+		wsconn := c.servicerStreamSide.ChannelSide.WsConn
 		// 发送退出消息
 		protocol.SendMsg(wsconn, &protocol.MsgCustomerLogout{
 			PostBack: fields.CreateStringMax255(""),
@@ -119,7 +119,7 @@ func (c *ChannelPayUser) LoadLastBillFromDisk() (channel.ReconciliationBalanceBi
 	fbts, e := ioutil.ReadFile(fname)
 	if e == nil || len(fbts) > 0 {
 		// 解析文件
-		bill, e = channel.ParseReconciliationBalanceBillByPrefixTypeCode(fbts, 0)
+		bill, _, e = channel.ParseReconciliationBalanceBillByPrefixTypeCode(fbts, 0)
 	}
 	c.localLatestReconciliationBalanceBill = bill
 	// 返回
@@ -148,8 +148,8 @@ func (c *ChannelPayUser) SaveLastBillToDisk(bill channel.ReconciliationBalanceBi
 
 // 登陆后从远程取得对账票据
 func (c *ChannelPayUser) GetReconciliationBalanceBillAfterLoginFromRemote() channel.ReconciliationBalanceBill {
-	if c.upstreamSide != nil {
-		return c.upstreamSide.ChannelSide.LatestReconciliationBalanceBill
+	if c.servicerStreamSide != nil {
+		return c.servicerStreamSide.ChannelSide.LatestReconciliationBalanceBill
 	}
 	return nil // 不存在
 }
@@ -218,7 +218,7 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 	}
 
 	// 通道端
-	c.upstreamSide = chanpay.NewRelayPayNodeConnect(c.selfAddr.ServicerName.Value(), csobj.ChannelId, ourIsLeft, csobj)
+	c.servicerStreamSide = chanpay.NewRelayPayNodeConnect(c.selfAddr.ServicerName.Value(), csobj.ChannelId, ourIsLeft, csobj)
 
 	// 成功
 	return nil

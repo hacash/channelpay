@@ -47,7 +47,7 @@ func CreateChannelPayClient(app fyne.App, user *ChannelPayUser, lgwd fyne.Window
 
 // 更新界面显示
 func (c *ChannelPayClient) UpdateBalanceShow() {
-	cside := c.user.upstreamSide.ChannelSide
+	cside := c.user.servicerStreamSide.ChannelSide
 	bill := cside.GetReconciliationBill()
 	billhex := ""
 	if bill != nil {
@@ -81,7 +81,7 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 		return fmt.Sprintf("Amount format error: %s", e.Error()) // 错误
 	}
 	// 余额检查
-	amtcap := c.user.upstreamSide.ChannelSide.GetChannelCapacityAmountOfOur()
+	amtcap := c.user.servicerStreamSide.ChannelSide.GetChannelCapacityAmountOfOur()
 	if amtcap.LessThan(amount) {
 		return fmt.Sprintf("Balance %s not enough for transfer %s",
 			amtcap.ToFinString(), amount.ToFinString()) // 余额不足
@@ -92,7 +92,7 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 		PayAmount:        *amount,
 		PayeeChannelAddr: fields.CreateStringMax255(addr),
 	}
-	err := protocol.SendMsg(c.user.upstreamSide.ChannelSide.WsConn, msg)
+	err := protocol.SendMsg(c.user.servicerStreamSide.ChannelSide.WsConn, msg)
 	if err != nil {
 		return "SendMsg Error: " + err.Error()
 	}
@@ -112,10 +112,10 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 func (c *ChannelPayClient) BindFuncChangeAutoCollection(isopen int) {
 	if isopen == 0 {
 		// 关闭收款
-		c.user.upstreamSide.ChannelSide.StartCloseAutoCollectionStatus() // 启用状态
+		c.user.servicerStreamSide.ChannelSide.StartCloseAutoCollectionStatus() // 启用状态
 	} else {
 		// 开启收款
-		c.user.upstreamSide.ChannelSide.ClearCloseAutoCollectionStatus() // 清除标记
+		c.user.servicerStreamSide.ChannelSide.ClearCloseAutoCollectionStatus() // 清除标记
 	}
 }
 

@@ -225,11 +225,14 @@ func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 		return e
 	}
 
+	// 设置票据
+	userObj.servicerStreamSide.ChannelSide.SetReconciliationBill(localbill)
+
 	// 打开消息监听
 	client.startMsgHandler()
 
 	// 开始监听消息
-	userObj.upstreamSide.ChannelSide.StartMessageListen()
+	userObj.servicerStreamSide.ChannelSide.StartMessageListen()
 
 	// 登录窗口影藏
 	if DevDebug == false {

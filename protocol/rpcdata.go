@@ -15,6 +15,7 @@ import (
 
 type RpcDataChannelInfo struct {
 	//LockBlock    fields.VarUint2 // 单方面结束通道要锁定的区块数量
+	ChannelId    fields.ChannelId
 	LeftAddress  fields.Address
 	LeftAmount   fields.Amount // 抵押数额1
 	RightAddress fields.Address
@@ -23,7 +24,12 @@ type RpcDataChannelInfo struct {
 	Status       fields.VarUint1 // 已经关闭并结算等状态
 }
 
-func ParseRpcDataChannelInfoByJSON(bytes []byte) (*RpcDataChannelInfo, error) {
+func (r *RpcDataChannelInfo) GetLeftAndRightTotalAmount() *fields.Amount {
+	ttamt, _ := r.LeftAmount.Add(&r.RightAmount)
+	return ttamt
+}
+
+func ParseRpcDataChannelInfoByJSON(cid fields.ChannelId, bytes []byte) (*RpcDataChannelInfo, error) {
 
 	// 解析
 	laddr, e := jsonparser.GetString(bytes, "left_address")
@@ -45,6 +51,7 @@ func ParseRpcDataChannelInfoByJSON(bytes []byte) (*RpcDataChannelInfo, error) {
 	// 返回
 	channel := &RpcDataChannelInfo{
 		//LockBlock:    fields.VarUint2(lockhei),
+		ChannelId:    cid,
 		ReuseVersion: fields.VarUint4(reusev),
 		Status:       fields.VarUint1(status),
 		LeftAddress:  *leftaddr,
@@ -76,7 +83,7 @@ func RequestRpcReqChannelInfo(fullNodeRpcUrl string, cid fields.ChannelId) (*Rpc
 		return nil, fmt.Errorf(errmsg)
 	}
 	// 解析
-	return ParseRpcDataChannelInfoByJSON(bytes)
+	return ParseRpcDataChannelInfoByJSON(cid, bytes)
 }
 
 //////////////////////////////////////////////////////////////
@@ -121,7 +128,7 @@ func RequestChannelAndSernodeInfoFromLoginResolutionApi(apiUrl string, cid field
 	if e != nil {
 		return nil, nil, e
 	}
-	chaninfo, e := ParseRpcDataChannelInfoByJSON(bytes2)
+	chaninfo, e := ParseRpcDataChannelInfoByJSON(cid, bytes2)
 	if e != nil {
 		return nil, nil, e
 	}

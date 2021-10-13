@@ -54,7 +54,7 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	tarpath := ops[pidx]
 	//fmt.Println("发起支付", pathselect)
 	// 抢占通道支付状态
-	if c.user.upstreamSide.ChannelSide.StartBusinessExclusive() == false {
+	if c.user.servicerStreamSide.ChannelSide.StartBusinessExclusive() == false {
 		return "The channel status is occupied. Please try again later"
 	}
 
@@ -96,17 +96,20 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	payaction.SubscribeLogs(logschan) // 日志订阅
 
 	// 我发起的支付，我是源头，服务商设置为下游
-	payaction.SetDownstreamSide(c.user.upstreamSide)
+	payaction.SetDownstreamSide(c.user.servicerStreamSide)
 
 	// 设置签名机
 	signmch := NewSignatureMachine(c.user.selfAcc)
 	payaction.SetSignatureMachine(signmch)
 	// 设置我必须签名的地址
-	payaction.SetMustSignAddresses([]fields.Address{c.user.upstreamSide.ChannelSide.OurAddress})
+	payaction.SetMustSignAddresses([]fields.Address{c.user.servicerStreamSide.ChannelSide.OurAddress})
 
 	// 启动消息监听
 	isupordown := false // 下游
-	payaction.StartOneSideMessageSubscription(isupordown, c.user.upstreamSide.ChannelSide)
+	payaction.StartOneSideMessageSubscription(isupordown, c.user.servicerStreamSide.ChannelSide)
+
+	// 支付、收款成功后的回调
+	payaction.SetSuccessedBackCall(c.callbackPaymentSuccessed)
 
 	// 初始化票据信息
 	be := payaction.InitCreateEmptyBillDocumentsByInitPayMsg(paymsg)
@@ -116,7 +119,7 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	}
 
 	// 发送消息并创建支付状态机
-	se := protocol.SendMsg(c.user.upstreamSide.ChannelSide.WsConn, paymsg)
+	se := protocol.SendMsg(c.user.servicerStreamSide.ChannelSide.WsConn, paymsg)
 	if se != nil {
 		payaction.Destroy() // 终止支付，自动解除状态独占
 		return "Initiate payment send msg error: " + se.Error()

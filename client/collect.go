@@ -16,8 +16,8 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 	//c.ShowLogString(fmt.Sprintf("collecting %s ...", msg.PayAmount.ToFinString()), false, false)
 
 	// 检查状态
-	upconn := c.user.upstreamSide.ChannelSide.WsConn
-	if c.user.upstreamSide.IsInBusinessExclusive() {
+	upconn := c.user.servicerStreamSide.ChannelSide.WsConn
+	if c.user.servicerStreamSide.IsInBusinessExclusive() {
 		protocol.SendMsg(upconn, &protocol.MsgBroadcastChannelStatementError{
 			ErrCode: 1,
 			ErrTip:  fields.CreateStringMax65535("target collection address channel occupied."),
@@ -27,12 +27,12 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 
 	// 创建支付操作包
 	payact := chanpay.NewChannelPayActionInstance()
-	payact.SetUpstreamSide(c.user.upstreamSide)
+	payact.SetUpstreamSide(c.user.servicerStreamSide)
 	// 设置签名机
 	signmch := NewSignatureMachine(c.user.selfAcc)
 	payact.SetSignatureMachine(signmch)
 	// 设置我必须签名的地址
-	payact.SetMustSignAddresses([]fields.Address{c.user.upstreamSide.ChannelSide.OurAddress})
+	payact.SetMustSignAddresses([]fields.Address{c.user.servicerStreamSide.ChannelSide.OurAddress})
 
 	// 错误返回
 	returnError := func(errmsg string) {
@@ -62,7 +62,10 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 	payact.SubscribeLogs(logschan) // 日志订阅
 
 	// 启动消息监听
-	payact.StartOneSideMessageSubscription(true, c.user.upstreamSide.ChannelSide)
+	payact.StartOneSideMessageSubscription(true, c.user.servicerStreamSide.ChannelSide)
+
+	// 支付、收款成功后的回调
+	payact.SetSuccessedBackCall(c.callbackPaymentSuccessed)
 
 	// 初始化票据
 	e := payact.InitCreateEmptyBillDocumentsByInitPayMsg(msg)

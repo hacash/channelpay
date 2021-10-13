@@ -40,7 +40,7 @@ func (m *MsgLoginCheckLastestBill) Parse(buf []byte, seek uint32) (uint32, error
 		return 0, e
 	}
 	if m.BillIsExistent.Check() {
-		seek, e = m.LastBill.Parse(buf, seek)
+		m.LastBill, seek, e = channel.ParseReconciliationBalanceBillByPrefixTypeCode(buf, seek)
 		if e != nil {
 			return 0, e
 		}
@@ -63,7 +63,8 @@ func (m MsgLoginCheckLastestBill) Serialize() ([]byte, error) {
 	}
 	buf.Write(bt)
 	if m.BillIsExistent.Check() {
-		bt, e = m.LastBill.Serialize()
+		// 必须带上 code
+		bt, e = m.LastBill.SerializeWithTypeCode()
 		if e != nil {
 			return nil, e
 		}
