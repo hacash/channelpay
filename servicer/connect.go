@@ -70,9 +70,9 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 				}
 				protocol.SendMsg(customer.ChannelSide.WsConn, billmsg)
 				// 继续接受消息，订阅消息
-				s.dealOtherMessage(customer, customer.ChannelSide)
+				s.dealOtherMessage(customer)
 				// 成功返回
-				return
+				break
 			} else {
 				// 消息类型错误，直接退出
 				break
@@ -89,10 +89,10 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 }
 
 // 中继支付服务连接
-func (s *Servicer) dealOtherMessage(customer *chanpay.Customer, customerSide *chanpay.ChannelSideConn) {
+func (s *Servicer) dealOtherMessage(customer *chanpay.Customer) {
 
 	msgch := make(chan protocol.Message, 2)
-	subobj := customerSide.SubscribeMessage(msgch) // 订阅消息
+	subobj := customer.ChannelSide.SubscribeMessage(msgch) // 订阅消息
 
 	// 处理其它类型消息
 	for {
@@ -101,7 +101,8 @@ func (s *Servicer) dealOtherMessage(customer *chanpay.Customer, customerSide *ch
 			// 从管理池里移除
 			s.RemoveCustomerFromPool(customer)
 			// 断开连接
-			customerSide.WsConn.Close()
+			customer.ChannelSide.WsConn.Close()
+			return
 		case msg := <-msgch:
 			// 处理其他消息
 			go s.msgHandler(customer, msg)

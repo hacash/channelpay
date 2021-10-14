@@ -15,33 +15,38 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 
 	//c.ShowLogString(fmt.Sprintf("collecting %s ...", msg.PayAmount.ToFinString()), false, false)
 
-	// 检查状态
-	upconn := c.user.servicerStreamSide.ChannelSide.WsConn
-	if c.user.servicerStreamSide.IsInBusinessExclusive() {
+	var payact *chanpay.ChannelPayActionInstance = nil
+	returnErrorString := func(err string) {
+		upconn := c.user.servicerStreamSide.ChannelSide.WsConn
 		protocol.SendMsg(upconn, &protocol.MsgBroadcastChannelStatementError{
 			ErrCode: 1,
-			ErrTip:  fields.CreateStringMax65535("target collection address channel occupied."),
+			ErrTip:  fields.CreateStringMax65535(err),
 		})
+		if payact != nil {
+			payact.Destroy()
+		}
+	}
+
+	// 是否关闭收款
+	if c.user.servicerStreamSide.ChannelSide.IsInCloseAutoCollectionStatus() {
+		returnErrorString("Target account closed collection.")
+		return
+	}
+
+	// 检查状态
+	if c.user.servicerStreamSide.IsInBusinessExclusive() {
+		returnErrorString("target collection address channel occupied.")
 		return
 	}
 
 	// 创建支付操作包
-	payact := chanpay.NewChannelPayActionInstance()
+	payact = chanpay.NewChannelPayActionInstance()
 	payact.SetUpstreamSide(c.user.servicerStreamSide)
 	// 设置签名机
 	signmch := NewSignatureMachine(c.user.selfAcc)
 	payact.SetSignatureMachine(signmch)
 	// 设置我必须签名的地址
 	payact.SetMustSignAddresses([]fields.Address{c.user.servicerStreamSide.ChannelSide.OurAddress})
-
-	// 错误返回
-	returnError := func(errmsg string) {
-		protocol.SendMsg(upconn, &protocol.MsgBroadcastChannelStatementError{
-			ErrCode: 1,
-			ErrTip:  fields.CreateStringMax65535(errmsg),
-		})
-		payact.Destroy() // 资源销毁
-	}
 
 	// 订阅日志，启动日志订阅
 	logschan := make(chan *chanpay.PayActionLog, 2)
@@ -70,7 +75,7 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 	// 初始化票据
 	e := payact.InitCreateEmptyBillDocumentsByInitPayMsg(msg)
 	if e != nil {
-		returnError(e.Error()) // 初始化错误
+		returnErrorString(e.Error()) // 初始化错误
 		return
 	}
 
