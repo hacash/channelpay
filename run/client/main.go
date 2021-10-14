@@ -26,8 +26,8 @@ func init() {
 
 func main() {
 
-	//mainRelease()
-	mainDev1()
+	mainRelease()
+	//mainDev1()
 
 }
 

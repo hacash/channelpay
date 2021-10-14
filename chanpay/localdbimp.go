@@ -176,22 +176,24 @@ func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *c
 
 	// 检查服务的通道
 	// 找到两个通道，并且必须是顺序挨着的
-	var paychan1 *channel.ChannelChainTransferProveBodyInfo = nil
-	var paychan2 *channel.ChannelChainTransferProveBodyInfo = nil
-	bodys := paydocs.ProveBodys.ProveBodys
-	for i := 0; i < len(bodys)-1; i++ {
-		// 必须两个连续的通道
-		if hav1 := s.CheckCustomerPayChannel(bodys[i].ChannelId); hav1 {
-			if hav2 := s.CheckCustomerPayChannel(bodys[i+1].ChannelId); hav2 {
-				paychan1 = bodys[i]
-				paychan2 = bodys[i+1]
+	/*
+		var paychan1 *channel.ChannelChainTransferProveBodyInfo = nil
+		var paychan2 *channel.ChannelChainTransferProveBodyInfo = nil
+		bodys := paydocs.ProveBodys.ProveBodys
+		for i := 0; i < len(bodys)-1; i++ {
+			// 必须两个连续的通道
+			if hav1 := s.CheckCustomerPayChannel(bodys[i].ChannelId); hav1 {
+				if hav2 := s.CheckCustomerPayChannel(bodys[i+1].ChannelId); hav2 {
+					paychan1 = bodys[i]
+					paychan2 = bodys[i+1]
+				}
 			}
 		}
-	}
-	if paychan1 == nil || paychan2 == nil {
-		// 没找到支持的通道
-		return nil, fmt.Errorf("Channel not support in check list.")
-	}
+		if paychan1 == nil || paychan2 == nil {
+			// 没找到支持的通道
+			return nil, fmt.Errorf("Channel not support in check list.")
+		}
+	*/
 
 	// 不做任何余额或者下游签名的检查，这些检查都放在外层
 	// TODO:: 或者第三方签名机实现时再做必要的检查

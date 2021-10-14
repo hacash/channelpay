@@ -21,7 +21,7 @@ func OpenConnectAndSendMsgForResponseTimeout(wsurl string, msg Message, timeouts
 
 	go func() {
 		// 发起连接
-		conn, e := websocket.Dial(wsurl, "", "")
+		conn, e := websocket.Dial(wsurl, "", "http://127.0.0.1/")
 		wsconn = conn // 赋值
 		ttt.Stop()
 		errchan <- e
@@ -53,7 +53,7 @@ func OpenConnectAndSendMsgForResponseTimeout(wsurl string, msg Message, timeouts
 func OpenConnectAndSendMsg(wsurl string, msg Message) (*websocket.Conn, error) {
 
 	// 发起连接
-	conn, e := websocket.Dial(wsurl, "", "")
+	conn, e := websocket.Dial(wsurl, "", "http://127.0.0.1/")
 	if e != nil {
 		return nil, e
 	}
@@ -71,5 +71,5 @@ func OpenConnectAndSendMsg(wsurl string, msg Message) (*websocket.Conn, error) {
 // 连接
 func OpenConnect(wsurl string) (*websocket.Conn, error) {
 	// 发起连接
-	return websocket.Dial(wsurl, "", "")
+	return websocket.Dial(wsurl, "", "http://127.0.0.1/")
 }

@@ -518,7 +518,8 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 		}
 		// 检查付款段是否是我
 		if payaddr.NotEqual(downSide.OurAddress) {
-			return false, fmt.Errorf("pay address is not our address.")
+			return false, fmt.Errorf("pay address %s is not our address %s.",
+				payaddr.ToReadable(), downSide.OurAddress.ToReadable())
 		}
 		// 检测我是否为付款端
 		var upSide *ChannelSideConn = nil

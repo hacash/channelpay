@@ -71,7 +71,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 	if len(pathResults) == 0 {
 		// 未找到路径
 		errorReturn(fmt.Errorf("Can not find the pay routes path from node %s to %s.",
-			localServicerName, targetnode.IdentificationName))
+			localServicerName, targetnode.IdentificationName.Value()))
 		return
 	}
 	forms := CreatePayPathForms(pathResults, &msg.PayAmount) // 路径列表
