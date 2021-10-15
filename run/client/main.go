@@ -33,7 +33,7 @@ func main() {
 
 func mainRelease() {
 	// 开发者模式
-	client.DevDebug = true
+	client.DevDebug = false
 
 	// 启动
 	client.MainNewAppRun()
