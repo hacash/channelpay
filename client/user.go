@@ -95,17 +95,30 @@ func (c *ChannelPayUser) Logout() {
 	}
 }
 
-func (c *ChannelPayUser) billfilepath() string {
+func billfilepath(channelID fields.ChannelId) string {
 	datadir := sys.AbsDir(billDir)
 	os.MkdirAll(datadir, 0777)
-	fname := path.Join(datadir, fmt.Sprintf("bill_%s.dat", c.selfAddr.ChannelId.ToHex()))
+	fname := path.Join(datadir, fmt.Sprintf("bill_%s.dat", channelID.ToHex()))
 	return fname
+}
+
+func LoadBillFromDisk(channelID fields.ChannelId) (channel.ReconciliationBalanceBill, error) {
+	var bill channel.ReconciliationBalanceBill = nil
+	// 读取本地目录
+	fname := billfilepath(channelID)
+	fbts, e := ioutil.ReadFile(fname)
+	if e == nil || len(fbts) > 0 {
+		// 解析文件
+		bill, _, e = channel.ParseReconciliationBalanceBillByPrefixTypeCode(fbts, 0)
+	}
+	// 返回
+	return bill, nil
 }
 
 // 删除本地票据
 func (c *ChannelPayUser) DeleteLastBillOnDisk() error {
 	// 读取本地目录
-	fname := c.billfilepath()
+	fname := billfilepath(c.selfAddr.ChannelId)
 	c.localLatestReconciliationBalanceBill = nil
 	// 删除文件
 	return os.Remove(fname)
@@ -115,11 +128,9 @@ func (c *ChannelPayUser) DeleteLastBillOnDisk() error {
 func (c *ChannelPayUser) LoadLastBillFromDisk() (channel.ReconciliationBalanceBill, error) {
 	var bill channel.ReconciliationBalanceBill = nil
 	// 读取本地目录
-	fname := c.billfilepath()
-	fbts, e := ioutil.ReadFile(fname)
-	if e == nil || len(fbts) > 0 {
-		// 解析文件
-		bill, _, e = channel.ParseReconciliationBalanceBillByPrefixTypeCode(fbts, 0)
+	ldbill, e := LoadBillFromDisk(c.selfAddr.ChannelId)
+	if e == nil {
+		bill = ldbill
 	}
 	c.localLatestReconciliationBalanceBill = bill
 	// 返回
@@ -132,7 +143,7 @@ func (c *ChannelPayUser) SaveLastBillToDisk(bill channel.ReconciliationBalanceBi
 		return fmt.Errorf("bill is nil")
 	}
 	// 本地目录
-	fname := c.billfilepath()
+	fname := billfilepath(c.selfAddr.ChannelId)
 	fbts, e := channel.SerializeReconciliationBalanceBillWithPrefixTypeCode(bill)
 	if e == nil || len(fbts) > 0 {
 		// 保存

@@ -7,22 +7,24 @@ import (
 
 // 打开窗口
 func NewVScrollWindowAndShow(app fyne.App, windowSize *fyne.Size, content fyne.CanvasObject, title string) fyne.Window {
-
 	w := app.NewWindow(title)
-	w.Resize(*windowSize)
+	return NewVScrollAndShowWindow(w, windowSize, content)
+}
 
-	box := container.NewVBox()
+// 打开窗口
+func NewVScrollAndShowWindow(window fyne.Window, windowSize *fyne.Size, content fyne.CanvasObject) fyne.Window {
 
-	box.Add(content)
+	//w := app.NewWindow(title)
+	window.Resize(*windowSize)
 
 	// 页面翻动
-	scroll := container.NewVScroll(box)
+	scroll := container.NewVScroll(content)
 	scroll.Resize(*windowSize)
 
-	w.SetContent(scroll)
+	window.SetContent(scroll)
 
-	w.Show()
+	window.Show()
 
 	// return ok
-	return w
+	return window
 }

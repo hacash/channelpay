@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/hex"
 	"fmt"
 	"fyne.io/fyne"
 	"fyne.io/fyne/container"
@@ -8,21 +9,102 @@ import (
 	"fyne.io/fyne/widget"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/account"
+	"github.com/hacash/core/channel"
+	"github.com/hacash/core/stores"
 	"sync"
+)
+
+const (
+	windowWidth = 500
 )
 
 func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 
 	windowSize := fyne.Size{
-		Width:  460,
-		Height: 640,
+		Width:  windowWidth,
+		Height: 700,
 	}
 
+	window := app.NewWindow("Hacash Channel Chain Payment User Login")
+
 	// 显示登录窗口
+	loginBox := createLoginTab(app, window)
+	billBox := createOutputBillTab(app, window)
+
+	tabs := widget.NewTabContainer(
+		widget.NewTabItem("Login", loginBox),
+		widget.NewTabItem("Export bill", billBox),
+	)
+
+	// 显示窗口
+	NewVScrollAndShowWindow(window, &windowSize, tabs)
+	return window
+
+}
+
+// 创建导出票据窗口
+func createOutputBillTab(app fyne.App, window fyne.Window) *fyne.Container {
+
 	objs := container.NewVBox()
 
 	// title
-	loginTitle := widget.NewLabel("\nChannel Account Login\n")
+	title := widget.NewLabel("\nExport locally stored payment bill")
+	title.Alignment = fyne.TextAlignCenter // 居中对齐
+	title.TextStyle = fyne.TextStyle{
+		Bold: true,
+	}
+	objs.Add(title)
+
+	// 通道id
+	objs.Add(widget.NewLabel("Channel ID:"))
+	inputChannelID := widget.NewEntry()
+	objs.Add(inputChannelID)
+
+	// export btn
+	okBtn := widget.NewButton("Export", nil)
+	objs.Add(okBtn)
+
+	// results show
+	resshow := widget.NewEntry()
+	resshow.MultiLine = true
+	resshow.Wrapping = fyne.TextWrapBreak
+	objs.Add(resshow)
+
+	// 点击导出按钮
+	okBtn.OnTapped = func() {
+		// 查询本地是否存在票据
+		chanid, e := hex.DecodeString(inputChannelID.Text)
+		if e != nil || chanid == nil || len(chanid) != stores.ChannelIdLength {
+			resshow.SetText("Channel ID error.")
+			resshow.Refresh()
+			return
+		}
+		bill, e := LoadBillFromDisk(chanid)
+		if e != nil || bill == nil {
+			resshow.SetText("Not find this channel.")
+			resshow.Refresh()
+			return
+		}
+		// 显示票据
+		content := "Bill exported successfully!\n"
+		content += "---- bill hex data start ----\n"
+		bldt, _ := bill.SerializeWithTypeCode()
+		content += hex.EncodeToString(bldt)
+		content += "\n---- bill hex data end ----"
+		resshow.SetText(content)
+		resshow.Refresh()
+	}
+
+	return objs
+}
+
+// 创建登录窗口
+func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
+
+	objs := container.NewVBox()
+
+	// title
+	loginTitle := widget.NewLabel("\nChannel account login")
 	loginTitle.Alignment = fyne.TextAlignCenter // 居中对齐
 	loginTitle.TextStyle = fyne.TextStyle{
 		Bold: true,
@@ -31,7 +113,7 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 
 	// label: address
 	objs.Add(widget.NewLabel("Hacash Channel Address:"))
-	inputAddr := widget.NewEntry()
+	inputAddr := widget.NewMultiLineEntry()
 	inputAddr.MultiLine = true
 	inputAddr.Wrapping = fyne.TextWrapBreak
 	inputAddr.SetPlaceHolder("example: 1MzNY1oA3kfgYi75zquj3SRUPYztzXHzK9_6814e443c4fe0615d3ea13732b313259_HACorg")
@@ -43,7 +125,20 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 	inputPrikey := widget.NewPasswordEntry()
 	objs.Add(inputPrikey)
 
-	objs.Add(widget.NewLabel("\n"))
+	// 对账票据
+	objs.Add(widget.NewLabel("\nReconciliation or payment bill:"))
+	inputBill := widget.NewMultiLineEntry()
+	inputBill.Wrapping = fyne.TextWrapBreak
+	inputBill.SetPlaceHolder("Optional: reconciliation or payment bill hex data")
+	inputBill.Refresh()
+	billwrap := container.NewVScroll(inputBill)
+	billwrap.SetMinSize(fyne.Size{
+		Width:  windowWidth,
+		Height: 74,
+	})
+	objs.Add(billwrap)
+
+	//objs.Add(widget.NewLabel("\n"))
 	// login btn
 	loginBtn := widget.NewButton("Login", nil)
 	objs.Add(loginBtn)
@@ -54,31 +149,32 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 	errorshow.Wrapping = fyne.TextWrapBreak
 	objs.Add(errorshow)
 
-	// 显示窗口
-	window := NewVScrollWindowAndShow(app, &windowSize, objs, "Hacash Channel Chain Payment User Login")
-
 	// 点击登录按钮
 	loginBtn.OnTapped = func() {
-		// 执行登录
-		e := HandlerLogin(inputAddr.Text, inputPrikey.Text, app, window)
-		if e != nil {
-			errorshow.SetText(e.Error())
-		} else {
-			// 登录成功，清空数据
-			if DevDebug == false {
-				inputAddr.SetText("")
-				inputPrikey.SetText("")
+		go func() {
+			// 执行登录
+			e := HandlerLogin(inputAddr.Text, inputPrikey.Text, inputBill.Text, app, window)
+			if e != nil {
+				errorshow.SetText(e.Error())
+			} else {
+				// 登录成功，清空数据
+				if DevDebug == false {
+					inputAddr.SetText("")
+					inputPrikey.SetText("")
+					inputBill.SetText("")
+				}
+				errorshow.SetText("")
 			}
-			errorshow.SetText("")
-		}
-		errorshow.Refresh()
+			errorshow.Refresh()
+		}()
 	}
 
-	return window
+	// 返回
+	return objs
 }
 
 // 执行登录
-func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Window) error {
+func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window fyne.Window) error {
 
 	// 必填
 	if len(addr) == 0 {
@@ -86,6 +182,19 @@ func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 	}
 	if len(prikeyorpassword) == 0 {
 		return fmt.Errorf("Please enter the Private key or Password.")
+	}
+
+	// 选填的对账票据
+	var inputbillobj channel.ReconciliationBalanceBill = nil
+	if len(billhex) > 0 {
+		billdata, e := hex.DecodeString(billhex)
+		if e != nil {
+			return fmt.Errorf("billdata format error")
+		}
+		inputbillobj, _, e = channel.ParseReconciliationBalanceBillByPrefixTypeCode(billdata, 0)
+		if e != nil {
+			return fmt.Errorf("billdata parse error: %s", e.Error())
+		}
 	}
 
 	// 检查地址格式
@@ -133,7 +242,11 @@ func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 			}
 			next.Done()
 		}, window)
-		dia.Show()  // show 才有事件响应
+		dia.Resize(fyne.Size{
+			Width:  windowWidth - 20,
+			Height: 200,
+		})
+		dia.Show()
 		next.Wait() // 等待
 		return resck
 	}
@@ -146,7 +259,7 @@ func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 		l1 := localbill.GetReuseVersion()
 		if l1 != uint32(chaninfo.ReuseVersion) {
 			// 本地不存在票据，是否使用远程对账票据
-			waitConfirmDialog("Your local reconciliation bill has expired. Are you sure to delete it?", func() {
+			waitConfirmDialog("Your local reconciliation bill has expired.\n Are you sure to delete it?", func() {
 				// 确认删除本地过期票据
 				userObj.DeleteLastBillOnDisk() // 删除
 			}, nil)
@@ -166,36 +279,50 @@ func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 	}
 	remotebill := userObj.GetReconciliationBalanceBillAfterLoginFromRemote()
 
-	// 票据对比
+	// 输入票据对比
+	if inputbillobj != nil {
+		if localbill == nil {
+			// 本地不存在票据，直接使用输入的票据
+			localbill = inputbillobj
+		} else {
+			// 对比票据版本
+			if inputbillobj.GetReuseVersion() < localbill.GetReuseVersion() ||
+				inputbillobj.GetAutoNumber() < localbill.GetAutoNumber() {
+				// 输入的票据版本过小询问是否强制使用
+				waitConfirmDialog("The reconciliation bill version entered\n is older than that saved locally. \nDo you want to force the entered\n bill to be used?", func() {
+					localbill = inputbillobj
+				}, nil)
+			} else {
+				// 输入的票据版本大于本地保存，不询问，直接使用
+				localbill = inputbillobj
+			}
+		}
+	}
+
+	// 远程票据对比
 	if remotebill != nil {
 		// 远程存在票据
 		var msgcon string = ""
 		if localbill == nil {
 			// 本地不存在对账票据，是否使用你的支付服务商发送的对账票据？
-			msgcon = "There is no reconciliation bill in the local area. Do you want to use the reconciliation bill sent by your payment service provider?"
+			msgcon = "There is no reconciliation bill \nin the local area. \nDo you want to use the reconciliation bill \nsent by your payment service provider?"
 		} else {
 			// 本地存在票据，对比票据版本
 			l1, l2 := localbill.GetReuseVersionAndAutoNumber()
 			r1, r2 := remotebill.GetReuseVersionAndAutoNumber()
 			if l1 < r1 || l2 < r2 {
 				// 本地的对账票据序列号落后于远程，是否强制使用你的支付服务商发送的对账票据？
-				msgcon = "The serial number of the local reconciliation bill lags behind that of the remote reconciliation bill. Is it mandatory to use the reconciliation bill sent by your payment service provider?"
+				msgcon = "The serial number of the local \nreconciliation bill lags behind that \nof the remote reconciliation bill. \nIs it mandatory to use the reconciliation bill\n sent by your payment service provider?"
 			} else if l1 > r1 || l2 > r2 {
 				// 本地的对账票据序列号高于远程，是否强制使用你的支付服务商发送的对账票据？
-				msgcon1 := "The serial number of the local reconciliation bill is higher than that of the remote reconciliation bill. Is it mandatory to use the reconciliation bill sent by your payment service provider?"
-				useok := waitConfirmDialog(msgcon1, func() {
-					userObj.SaveLastBillToDisk(remotebill) // 将远程票据保存到本地
-				}, nil)
-				if !useok {
-					userObj.Logout()
-					return nil // 不使用，则退出
-				}
+				msgcon = "The serial number of the local reconciliation bill\n is higher than that of the remote reconciliation bill.\n Is it mandatory to use the reconciliation bill\n sent by your payment service provider?"
 			}
 		}
 		if len(msgcon) > 0 {
 			// 本地不存在票据或者票据落后，是否使用远程对账票据
 			useok := waitConfirmDialog(msgcon, func() {
 				userObj.SaveLastBillToDisk(remotebill) // 将远程票据保存到本地
+				localbill = remotebill                 // 使用远程票据
 			}, nil)
 			if !useok {
 				userObj.Logout()
@@ -209,7 +336,7 @@ func HandlerLogin(addr, prikeyorpassword string, app fyne.App, window fyne.Windo
 		// 远程不存在票据
 		if localbill != nil {
 			// 本地存在票据
-			waitConfirmDialog("The bill does not exist remotely, but exists locally. Please contact your payment service provider for processing.", nil, nil)
+			waitConfirmDialog("The bill does not exist remotely,\n but exists locally.\n Please contact your payment\n service provider for processing.", nil, nil)
 			userObj.Logout()
 			return nil // 不使用，则退出
 		} else {
