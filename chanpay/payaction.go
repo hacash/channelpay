@@ -309,7 +309,7 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 		// 检查
 		// 如果从右往左支付
 		var a1, a2 = v.LeftAddress, v.RightAddress
-		if uint8(v.PayDirection) == channel.ChannelTransferDirectionRightToLeft {
+		if uint8(v.PayDirection) == channel.ChannelTransferDirectionHacashRightToLeft {
 			a2, a1 = a1, a2
 		}
 		if prevlast.Equal(a1) {
@@ -409,13 +409,13 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 		billautonumber = uint64(blan) + 1 // 自增
 	}
 	// 方向
-	paydirection := channel.ChannelTransferDirectionRightToLeft
+	paydirection := channel.ChannelTransferDirectionHacashRightToLeft
 	oldpayamt := oldrightamt
 	oldcollectamt := oldleftamt
 	remoteisleft := chanSide.RemoteAddressIsLeft()
 	if remoteisleft {
-		paydirection = channel.ChannelTransferDirectionLeftToRight // 总是对方支付给我
-		oldpayamt, oldcollectamt = oldcollectamt, oldpayamt        // 反向
+		paydirection = channel.ChannelTransferDirectionHacashLeftToRight // 总是对方支付给我
+		oldpayamt, oldcollectamt = oldcollectamt, oldpayamt              // 反向
 	}
 	// 计算最新分配
 	newpayamt, e := oldpayamt.Sub(collectAmt) // 支付端扣除
@@ -439,17 +439,15 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	}
 	//fmt.Println("createMyProveBodyByRemotePay: billautonumber=", billautonumber)
 	// 创建
-	body := &channel.ChannelChainTransferProveBodyInfo{
-		ChannelId:      chanSide.ChannelId,
-		ReuseVersion:   fields.VarUint4(reuseversion),
-		BillAutoNumber: fields.VarUint8(billautonumber),
-		PayDirection:   fields.VarUint1(paydirection),
-		PayAmount:      *collectAmt,
-		LeftAddress:    chaninfo.LeftAddress,
-		RightAddress:   chaninfo.RightAddress,
-		LeftBalance:    *newleftamt,
-		RightBalance:   *newrightamt,
-	}
+	body := channel.CreateEmptyProveBody(chanSide.ChannelId)
+	body.ReuseVersion = fields.VarUint4(reuseversion)
+	body.BillAutoNumber = fields.VarUint8(billautonumber)
+	body.PayDirection = fields.VarUint1(paydirection)
+	body.PayAmount = *collectAmt
+	body.LeftBalance = *newleftamt
+	body.RightBalance = *newrightamt
+	body.LeftAddress = chaninfo.LeftAddress
+	body.RightAddress = chaninfo.RightAddress
 
 	// 返回
 	return body, nil
@@ -506,7 +504,7 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 				bodyindex = i - 1
 				downSideColletAmt = &one.PayAmount
 				payaddr = &one.LeftAddress
-				if uint8(one.PayDirection) == channel.ChannelTransferDirectionRightToLeft {
+				if uint8(one.PayDirection) == channel.ChannelTransferDirectionHacashRightToLeft {
 					payaddr = &one.RightAddress
 				}
 			}

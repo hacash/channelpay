@@ -225,25 +225,6 @@ func (c *ChannelSideConn) GetChannelCapacityAmountOfRemote() fields.Amount {
 	return c.GetChannelCapacityAmount("remote")
 }
 
-// 创建对账单
-func (c *ChannelSideConn) CreateNewProveBodyByDoPayFromSide(side string, payamt *fields.Amount) (*channel.ChannelChainTransferProveBodyInfo, error) {
-
-	if side != "our" && side != "remote" {
-		return nil, fmt.Errorf("side %s error", side)
-	}
-
-	// 检查容量
-	amtcap := c.GetChannelCapacityAmount(side)
-	if amtcap.LessThan(payamt) {
-		return nil, fmt.Errorf("%s side channel capacity balance not enough.", side)
-	}
-
-	// 创建
-	body := &channel.ChannelChainTransferProveBodyInfo{}
-
-	return body, nil
-}
-
 // 直接保存（不做检查）支付对账票据
 func (c *ChannelSideConn) UncheckSignSaveBillByCompleteDocuments(bills *channel.ChannelPayCompleteDocuments) error {
 
