@@ -19,9 +19,9 @@ func (c *ChannelPayClient) DealServicerRespondReconciliation(msg *protocol.MsgSe
 	}
 	tarAddr := account.NewAddressFromPublicKeyV0(msg.SelfSign.PublicKey)
 	if waitBill.LeftAddress.Equal(tarAddr) {
-		waitBill.RightSign = msg.SelfSign
-	} else {
 		waitBill.LeftSign = msg.SelfSign
+	} else {
+		waitBill.RightSign = msg.SelfSign
 	}
 	// 检查单据签名
 	if e := waitBill.CheckAddressAndSign(); e != nil {
