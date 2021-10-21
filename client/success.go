@@ -62,7 +62,7 @@ func (c *ChannelPayClient) updateReconciliationBalanceBill(newbill channel.Recon
 	if e != nil {
 		return // 出错,返回
 	}
-	//fmt.Println("ChannelPayClient SetReconciliationBill: ", newbill.GetAutoNumber())
+	// fmt.Println("ChannelPayClient SetReconciliationBill: ", newbill.TypeCode(), newbill.GetAutoNumber())
 
 	// 重新显示余额
 	go c.UpdateBalanceShow()

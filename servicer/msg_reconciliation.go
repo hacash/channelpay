@@ -1,7 +1,6 @@
 package servicer
 
 import (
-	"fmt"
 	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/channel"
@@ -15,7 +14,9 @@ func (s *Servicer) MsgHandlerClientInitiateReconciliation(newcur *chanpay.Custom
 
 	// 返回错误消息
 	errorReturnString := func(err string) {
-		errobj := protocol.NewMsgResponsePrequeryPayment(1)
+		errobj := &protocol.MsgError{
+			ErrCode: 1,
+		}
 		errobj.ErrTip = fields.CreateStringMax65535(err)
 		protocol.SendMsg(newcur.ChannelSide.WsConn, errobj)
 	}
@@ -27,7 +28,7 @@ func (s *Servicer) MsgHandlerClientInitiateReconciliation(newcur *chanpay.Custom
 		return
 	}
 	if oldbill.TypeCode() != channel.BillTypeCodeSimplePay {
-		fmt.Println("bill type is not BillTypeCodeSimplePay:", oldbill.TypeCode())
+		//fmt.Println("bill type is not BillTypeCodeSimplePay:", oldbill.TypeCode())
 		errorReturnString("bill type is not BillTypeCodeSimplePay.")
 		return
 	}

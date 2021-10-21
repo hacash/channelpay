@@ -187,13 +187,16 @@ func (s *LocalDBImpOfDataSource) CheckReconciliationFillNeedSignature(bill *chan
 			return nil, e
 		}
 	}
-	rightacc := s.ReadPrivateKey(bill.LeftAddress)
-	if leftacc != nil {
-		// 填充签名
-		bill.LeftSign = *checksign
-		fillsign, _, e = bill.FillTargetSignature(rightacc)
-		if e != nil {
-			return nil, e
+	if fillsign == nil {
+		// 再次尝试右侧
+		rightacc := s.ReadPrivateKey(bill.RightAddress)
+		if rightacc != nil {
+			// 填充签名
+			bill.LeftSign = *checksign
+			fillsign, _, e = bill.FillTargetSignature(rightacc)
+			if e != nil {
+				return nil, e
+			}
 		}
 	}
 	if fillsign == nil {
