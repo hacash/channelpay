@@ -29,6 +29,11 @@ func (s *SignatureMachine) TemporaryStoragePrivateKeyForSign(string) {}
 func (s *SignatureMachine) RemovePrivateKey(fields.Address)          {}
 func (s *SignatureMachine) CleanAllPrivateKey()                      {}
 
+// 签署对账单并之后检查全部签名
+func (s *SignatureMachine) CheckReconciliationFillNeedSignature(bill *channel.OffChainFormPaymentChannelRealtimeReconciliation, checksign *fields.Sign) (*fields.Sign, error) {
+	return nil, nil
+}
+
 // 将通道交易送入签名机验证数据，并自动填充签名
 func (s *SignatureMachine) CheckPaydocumentAndFillNeedSignature(paydocs *channel.ChannelPayCompleteDocuments, mustaddrs []fields.Address) (*fields.SignListMax255, error) {
 	// 检查账户

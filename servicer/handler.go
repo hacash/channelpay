@@ -25,6 +25,11 @@ func (s *Servicer) msgHandler(customer *chanpay.Customer, msgobj protocol.Messag
 		s.MsgHandlerRequestInitiatePayment(customer, nil, msgobj.(*protocol.MsgRequestInitiatePayment))
 		break
 
+	// 发起对账
+	case protocol.MsgTypeClientInitiateReconciliation:
+		s.MsgHandlerClientInitiateReconciliation(customer, msgobj.(*protocol.MsgClientInitiateReconciliation))
+		break
+
 	}
 
 }

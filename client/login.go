@@ -229,6 +229,10 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 	dtitle := "Reconciliation bill check"
 	// 等待确认对话框
 	waitConfirmDialog := func(msgcon string, cbfyes, cbfno func()) bool {
+		if window == nil {
+			cbfyes()
+			return true // 测试是直接选 yes
+		}
 		var resck bool
 		next := sync.WaitGroup{}
 		next.Add(1)

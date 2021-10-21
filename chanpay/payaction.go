@@ -909,8 +909,6 @@ func (c *ChannelPayActionInstance) channelPaySignatureArrive(upOrDownStream bool
 	if c.downstreamSide == nil && c.collectCustomer == nil {
 		e := c.billDocuments.ChainPayment.CheckMustAddressAndSigns()
 		if e == nil {
-			// 支付完成的回调
-			go c.doCallbackOfSuccessed() // 回调
 			// 成功日志
 			c.logSuccess(fmt.Sprintf("collect successfully finished at %s.", time.Now().Format("15:04:05.999")))
 			// 所有签名全部完成，广播完成消息
@@ -920,6 +918,8 @@ func (c *ChannelPayActionInstance) channelPaySignatureArrive(upOrDownStream bool
 			c.BroadcastMessage(okmsg)
 			// 销毁支付操作包
 			c.destroyUnsafe()
+			// 支付完成的回调
+			go c.doCallbackOfSuccessed() // 回调
 		}
 	}
 
@@ -967,14 +967,15 @@ func (c *ChannelPayActionInstance) channelPaySuccessArrive(upOrDownStream bool, 
 		protocol.SendMsg(otherside, msg)
 	}
 
-	// 支付完成的回调
-	go c.doCallbackOfSuccessed() // 回调
-
 	// 日志
 	c.logSuccess(fmt.Sprintf("payment finished successfully at %s.", time.Now().Format("15:04:05.999")))
 
 	// 全部结束
 	c.destroyUnsafe()
+
+	// 支付完成的回调
+	go c.doCallbackOfSuccessed() // 回调
+
 }
 
 // 支付成功回调

@@ -34,6 +34,9 @@ type ChannelPayUser struct {
 	// 本地对账票据
 	localLatestReconciliationBalanceBill channel.ReconciliationBalanceBill
 
+	// 等待对账单
+	waitRealtimeReconciliation *channel.OffChainFormPaymentChannelRealtimeReconciliation
+
 	// 通道链
 	servicerStreamSide *chanpay.RelayPaySettleNoder
 

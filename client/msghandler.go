@@ -50,6 +50,11 @@ func (c *ChannelPayClient) dealMsg(msg protocol.Message) {
 		//fmt.Println("PayPathCount: ", msgobj.PathForms.PayPathCount)
 		c.dealPrequeryPaymentResult(msgobj)
 
+		// 对账返回
+	case protocol.MsgTypeServicerRespondReconciliation:
+		msgobj := msg.(*protocol.MsgServicerRespondReconciliation)
+		c.DealServicerRespondReconciliation(msgobj)
+
 	// 被顶下线
 	case protocol.MsgTypeDisplacementOffline:
 		c.logoutConnectWindowShow("You have login at another place and this connection has been exited") // 退出

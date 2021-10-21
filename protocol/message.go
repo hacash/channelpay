@@ -37,17 +37,22 @@ const (
 	MsgTypeBroadcastChannelStatementError     uint8 = 11 // 广播通道支付错误
 	MsgTypeBroadcastChannelStatementSuccessed uint8 = 12 // 广播通道支付成功完成
 
-	//////////////////////////////////////////
+	// 对账相关
+	MsgTypeClientInitiateReconciliation  uint8 = 13 // 客户端发起对账
+	MsgTypeServicerRespondReconciliation uint8 = 14 // 服务端响应对账
 
-	MsgTypeRequestChannelPayCollectionSign               uint8 = 101 // 向客户端请求收款签名
-	MsgTypeResponseChannelPayCollectionSign              uint8 = 102 // 获得签名
-	MsgTypeRequestChannelPayPaymentSign                  uint8 = 103 // 向客户端请求支付签名
-	MsgTypeResponseChannelPayPaymentSign                 uint8 = 104 // 获得签名
-	MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 105 // 发送完整票据给支付下游
+	/*
 
-	MsgTypeResponseRemoteChannelPayment           uint8 = 107 // 远程支付由目标终端最终响应
-	MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 108 // 向远程请求收款签名
-	MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 109 // 远程签名回复
+		MsgTypeRequestChannelPayCollectionSign               uint8 = 101 // 向客户端请求收款签名
+		MsgTypeResponseChannelPayCollectionSign              uint8 = 102 // 获得签名
+		MsgTypeRequestChannelPayPaymentSign                  uint8 = 103 // 向客户端请求支付签名
+		MsgTypeResponseChannelPayPaymentSign                 uint8 = 104 // 获得签名
+		MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 105 // 发送完整票据给支付下游
+
+		MsgTypeResponseRemoteChannelPayment           uint8 = 107 // 远程支付由目标终端最终响应
+		MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 108 // 向远程请求收款签名
+		MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 109 // 远程签名回复
+	*/
 
 )
 
@@ -79,26 +84,6 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 	case MsgTypeLoginCheckLastestBill:
 		msg = &MsgLoginCheckLastestBill{}
 
-		/*
-			case MsgTypeRequestChannelPayCollectionSign:
-				msg = &MsgRequestChannelPayCollectionSign{}
-			case MsgTypeResponseChannelPayCollectionSign:
-				msg = &MsgResponseChannelPayCollectionSign{}
-			case MsgTypeRequestChannelPayPaymentSign:
-				msg = &MsgRequestChannelPayPaymentSign{}
-			case MsgTypeResponseChannelPayPaymentSign:
-				msg = &MsgResponseChannelPayPaymentSign{}
-
-			case MsgTypeRequestLaunchRemoteChannelPayment:
-				//msg = &MsgRequestLaunchRemoteChannelPayment{}
-			case MsgTypeResponseRemoteChannelPayment:
-				//msg = &MsgResponseRemoteChannelPayment{}
-			case MsgTypeRequestRemoteChannelPayCollectionSign:
-				msg = &MsgRequestRemoteChannelPayCollectionSign{}
-			case MsgTypeResponseRemoteChannelPayCollectionSign:
-				msg = &MsgResponseRemoteChannelPayCollectionSign{}
-		*/
-
 	case MsgTypeLogin:
 		msg = &MsgLogin{}
 	case MsgTypeLogout:
@@ -120,6 +105,11 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 		msg = &MsgBroadcastChannelStatementError{}
 	case MsgTypeBroadcastChannelStatementSuccessed:
 		msg = &MsgBroadcastChannelStatementSuccessed{}
+
+	case MsgTypeClientInitiateReconciliation:
+		msg = &MsgClientInitiateReconciliation{}
+	case MsgTypeServicerRespondReconciliation:
+		msg = &MsgServicerRespondReconciliation{}
 
 	case MsgTypePayRouteRequestServiceNodes:
 		msg = &MsgPayRouteRequestServiceNodes{}

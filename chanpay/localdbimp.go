@@ -157,6 +157,16 @@ func (s *LocalDBImpOfDataSource) RemovePrivateKey(address fields.Address) {
 	delete(s.tempPrivateKeys, string(address))
 }
 
+// 移除私钥
+func (s *LocalDBImpOfDataSource) ReadPrivateKey(address fields.Address) *account.Account {
+	s.accMapLock.RLock()
+	defer s.accMapLock.RUnlock()
+	if acc, ok := s.tempPrivateKeys[string(address)]; ok {
+		return acc
+	}
+	return nil
+}
+
 // 清除所有私钥
 func (s *LocalDBImpOfDataSource) CleanAllPrivateKey() {
 	s.accMapLock.Lock()
@@ -164,6 +174,41 @@ func (s *LocalDBImpOfDataSource) CleanAllPrivateKey() {
 	s.tempPrivateKeys = make(map[string]*account.Account)
 }
 
+// 签署对账单
+func (s *LocalDBImpOfDataSource) CheckReconciliationFillNeedSignature(bill *channel.OffChainFormPaymentChannelRealtimeReconciliation, checksign *fields.Sign) (*fields.Sign, error) {
+	var e error
+	leftacc := s.ReadPrivateKey(bill.LeftAddress)
+	var fillsign *fields.Sign = nil
+	if leftacc != nil {
+		// 填充签名
+		bill.RightSign = *checksign
+		fillsign, _, e = bill.FillTargetSignature(leftacc)
+		if e != nil {
+			return nil, e
+		}
+	}
+	rightacc := s.ReadPrivateKey(bill.LeftAddress)
+	if leftacc != nil {
+		// 填充签名
+		bill.LeftSign = *checksign
+		fillsign, _, e = bill.FillTargetSignature(rightacc)
+		if e != nil {
+			return nil, e
+		}
+	}
+	if fillsign == nil {
+		return nil, fmt.Errorf("No address of private key that can be signed.")
+	}
+	// 检查所有签名
+	if e = bill.CheckAddressAndSign(); e != nil {
+		return nil, fmt.Errorf("Signature verification failed.")
+	}
+
+	// 成功
+	return fillsign, nil
+}
+
+// 签署支付
 func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *channel.ChannelPayCompleteDocuments, mustaddrs []fields.Address) (*fields.SignListMax255, error) {
 	// 检查时间戳，不签署已经过期 60s 后的票据
 	ctimes := time.Now().Unix()

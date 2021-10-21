@@ -1,11 +1,5 @@
 package protocol
 
-import (
-	"bytes"
-	"github.com/hacash/core/channel"
-	"github.com/hacash/core/fields"
-)
-
 // 发起远程支付消息
 /*
 type MsgRequestLaunchRemoteChannelPayment struct {
@@ -107,7 +101,7 @@ func (m *MsgRequestLaunchRemoteChannelPayment) CopyFromInitiatePayment(msg *MsgR
 	m.PayeeChannelAddr = msg.PayeeChannelAddr
 	m.TargetPath = msg.TargetPath
 }
-*/
+
 //////////////////////////////////////////////////////
 
 // 终端节点响应支付消息
@@ -175,7 +169,7 @@ func (m MsgRequestRemoteChannelPayCollectionSign) SerializeWithType() ([]byte, e
 	return buf.Bytes(), nil
 }
 
-/**************************************************/
+/**************************************************
 
 type MsgResponseRemoteChannelPayCollectionSign struct {
 	OperationNum fields.VarUint8     // 操作单号
@@ -238,3 +232,5 @@ func (m MsgResponseRemoteChannelPayCollectionSign) SerializeWithType() ([]byte, 
 	// ok
 	return buf.Bytes(), nil
 }
+
+*/

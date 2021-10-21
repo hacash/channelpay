@@ -1,12 +1,6 @@
 package protocol
 
-import (
-	"bytes"
-	"github.com/hacash/core/channel"
-	"github.com/hacash/core/fields"
-)
-
-/**************************************************/
+/**************************************************
 
 type MsgRequestChannelPayCollectionSign struct {
 	OperationNum fields.VarUint8                      // 操作单号
@@ -57,7 +51,7 @@ func (m MsgRequestChannelPayCollectionSign) SerializeWithType() ([]byte, error) 
 	return buf.Bytes(), nil
 }
 
-/**************************************************/
+/**************************************************
 
 type MsgResponseChannelPayCollectionSign struct {
 	OperationNum fields.VarUint8     // 操作单号
@@ -121,7 +115,7 @@ func (m MsgResponseChannelPayCollectionSign) SerializeWithType() ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-/**************************************************/
+/**************************************************
 
 type MsgRequestChannelPayPaymentSign struct {
 	OperationNum fields.VarUint8                      // 操作单号
@@ -172,7 +166,7 @@ func (m MsgRequestChannelPayPaymentSign) SerializeWithType() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-/**************************************************/
+/**************************************************
 
 type MsgResponseChannelPayPaymentSign struct {
 	OperationNum fields.VarUint8     // 操作单号
@@ -236,7 +230,7 @@ func (m MsgResponseChannelPayPaymentSign) SerializeWithType() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-/**************************************************/
+/**************************************************
 
 type MsgSendChannelPayCompletedSignaturesToDownstream struct {
 	OperationNum fields.VarUint8       // 操作单号
@@ -286,3 +280,6 @@ func (m MsgSendChannelPayCompletedSignaturesToDownstream) SerializeWithType() ([
 	// ok
 	return buf.Bytes(), nil
 }
+
+
+*/

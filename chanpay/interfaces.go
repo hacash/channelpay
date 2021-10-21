@@ -43,6 +43,8 @@ type DataSourceOfSignatureMachine interface {
 	TemporaryStoragePrivateKeyForSign(privatekeyOrPassword string)
 	RemovePrivateKey(address fields.Address) // 移除私钥
 	CleanAllPrivateKey()                     // 清除所有私钥
+	// 签署对账单并之后检查全部签名
+	CheckReconciliationFillNeedSignature(bill *channel.OffChainFormPaymentChannelRealtimeReconciliation, checksign *fields.Sign) (*fields.Sign, error)
 	// 将通道交易送入签名机验证数据，并自动填充签名
 	CheckPaydocumentAndFillNeedSignature(paydocs *channel.ChannelPayCompleteDocuments, mustaddrs []fields.Address) (*fields.SignListMax255, error)
 }
