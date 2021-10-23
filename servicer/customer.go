@@ -18,9 +18,9 @@ func (s *Servicer) checkCustomerActive() {
 	s.customerChgLock.RUnlock()
 
 	// 检查时间，30秒心跳过期
-	tnck := time.Now().Add(-30 * time.Second)
+	tnck := time.Now().Unix() - 30
 	for _, v := range susary {
-		if v.GetLastestHeartbeatTime().Before(tnck) {
+		if v.GetLastestHeartbeatTime().Unix() < tnck {
 			// 超过30秒没有心跳，断开连接
 			v.ChannelSide.WsConn.Close()
 		}
