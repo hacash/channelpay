@@ -11,6 +11,7 @@ import (
 	"github.com/hacash/core/account"
 	"github.com/hacash/core/channel"
 	"github.com/hacash/core/stores"
+	"strings"
 	"sync"
 )
 
@@ -173,8 +174,17 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	return objs
 }
 
+func trimInput(addr string) string {
+	return strings.Trim(addr, " \n")
+}
+
 // 执行登录
 func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window fyne.Window) error {
+
+	// 地址和私钥去掉前后空格和换行
+	addr = trimInput(addr)
+	prikeyorpassword = trimInput(prikeyorpassword)
+	billhex = trimInput(billhex)
 
 	// 必填
 	if len(addr) == 0 {
