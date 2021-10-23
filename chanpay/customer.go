@@ -5,14 +5,21 @@ import (
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
 	"math/rand"
+	"sync"
+	"time"
 )
 
 type Customer struct {
+	updateMux sync.RWMutex
+
 	RegisteredID uint64 // 是否已完成注册，完成时分配一个随机编号
 
 	LanguageSet fields.StringMax255 // 语言设置 en_US zh_CN
 
 	ChannelSide *ChannelSideConn
+
+	lastestHeartbeatTime time.Time
+
 	//
 	//
 	//// 客户端长连接
@@ -36,8 +43,9 @@ type Customer struct {
 func NewCustomer(ws *websocket.Conn) *Customer {
 	side := NewChannelSideByConn(ws)
 	return &Customer{
-		RegisteredID: 0,
-		ChannelSide:  side,
+		RegisteredID:         0,
+		ChannelSide:          side,
+		lastestHeartbeatTime: time.Now(),
 	}
 }
 
@@ -47,6 +55,18 @@ func CreateChannelSideConnWrapForCustomer(list []*Customer) ChannelSideConnListB
 		res[i] = v
 	}
 	return res
+}
+
+// 更新心跳时间
+func (c *Customer) UpdateLastestHeartbeatTime() {
+	c.updateMux.Lock()
+	defer c.updateMux.Unlock()
+	c.lastestHeartbeatTime = time.Now()
+}
+func (c *Customer) GetLastestHeartbeatTime() time.Time {
+	c.updateMux.RLock()
+	defer c.updateMux.RUnlock()
+	return c.lastestHeartbeatTime
 }
 
 // 执行注册
