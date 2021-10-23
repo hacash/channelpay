@@ -1,6 +1,7 @@
 package chanpay
 
 import (
+	"fmt"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 	"github.com/hacash/node/websocket"
@@ -61,6 +62,7 @@ func CreateChannelSideConnWrapForCustomer(list []*Customer) ChannelSideConnListB
 func (c *Customer) UpdateLastestHeartbeatTime() {
 	c.updateMux.Lock()
 	defer c.updateMux.Unlock()
+	fmt.Println("c *Customer UpdateLastestHeartbeatTime ", time.Now().Unix())
 	c.lastestHeartbeatTime = time.Now()
 }
 func (c *Customer) GetLastestHeartbeatTime() time.Time {
