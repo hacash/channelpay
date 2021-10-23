@@ -82,7 +82,8 @@ func (c *ChannelPayUser) StartHeartbeat() {
 		if c.isClosed {
 			return // 结束
 		}
-		// 发送
+		// 发送心跳包，忽略错误
+		protocol.SendMsg(c.servicerStreamSide.ChannelSide.WsConn, &protocol.MsgHeartbeat{})
 	}
 }
 
