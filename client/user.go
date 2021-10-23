@@ -76,13 +76,15 @@ func (c *ChannelPayUser) ClearBusinessExclusive() {
 func (c *ChannelPayUser) StartHeartbeat() {
 	for {
 		// 15秒一个心跳包
-		time.Sleep(time.Second * 15)
+		time.Sleep(time.Second * 13)
 		c.changeMux.Lock()
-		defer c.changeMux.Unlock()
 		if c.isClosed {
+			c.changeMux.Unlock()
 			return // 结束
 		}
+		c.changeMux.Unlock()
 		// 发送心跳包，忽略错误
+		//fmt.Println("protocol.SendMsg(c.servicerStreamSide.ChannelSide.WsConn, &protocol.MsgHeartbeat{})")
 		protocol.SendMsg(c.servicerStreamSide.ChannelSide.WsConn, &protocol.MsgHeartbeat{})
 	}
 }

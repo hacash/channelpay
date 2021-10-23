@@ -1,7 +1,6 @@
 package servicer
 
 import (
-	"fmt"
 	"github.com/hacash/channelpay/chanpay"
 	"time"
 )
@@ -23,7 +22,7 @@ func (s *Servicer) checkCustomerActive() {
 	for _, v := range susary {
 		if v.GetLastestHeartbeatTime().Unix() < tnck {
 			// 超过30秒没有心跳，断开连接
-			fmt.Println("v.GetLastestHeartbeatTime().Unix() < tnck CLOSE")
+			//fmt.Println("v.GetLastestHeartbeatTime().Unix() < tnck CLOSE")
 			v.ChannelSide.WsConn.Close()
 		}
 	}
