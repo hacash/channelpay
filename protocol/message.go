@@ -41,6 +41,9 @@ const (
 	MsgTypeClientInitiateReconciliation  uint8 = 13 // 客户端发起对账
 	MsgTypeServicerRespondReconciliation uint8 = 14 // 服务端响应对账
 
+	// 客户端心跳包
+	MsgTypeHeartbeat uint8 = 15
+
 	/*
 
 		MsgTypeRequestChannelPayCollectionSign               uint8 = 101 // 向客户端请求收款签名
@@ -83,6 +86,9 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 		msg = &MsgDisplacementOffline{}
 	case MsgTypeLoginCheckLastestBill:
 		msg = &MsgLoginCheckLastestBill{}
+
+	case MsgTypeHeartbeat:
+		msg = &MsgHeartbeat{}
 
 	case MsgTypeLogin:
 		msg = &MsgLogin{}

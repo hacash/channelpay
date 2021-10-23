@@ -13,6 +13,10 @@ func (s *Servicer) startListen() {
 
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"server":"HacashChannelPaymentServicerNode"}`))
+	})
+
 	// 处理顾客连接
 	mux.Handle("/customer/connect", websocket.Handler(s.connectCustomerHandler))
 

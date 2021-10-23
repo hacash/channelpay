@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 )
 
 const (
@@ -69,6 +70,20 @@ func (c *ChannelPayUser) StartBusinessExclusive() bool {
 // 解除状态独占
 func (c *ChannelPayUser) ClearBusinessExclusive() {
 	c.servicerStreamSide.ClearBusinessExclusive()
+}
+
+// 开始发送心跳包
+func (c *ChannelPayUser) StartHeartbeat() {
+	for {
+		// 15秒一个心跳包
+		time.Sleep(time.Second * 15)
+		c.changeMux.Lock()
+		defer c.changeMux.Unlock()
+		if c.isClosed {
+			return // 结束
+		}
+		// 发送
+	}
 }
 
 // 退出

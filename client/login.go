@@ -159,7 +159,7 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 			} else {
 				// 登录成功，清空数据
 				if DevDebug == false {
-					inputAddr.SetText("")
+					//inputAddr.SetText("")
 					inputPrikey.SetText("")
 					inputBill.SetText("")
 				}

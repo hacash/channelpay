@@ -30,6 +30,10 @@ func (s *Servicer) msgHandler(customer *chanpay.Customer, msgobj protocol.Messag
 		s.MsgHandlerClientInitiateReconciliation(customer, msgobj.(*protocol.MsgClientInitiateReconciliation))
 		break
 
+	// 心跳包，忽略
+	case protocol.MsgTypeHeartbeat:
+		break
+
 	}
 
 }
