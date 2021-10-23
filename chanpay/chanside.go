@@ -64,6 +64,7 @@ func NewChannelSideByConn(conn *websocket.Conn) *ChannelSideConn {
 		WsConn:                            conn,
 		ChannelInfo:                       nil,
 		LatestReconciliationBalanceBill:   nil,
+		lastestHeartbeatTime:              time.Now(),
 		businessExclusiveStatus:           0,
 		businessCloseAutoCollectionStatus: 0,
 		msgFeedErrs:                       make([]event.Subscription, 0),
