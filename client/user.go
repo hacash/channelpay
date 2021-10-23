@@ -249,6 +249,9 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 	// 通道端
 	c.servicerStreamSide = chanpay.NewRelayPayNodeConnect(c.selfAddr.ServicerName.Value(), csobj.ChannelId, ourIsLeft, csobj)
 
+	// 心跳保活
+	go c.StartHeartbeat()
+
 	// 成功
 	return nil
 }
