@@ -68,7 +68,7 @@ func NewChannelSideByConn(conn *websocket.Conn) *ChannelSideConn {
 // 启动消息监听
 func (c *ChannelSideConn) StartMessageListen() {
 	go func() {
-		//defer fmt.Printf("ChannelSideConn %s message listen end.\n", c.WsConn.RemoteAddr())
+		defer fmt.Printf("ChannelSideConn %s message listen end.\n", c.WsConn.RemoteAddr())
 		for {
 			msg, _, e := protocol.ReceiveMsg(c.WsConn)
 			if e != nil {
