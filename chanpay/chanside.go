@@ -9,6 +9,7 @@ import (
 	"github.com/hacash/node/websocket"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 /**
@@ -32,6 +33,9 @@ type ChannelSideConn struct {
 	// 最新的对账票据
 	LatestReconciliationBalanceBill channel.ReconciliationBalanceBill
 
+	// 最近心跳时间
+	lastestHeartbeatTime time.Time
+
 	// 关闭收款标记
 	businessCloseAutoCollectionStatus uint32
 
@@ -49,6 +53,7 @@ func NewChannelSideById(cid fields.ChannelId) *ChannelSideConn {
 		ChannelId:                         cid,
 		ChannelInfo:                       nil,
 		LatestReconciliationBalanceBill:   nil,
+		lastestHeartbeatTime:              time.Now(),
 		businessExclusiveStatus:           0,
 		businessCloseAutoCollectionStatus: 0,
 		msgFeedErrs:                       make([]event.Subscription, 0),
@@ -65,6 +70,14 @@ func NewChannelSideByConn(conn *websocket.Conn) *ChannelSideConn {
 	}
 }
 
+// 获取心跳时间
+
+func (c *ChannelSideConn) GetLastestHeartbeatTime() time.Time {
+	c.statusMux.RLock()
+	defer c.statusMux.RUnlock()
+	return c.lastestHeartbeatTime
+}
+
 // 启动消息监听
 func (c *ChannelSideConn) StartMessageListen() {
 	go func() {
@@ -77,6 +90,11 @@ func (c *ChannelSideConn) StartMessageListen() {
 				}
 				c.msgFeedErrs = make([]event.Subscription, 0) // 清空
 				return                                        // 发生错误，结束
+			}
+			if msg.Type() == protocol.MsgTypeHeartbeat {
+				c.statusMux.Lock()
+				c.lastestHeartbeatTime = time.Now()
+				c.statusMux.Unlock()
 			}
 			// 广播消息
 			c.msgFeed.Send(msg)

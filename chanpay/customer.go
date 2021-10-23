@@ -63,6 +63,8 @@ func (c *Customer) UpdateLastestHeartbeatTime() {
 	defer c.updateMux.Unlock()
 	//fmt.Println("c *Customer UpdateLastestHeartbeatTime ", time.Now().Unix())
 	c.lastestHeartbeatTime = time.Now()
+	// 回复心跳
+	protocol.SendMsg(c.ChannelSide.WsConn, &protocol.MsgHeartbeat{})
 }
 func (c *Customer) GetLastestHeartbeatTime() time.Time {
 	c.updateMux.RLock()
