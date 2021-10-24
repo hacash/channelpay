@@ -141,7 +141,7 @@ func (c *ChannelPayClient) ShowLogString(log string, isok bool, iserr bool) {
 func (c *ChannelPayClient) ShowWindow() error {
 
 	// Create UI with basic HTML passed via data URI
-	ui, err := lorca.New("", "", 962, 642)
+	ui, err := lorca.New("", "", 980, 660)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/hacash/channelpay/chanpay"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
+	"github.com/hacash/core/stores"
 )
 
 // 初始化通道
@@ -18,6 +19,11 @@ func (s *Servicer) InitializeChannelSide(side *chanpay.ChannelSideConn, remoteAd
 	chanInfo, e := protocol.RequestRpcReqChannelInfo(s.config.FullNodeRpcUrl, cid)
 	if e != nil {
 		return fmt.Errorf("request channel info fail: %s", e.Error())
+	}
+
+	// 检查通道状态
+	if chanInfo.Status != stores.ChannelStatusOpening {
+		return fmt.Errorf("channel status is not on opening!")
 	}
 
 	var remoteIsRight = true

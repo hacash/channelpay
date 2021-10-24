@@ -11,11 +11,10 @@ import (
 func (s *Servicer) checkCustomerActive() {
 
 	var susary = make([]*chanpay.Customer, 0)
-	s.customerChgLock.RLock()
+	s.customerChgLock.Lock()
 	for _, v := range s.customers {
 		susary = append(susary, v)
 	}
-	s.customerChgLock.RUnlock()
 
 	// 检查时间，30秒心跳过期
 	tnck := time.Now().Unix() - 30
@@ -24,6 +23,8 @@ func (s *Servicer) checkCustomerActive() {
 			// 超过30秒没有心跳，断开连接
 			//fmt.Println("v.GetLastestHeartbeatTime().Unix() < tnck CLOSE")
 			v.ChannelSide.WsConn.Close()
+			s.RemoveCustomerFromPoolUnsafe(v)
 		}
 	}
+	s.customerChgLock.Unlock()
 }

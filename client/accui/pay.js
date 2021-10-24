@@ -17,9 +17,12 @@
 
 /* 退出 */
 function Logout(tip) {
-    tip = tip || "You have logged out. Please log in again to collect money"
-    alert("[Logout Attention] " + tip)
-    window.close() // 关闭窗口
+    document.getElementById("lgagtip").style.display = "block";
+    setTimeout(function (){
+        tip = tip || "You have logged out. Please login again to collect money"
+        alert("[Logout Attention] " + tip)
+        window.close() // 关闭窗口
+    }, 100)
 }
 
 /* 日志输出 */

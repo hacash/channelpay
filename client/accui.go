@@ -51,6 +51,27 @@ button{
     /* border: 1px #ddd dashed; */
 }
 
+#lgagtip {
+    display: none;
+    background: rgba(255,255,255,0.8);
+    position: fixed;
+    z-index: 100;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+#lgagtip h1 {
+    text-align: center;
+    font-size: 20px;
+    padding: 20px;
+    background: beige;
+    color: chocolate;
+    box-shadow: 0 0 20px 2px rgba(0,0,0,0.5);
+    margin-top: 280px;
+}
+
 .box {
     display: inline-block;
     vertical-align: top;
@@ -423,6 +444,9 @@ h3.tt {
     </div>
 </div></div>
 
+<div id="lgagtip">
+    <h1>Please close the window and login again.</h1>
+</div>
 
 <!-- 选择支付渠道 -->
 <div id="dopay" class="dopay">
@@ -461,9 +485,12 @@ h3.tt {
 
 /* 退出 */
 function Logout(tip) {
-    tip = tip || "You have logged out. Please log in again to collect money"
-    alert("[Logout Attention] " + tip)
-    window.close() // 关闭窗口
+    document.getElementById("lgagtip").style.display = "block";
+    setTimeout(function (){
+        tip = tip || "You have logged out. Please login again to collect money"
+        alert("[Logout Attention] " + tip)
+        window.close() // 关闭窗口
+    }, 100)
 }
 
 /* 日志输出 */

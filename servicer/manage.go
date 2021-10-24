@@ -24,12 +24,20 @@ func (s *Servicer) AddCustomerToPool(newcur *chanpay.Customer) error {
 
 // 从管理池移除
 func (s *Servicer) RemoveCustomerFromPool(cur *chanpay.Customer) {
-	if cur.RegisteredID == 0 {
-		return
-	}
 	// 并发锁
 	s.customerChgLock.Lock()
 	defer s.customerChgLock.Unlock()
+	// 移除
+	s.RemoveCustomerFromPoolUnsafe(cur)
+	// ok
+	return
+}
+
+// 从管理池移除
+func (s *Servicer) RemoveCustomerFromPoolUnsafe(cur *chanpay.Customer) {
+	if cur.RegisteredID == 0 {
+		return
+	}
 	// 移除
 	delete(s.customers, cur.RegisteredID)
 	// ok

@@ -46,6 +46,12 @@ func (p *PayRoutesPublish) customerLoginResolution(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// 检查通道状态
+	if channelInfo.Status != stores.ChannelStatusOpening {
+		protocol.ResponseError(w, fmt.Errorf("channel status is not on opening!"))
+		return
+	}
+
 	// 返回
 	var nodeinfo = make(map[string]interface{})
 	var chaninfo = make(map[string]interface{})

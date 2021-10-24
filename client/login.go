@@ -13,6 +13,7 @@ import (
 	"github.com/hacash/core/stores"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -154,7 +155,7 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	loginBtn.OnTapped = func() {
 		go func() {
 			// 执行登录
-			e := HandlerLogin(inputAddr.Text, inputPrikey.Text, inputBill.Text, app, window)
+			e := HandlerLogin(inputAddr.Text, inputPrikey.Text, inputBill.Text, app, window, loginBtn)
 			if e != nil {
 				errorshow.SetText(e.Error())
 			} else {
@@ -179,7 +180,23 @@ func trimInput(addr string) string {
 }
 
 // 执行登录
-func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window fyne.Window) error {
+var isInHandlerLoginState = false
+
+func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window fyne.Window, loginBtn *widget.Button) error {
+	if isInHandlerLoginState {
+		return nil // 正在处理中
+	}
+	if loginBtn != nil {
+		loginBtn.SetText("waiting...")
+	}
+	isInHandlerLoginState = true
+	go func() {
+		time.Sleep(time.Second * 3)
+		if loginBtn != nil {
+			loginBtn.SetText("Login")
+		}
+		isInHandlerLoginState = false
+	}()
 
 	// 地址和私钥去掉前后空格和换行
 	addr = trimInput(addr)
