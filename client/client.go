@@ -76,7 +76,7 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	if e != nil {
 		return fmt.Sprintf("Address format error: %s", e.Error()) // 错误
 	}
-	amount, e := fields.NewAmountFromStringUnsafe(amt)
+	amount, e := fields.NewAmountFromString(amt)
 	if e != nil {
 		return fmt.Sprintf("Amount format error: %s", e.Error()) // 错误
 	}
