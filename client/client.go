@@ -9,6 +9,7 @@ import (
 	"github.com/zserge/lorca"
 	"log"
 	"net/url"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -162,7 +163,14 @@ func (c *ChannelPayClient) ShowStatusLog(log string) {
 func (c *ChannelPayClient) ShowWindow() error {
 
 	// Create UI with basic HTML passed via data URI
-	ui, err := lorca.New("", "", 980, 680)
+	sysType := runtime.GOOS
+	ww := 965
+	wh := 665
+	if sysType == "windows" {
+		ww = 995 // win系统避免出现滚动条
+		wh = 674
+	}
+	ui, err := lorca.New("", "", ww, wh)
 	if err != nil {
 		log.Fatal(err)
 	}
