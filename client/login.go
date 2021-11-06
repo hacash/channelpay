@@ -33,7 +33,7 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 	loginBox := createLoginTab(app, window)
 	billBox := createOutputBillTab(app, window)
 
-	tabs := container.NewDocTabs(
+	tabs := container.NewAppTabs(
 		container.NewTabItem("Login", loginBox),
 		container.NewTabItem("Export bill", billBox),
 	)
