@@ -1,5 +1,4 @@
 package client
-
 const AccUIhtmlContent = `
 <html>
 <head>
@@ -70,6 +69,22 @@ button{
     color: chocolate;
     box-shadow: 0 0 20px 2px rgba(0,0,0,0.5);
     margin-top: 280px;
+}
+
+#statlog {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background: #f6f6f6;
+    color: #999;
+    font-size: 12px;
+    line-height: 20px;
+    padding: 0 5px;
+    height: 20px;
+    overflow: hidden;
+    display: block;
+    width: 95%;
+    width: -webkit-fill-available;
 }
 
 .box {
@@ -432,6 +447,7 @@ h3.tt {
             <button class="trsbtn" id="paybtn">Start transfer</button>
             <div class="err" id="payerr"></div>
         </div>
+
     </div>
 
 
@@ -464,6 +480,7 @@ h3.tt {
     </div>
 </div>
 
+<div id="statlog"></div>
 
 <script>
 /**
@@ -476,6 +493,7 @@ h3.tt {
  * // 调用的函数
  * Logout()
  * ShowLogOnPrint(string, bool)
+ * ShowStatusLog(string)
  * InitAccount(...)
  * UpdateBalance(...)
  * ShowPaymentError(string)
@@ -495,7 +513,8 @@ function Logout(tip) {
 
 /* 日志输出 */
 var logw = document.getElementById("logw")
-, logbg = document.getElementById("logbg")
+    , logbg = document.getElementById("logbg")
+    , statlog = document.getElementById("statlog")
 ;
 function noticeLog() {
     // 吸引注意
@@ -515,7 +534,9 @@ function ShowLogOnPrint(log, isok, iserr) {
     logw.appendChild(p);
     logw.scrollTop = logw.scrollHeight;
 }
-
+function ShowStatusLog(str) {
+    statlog.innerHTML = str;
+}
 
 /* 初始化显示账户 */
 var cid = document.getElementById("cid")
@@ -699,4 +720,4 @@ function SelectPaymentPaths(noteinfo, paths) {
 </body>
 </html>
 
-`
+`;

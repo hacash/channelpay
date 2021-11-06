@@ -237,10 +237,7 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 	}
 
 	// 向网络请求服务商ip地址解析和通道状态数据
-	apiurl := "https://hcpu.hacash.org"
-	if DevDebug {
-		apiurl = "http://127.0.0.1:3355"
-	}
+	apiurl := GetLoginResolutionApiDomain()
 	chaninfo, nodeinfo, e := protocol.RequestChannelAndSernodeInfoFromLoginResolutionApi(
 		apiurl, addrobj.ChannelId, addrobj.ServicerName.Value())
 	if e != nil {

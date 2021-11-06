@@ -56,14 +56,15 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 
 	// 远程支付，查询路由
 	// 目标服务商是否存在
-	targetnode := s.payRouteMng.FindNodeByName(chanAddr.ServicerName.Value())
+	tarNodeName := chanAddr.ServicerName.Value()
+	targetnode := s.payRouteMng.FindNodeByName(tarNodeName)
 	if targetnode == nil {
-		errorReturn(fmt.Errorf("Target service Node <%s> not find in the routes list.", localServicerName))
+		errorReturn(fmt.Errorf("Target service Node <%s> not find in the routes list.", tarNodeName))
 		return
 	}
 
 	// 查询路由
-	pathResults, e := s.payRouteMng.SearchNodePath(localServicerName, chanAddr.ServicerName.Value())
+	pathResults, e := s.payRouteMng.SearchNodePath(localServicerName, tarNodeName)
 	if e != nil {
 		errorReturn(e)
 		return
@@ -71,7 +72,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 	if len(pathResults) == 0 {
 		// 未找到路径
 		errorReturn(fmt.Errorf("Can not find the pay routes path from node %s to %s.",
-			localServicerName, targetnode.IdentificationName.Value()))
+			localServicerName, tarNodeName))
 		return
 	}
 	forms := CreatePayPathForms(pathResults, &msg.PayAmount) // 路径列表

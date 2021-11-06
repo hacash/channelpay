@@ -66,11 +66,28 @@ func (c *ChannelPayClient) UpdateBalanceShow() {
 // 启动交易
 func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	//fmt.Println("BindFuncInitiatePayment:", addr, amt)
+	addr = strings.Trim(addr, "\n ")
+	amt = strings.Trim(amt, "\n ")
 	if len(addr) == 0 {
 		return "Please enter the address."
 	}
 	if len(amt) == 0 {
 		return "Please enter the amount."
+	}
+	// 解析 HDNS
+	diakind, ok := protocol.IsHDNSaddress(addr)
+	if ok {
+		// 执行解析
+		apiurl := GetLoginResolutionApiDomain()
+		realaddr, err := protocol.RequestRpcReqDiamondNameServiceFromLoginResolutionApi(apiurl, diakind)
+		if err != nil {
+			return fmt.Sprintf("Address Diamond Name Service error: %s", err.Error()) // 错误
+		}
+		addrary := strings.Split(addr, "_")
+		addrary[0] = realaddr
+		addr = strings.Join(addrary, "_")
+		// 解析日志打印
+		c.ShowStatusLog(fmt.Sprintf("HDNS analyze: diamond(%s) => %s", diakind, realaddr))
 	}
 	acc, e := protocol.ParseChannelAccountAddress(addr)
 	if e != nil {
@@ -137,11 +154,15 @@ func (c *ChannelPayClient) ShowLogString(log string, isok bool, iserr bool) {
 	c.payui.Eval(fmt.Sprintf(`ShowLogOnPrint("%s", %s, %s)`, strings.Replace(log, `"`, ``, -1), okmark, errmark))
 }
 
+func (c *ChannelPayClient) ShowStatusLog(log string) {
+	c.payui.Eval(fmt.Sprintf(`ShowStatusLog("%s")`, strings.Replace(log, `"`, ``, -1)))
+}
+
 // 显示界面
 func (c *ChannelPayClient) ShowWindow() error {
 
 	// Create UI with basic HTML passed via data URI
-	ui, err := lorca.New("", "", 980, 660)
+	ui, err := lorca.New("", "", 980, 680)
 	if err != nil {
 		log.Fatal(err)
 	}

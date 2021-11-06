@@ -26,6 +26,7 @@ func (p *PayRoutesPublish) listen(port int) {
 
 	// 通道链用户登录解析
 	mux.HandleFunc("/customer/login_resolution", p.customerLoginResolution)
+	mux.HandleFunc("/customer/hdns_analyze", p.customerAnalyzeHDNS)
 
 	// 设置监听的端口
 	portstr := strconv.Itoa(port)

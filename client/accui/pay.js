@@ -8,6 +8,7 @@
  * // 调用的函数
  * Logout()
  * ShowLogOnPrint(string, bool)
+ * ShowStatusLog(string)
  * InitAccount(...)
  * UpdateBalance(...)
  * ShowPaymentError(string)
@@ -27,7 +28,8 @@ function Logout(tip) {
 
 /* 日志输出 */
 var logw = document.getElementById("logw")
-, logbg = document.getElementById("logbg")
+    , logbg = document.getElementById("logbg")
+    , statlog = document.getElementById("statlog")
 ;
 function noticeLog() {
     // 吸引注意
@@ -47,7 +49,9 @@ function ShowLogOnPrint(log, isok, iserr) {
     logw.appendChild(p);
     logw.scrollTop = logw.scrollHeight;
 }
-
+function ShowStatusLog(str) {
+    statlog.innerHTML = str;
+}
 
 /* 初始化显示账户 */
 var cid = document.getElementById("cid")
