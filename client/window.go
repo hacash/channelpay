@@ -1,8 +1,8 @@
 package client
 
 import (
-	"fyne.io/fyne"
-	"fyne.io/fyne/container"
+	fyne "fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 )
 
 // 打开窗口

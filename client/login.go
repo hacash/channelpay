@@ -3,10 +3,10 @@ package client
 import (
 	"encoding/hex"
 	"fmt"
-	"fyne.io/fyne"
-	"fyne.io/fyne/container"
-	"fyne.io/fyne/dialog"
-	"fyne.io/fyne/widget"
+	fyne "fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/account"
 	"github.com/hacash/core/channel"
@@ -33,9 +33,9 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 	loginBox := createLoginTab(app, window)
 	billBox := createOutputBillTab(app, window)
 
-	tabs := widget.NewTabContainer(
-		widget.NewTabItem("Login", loginBox),
-		widget.NewTabItem("Export bill", billBox),
+	tabs := container.NewDocTabs(
+		container.NewTabItem("Login", loginBox),
+		container.NewTabItem("Export bill", billBox),
 	)
 
 	// 显示窗口

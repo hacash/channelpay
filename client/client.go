@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/hex"
 	"fmt"
-	"fyne.io/fyne"
+	fyne "fyne.io/fyne/v2"
 	"github.com/hacash/channelpay/protocol"
 	"github.com/hacash/core/fields"
 	"github.com/zserge/lorca"
