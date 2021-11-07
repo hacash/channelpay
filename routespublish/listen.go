@@ -18,7 +18,8 @@ func (p *PayRoutesPublish) listen(port int) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"server":"HacashChannelPayRoutesPublish"}`))
+		//w.Write([]byte(`{"server":"HacashChannelPayRoutesPublish"}`))
+		w.Write([]byte(GetHomePageHtml()))
 	})
 
 	// websocket 下载分发通道路由数据
