@@ -67,8 +67,7 @@ func createOutputBillTab(app fyne.App, window fyne.Window) *fyne.Container {
 	objs.Add(okBtn)
 
 	// results show
-	resshow := widget.NewEntry()
-	resshow.MultiLine = true
+	resshow := widget.NewMultiLineEntry()
 	resshow.Wrapping = fyne.TextWrapBreak
 	objs.Add(resshow)
 
@@ -131,14 +130,10 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	objs.Add(widget.NewLabel("\nReconciliation or payment bill:"))
 	inputBill := widget.NewMultiLineEntry()
 	inputBill.Wrapping = fyne.TextWrapBreak
+	// inputBill.Scroll = true
 	inputBill.SetPlaceHolder("Optional: reconciliation or payment bill hex data")
 	inputBill.Refresh()
-	billwrap := container.NewVScroll(inputBill)
-	billwrap.SetMinSize(fyne.Size{
-		Width:  windowWidth,
-		Height: 74,
-	})
-	objs.Add(billwrap)
+	objs.Add(inputBill)
 
 	//objs.Add(widget.NewLabel("\n"))
 	// login btn
