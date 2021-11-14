@@ -1,4 +1,5 @@
 package client
+
 const AccUIhtmlContent = `
 <html>
 <head>
@@ -412,7 +413,7 @@ h3.tt {
     <div class="pay">
         <div class="blsw">
             <table>
-                <tr><td><label>Channel Balance: </label></td><td><b class="amt" id="blsamt">ㄜ91,616,204:240</b></td></tr>
+                <tr><td><label>Channel balance: </label></td><td><b class="amt" id="blsamt">ㄜ91,616,204:240</b></td></tr>
                 <tr><td><label>Collection capacity: </label></td><td><b class="cap" id="blscap">ㄜ132:247</b></td></tr>
             </table>
         </div>
@@ -720,4 +721,4 @@ function SelectPaymentPaths(noteinfo, paths) {
 </body>
 </html>
 
-`;
+`
