@@ -130,7 +130,7 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	objs.Add(widget.NewLabel("\nReconciliation or payment bill:"))
 	inputBill := widget.NewMultiLineEntry()
 	inputBill.Wrapping = fyne.TextWrapBreak
-	// inputBill.Scroll = true
+	inputBill.Scroll = true
 	inputBill.SetPlaceHolder("Optional: reconciliation or payment bill hex data")
 	inputBill.Refresh()
 	objs.Add(inputBill)
