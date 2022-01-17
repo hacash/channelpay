@@ -13,9 +13,12 @@ func init() {
 	fontPaths := findfont.List()
 	for _, path := range fontPaths {
 
-		if strings.Contains(path, "simkai") ||
-			strings.Contains(path, "simhei") ||
-			strings.Contains(path, "simsun") {
+		if strings.Contains(path, "uming.ttc") ||
+			strings.Contains(path, "ukai.ttc") ||
+			strings.Contains(path, "simkai.ttf") ||
+			strings.Contains(path, "simhei.ttf") ||
+			strings.Contains(path, "simsun.ttf") ||
+			strings.Contains(path, "STHeiti") {
 			//fmt.Println(path)
 			os.Setenv("FYNE_FONT", path)
 			break
