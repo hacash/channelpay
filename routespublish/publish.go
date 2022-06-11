@@ -12,11 +12,11 @@ import (
 type PayRoutesPublish struct {
 	config *PayRoutesPublishConfig
 
-	// 数据缓存
+	// Data cache
 	dataAllNodes []byte
 	dataAllGraph []byte
 
-	// 管理
+	// Administration
 	routingManager *payroutes.RoutingManager
 }
 
@@ -33,10 +33,10 @@ func NewPayRoutesPublish(config *PayRoutesPublishConfig) *PayRoutesPublish {
 	}
 }
 
-// 开始
+// start
 func (p *PayRoutesPublish) Start() {
 
-	// 从目录读取配置
+	// Read configuration from directory
 	e := p.routingManager.LoadAllNodesAndRelationshipFormDisk(
 		p.config.DataSourceDir, &p.dataAllNodes, &p.dataAllGraph,
 	)
@@ -46,13 +46,13 @@ func (p *PayRoutesPublish) Start() {
 		fmt.Printf("current update log file num is %d.\n", p.routingManager.GetUpdateLastestPageNum())
 	}
 
-	// 从磁盘读取更新日志
+	// Read update log from disk
 	p.DoUpdateByReadLogFile()
 
-	// 事件处理
+	// event processing 
 	go p.loop()
 
-	// 监听
+	// monitor
 	go p.listen(p.config.WssListenPort)
 
 }

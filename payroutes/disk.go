@@ -19,48 +19,48 @@ const (
  * 从磁盘读取节点及关系表
  */
 func (p *RoutingManager) LoadAllNodesAndRelationshipFormDisk(datadir string, datanodes, datagraph *[]byte) error {
-	// 锁定
+	// locking
 	p.nodeUpdateLock.Lock()
 	defer p.nodeUpdateLock.Unlock()
 
 	var e error
 
-	// 读取状态
+	// Read status
 	statname := path.Join(datadir, NodeRoutesDataFileNameOfState)
 	numbt, e := ioutil.ReadFile(statname)
 	if e == nil && len(numbt) == 4 {
-		// 解析状态
+		// Resolution status
 		e = p.RebuildNodesAndRelationshipUnsafe(NodeRoutesDataFileNameOfState, numbt)
 		if e != nil {
 			return e
 		}
 	}
 
-	// 读取节点及关系
+	// Read nodes and relationships
 	if p.nodeUpdateLastestPageNum > 0 {
 
-		// 读取全部节点
+		// Read all nodes
 		nodesfn := path.Join(datadir, NodeRoutesDataFileNameOfNodes)
 		nodesbts, e := ioutil.ReadFile(nodesfn)
 		if e == nil && nodesbts != nil {
-			// 解析全部节点
+			// Resolve all nodes
 			e = p.RebuildNodesAndRelationshipUnsafe(NodeRoutesDataFileNameOfNodes, nodesbts)
 			if e != nil {
 				return e
 			}
-			*datanodes = nodesbts // 拷贝出去使用
+			*datanodes = nodesbts // Copy out for use
 		}
 
-		// 读取全部关系
+		// Read all relationships
 		graphfn := path.Join(datadir, NodeRoutesDataFileNameOfGraph)
 		graphbts, e := ioutil.ReadFile(graphfn)
 		if e == nil && graphbts != nil {
-			// 解析全部关系
+			// Resolve all relationships
 			e = p.RebuildNodesAndRelationshipUnsafe(NodeRoutesDataFileNameOfGraph, graphbts)
 			if e != nil {
 				return e
 			}
-			*datagraph = graphbts // 拷贝出去使用
+			*datagraph = graphbts // Copy out for use
 		}
 
 	}
@@ -75,35 +75,35 @@ func (p *RoutingManager) RebuildNodesAndRelationshipUnsafe(fnamety string, conbt
 	var e error
 	if fnamety == NodeRoutesDataFileNameOfState {
 
-		// 状态
+		// state
 		var curpagenum uint32 = 0
 		curpagenum = binary.BigEndian.Uint32(conbts)
 		p.nodeUpdateLastestPageNum = curpagenum
 
 	} else if fnamety == NodeRoutesDataFileNameOfNodes {
 
-		// 节点
-		// 解析全部节点
+		// node
+		// Resolve all nodes
 		var fseek uint32 = 0
-		var nodeById = make(map[uint32]*PayRelayNode)   // 节点
-		var nodeByName = make(map[string]*PayRelayNode) // 节点
+		var nodeById = make(map[uint32]*PayRelayNode)   // node
+		var nodeByName = make(map[string]*PayRelayNode) // node
 		for {
 			var node = &PayRelayNode{}
 			fseek, e = node.Parse(conbts, fseek)
 			if e != nil {
-				break // 全部解析完毕
+				break // All parsing completed
 			}
 			nodeById[uint32(node.ID)] = node
-			nodeByName[strings.ToLower(node.IdentificationName.Value())] = node // 忽略大小写
+			nodeByName[strings.ToLower(node.IdentificationName.Value())] = node // ignore case
 		}
 		p.nodeById = nodeById
-		p.nodeByName = nodeByName // 读取完毕
+		p.nodeByName = nodeByName // Read complete
 
 	} else if fnamety == NodeRoutesDataFileNameOfGraph {
 
-		// 关系
-		// 解析全部关系
-		var graphDatas = make([]*ChannelRelationship, 0, len(conbts)/8) // 关系表
+		// relationship
+		// Resolve all relationships
+		var graphDatas = make([]*ChannelRelationship, 0, len(conbts)/8) // Relation table
 		for i := 0; i+7 < len(conbts); i += 8 {
 			n1 := binary.BigEndian.Uint32(conbts[i : i+4])
 			n2 := binary.BigEndian.Uint32(conbts[i+4 : i+8])
@@ -111,11 +111,11 @@ func (p *RoutingManager) RebuildNodesAndRelationshipUnsafe(fnamety string, conbt
 				fields.VarUint4(n1), fields.VarUint4(n2),
 			})
 		}
-		p.graphDatas = graphDatas // 读取完毕
+		p.graphDatas = graphDatas // Read complete
 
 	}
 
-	// 全部完成
+	// All complete
 	return nil
 }
 
@@ -124,12 +124,12 @@ func (p *RoutingManager) RebuildNodesAndRelationshipUnsafe(fnamety string, conbt
  */
 func (p *RoutingManager) FlushAllNodesAndRelationshipToDiskUnsafe(datadir string, datanodes, datagraph *[]byte) error {
 
-	// 判断有无数据
+	// Judge whether there is data
 	if p.nodeUpdateLastestPageNum == 0 {
 		return nil
 	}
 
-	// 保存节点表
+	// Save node table
 	var nodesbuf = bytes.NewBuffer(nil)
 	for _, v := range p.nodeById {
 		nbts, _ := v.Serialize()
@@ -137,7 +137,7 @@ func (p *RoutingManager) FlushAllNodesAndRelationshipToDiskUnsafe(datadir string
 	}
 	*datanodes = nodesbuf.Bytes()
 
-	// 保存关系表
+	// Save relationship table
 	var graphbuf = bytes.NewBuffer(nil)
 	for _, v := range p.graphDatas {
 		nbts, _ := v.Serialize()
@@ -145,11 +145,11 @@ func (p *RoutingManager) FlushAllNodesAndRelationshipToDiskUnsafe(datadir string
 	}
 	*datagraph = graphbuf.Bytes()
 
-	// 保存状态
+	// Save status
 	statbts := make([]byte, 4)
 	binary.BigEndian.PutUint32(statbts, p.nodeUpdateLastestPageNum)
 
-	// 写入磁盘
+	// Write to disk
 	return p.ForceWriteAllNodesAndRelationshipToDiskUnsafe(datadir, statbts, nodesbuf.Bytes(), graphbuf.Bytes())
 }
 
@@ -160,32 +160,32 @@ func (p *RoutingManager) ForceWriteAllNodesAndRelationshipToDiskUnsafe(datadir s
 
 	var e error
 
-	// 判断有无数据
+	// Judge whether there is data
 	if p.nodeUpdateLastestPageNum == 0 {
 		return nil
 	}
 
-	// 保存节点表
+	// Save node table
 	nodesfn := path.Join(datadir, NodeRoutesDataFileNameOfNodes)
 	e = ioutil.WriteFile(nodesfn, datanodes, 0777)
 	if e != nil {
 		return e
 	}
 
-	// 保存关系表
+	// Save relationship table
 	graphfn := path.Join(datadir, NodeRoutesDataFileNameOfGraph)
 	e = ioutil.WriteFile(graphfn, datagraph, 0777)
 	if e != nil {
 		return e
 	}
 
-	// 保存状态
+	// Save status
 	statname := path.Join(datadir, NodeRoutesDataFileNameOfState)
 	e = ioutil.WriteFile(statname, statbts, 0777)
 	if e != nil {
 		return e
 	}
 
-	// 全部保存完毕
+	// All saved
 	return nil
 }

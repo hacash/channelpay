@@ -10,22 +10,22 @@ type ServicerConfig struct {
 
 	WssListenPort int
 
-	PaySourceDataDir    string // 支付数据储存
-	RoutesSourceDataDir string // 路由数据储存
+	PaySourceDataDir    string // Payment data storage
+	RoutesSourceDataDir string // Routing data storage
 
-	SelfIdentificationName string // 本机服务商识别名称
-	LoadRoutesUrl          string // 下发路由数据
+	SelfIdentificationName string // Local service provider identification name
+	LoadRoutesUrl          string // Send routing data
 
-	FullNodeRpcUrl string // Hacash 全节点数据接口地址
+	FullNodeRpcUrl string // Hacash all node data interface address
 
-	// 数据修改
-	ServiceCustomerChannelsAdd    string // 要添加的客户服务通道列表
-	ServiceCustomerChannelsCancel string // 取消服务
+	// Data modification
+	ServiceCustomerChannelsAdd    string // List of customer service channels to add
+	ServiceCustomerChannelsCancel string // Cancel service
 
-	// 节点结算通道配置文件
+	// Node settlement channel profile
 	RelaySettlementChannelsJsonFile string
 
-	// 签名机私钥列表
+	// Signer private key list
 	SignatureMachinePrivateKeySetupList string
 }
 
@@ -62,18 +62,18 @@ func NewServicerConfig(cnffile *sys.Inicnf) *ServicerConfig {
 
 	cnf.FullNodeRpcUrl = section.Key("full_node_rpc_url").MustString("http://127.0.0.1:3381")
 
-	// 数据节点
+	// Data node
 	section2 := cnffile.Section("channel")
-	// 要添加的客户服务通道列表
+	// List of customer service channels to add
 	cnf.ServiceCustomerChannelsAdd = section2.Key("service_customer_channels_add").MustString("")
-	// 取消服务
+	// Cancel service
 	cnf.ServiceCustomerChannelsCancel = section2.Key("service_customer_channels_cancel").MustString("")
-	// 节点间结算通道
+	// Inter node settlement channel
 	cnf.RelaySettlementChannelsJsonFile = section2.Key("relay_settlement_channels_json_file").MustString("./hacash_relay_settlement_channels_json_file.json")
 
-	// 密码
+	// password
 	section3 := cnffile.Section("password")
-	// 签名机私钥
+	// Signer private key
 	cnf.SignatureMachinePrivateKeySetupList = section3.Key("signature_machine_password_setup_list").MustString("")
 	// ok
 	return cnf

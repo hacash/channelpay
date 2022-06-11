@@ -10,10 +10,10 @@ import (
 */
 
 type MsgLogin struct {
-	ProtocolVersion fields.VarUint2     // 客户端协议版本号，用于升级和向前兼容
-	ChannelId       fields.ChannelId    // 通道id
-	CustomerAddress fields.Address      // 客户侧地址
-	LanguageSet     fields.StringMax255 // 语言设置
+	ProtocolVersion fields.VarUint2     // Client protocol version number for upgrade and forward compatibility
+	ChannelId       fields.ChannelId    // Channel ID
+	CustomerAddress fields.Address      // Customer side address
+	LanguageSet     fields.StringMax255 // Language settings
 }
 
 func (m MsgLogin) Type() uint8 {

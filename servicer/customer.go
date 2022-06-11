@@ -16,11 +16,11 @@ func (s *Servicer) checkCustomerActive() {
 		susary = append(susary, v)
 	}
 
-	// 检查时间，30秒心跳过期
+	// Check time, 30 seconds heartbeat expired
 	tnck := time.Now().Unix() - 30
 	for _, v := range susary {
 		if v.GetLastestHeartbeatTime().Unix() < tnck {
-			// 超过30秒没有心跳，断开连接
+			// No heartbeat for more than 30 seconds, disconnect
 			//fmt.Println("v.GetLastestHeartbeatTime().Unix() < tnck CLOSE")
 			v.ChannelSide.WsConn.Close()
 			s.RemoveCustomerFromPoolUnsafe(v)

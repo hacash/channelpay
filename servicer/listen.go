@@ -17,13 +17,13 @@ func (s *Servicer) startListen() {
 		w.Write([]byte(`{"server":"HacashChannelPaymentServicerNode"}`))
 	})
 
-	// 处理顾客连接
+	// Handling customer connections
 	mux.Handle("/customer/connect", websocket.Handler(s.connectCustomerHandler))
 
-	// 处理中继支付连接
+	// Process relay payment connection
 	mux.Handle("/relaypay/connect", websocket.Handler(s.connectRelayPayHandler))
 
-	// 设置监听的端口
+	// Set listening port
 	portstr := strconv.Itoa(s.config.WssListenPort)
 
 	server := &http.Server{

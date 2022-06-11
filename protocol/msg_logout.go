@@ -10,7 +10,7 @@ import (
  */
 
 type MsgCustomerLogout struct {
-	PostBack fields.StringMax255 // 回传信息
+	PostBack fields.StringMax255 // Return message
 }
 
 func (m MsgCustomerLogout) Type() uint8 {

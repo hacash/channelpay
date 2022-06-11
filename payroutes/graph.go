@@ -9,8 +9,8 @@ import (
  * 通道连通关系
  */
 type ChannelRelationship struct {
-	LeftNodeID  fields.VarUint4 // 节点 1
-	RightNodeID fields.VarUint4 // 节点 2
+	LeftNodeID  fields.VarUint4 // Node 1
+	RightNodeID fields.VarUint4 // Node 2
 
 }
 

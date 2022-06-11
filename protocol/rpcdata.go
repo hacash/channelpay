@@ -17,11 +17,11 @@ type RpcDataChannelInfo struct {
 	//LockBlock    fields.VarUint2 // 单方面结束通道要锁定的区块数量
 	ChannelId    fields.ChannelId
 	LeftAddress  fields.Address
-	LeftAmount   fields.Amount // 抵押数额1
+	LeftAmount   fields.Amount // Mortgage amount 1
 	RightAddress fields.Address
-	RightAmount  fields.Amount   // 抵押数额2
-	ReuseVersion fields.VarUint4 // 重用版本号 从 1 开始
-	Status       fields.VarUint1 // 已经关闭并结算等状态
+	RightAmount  fields.Amount   // Mortgage amount 2
+	ReuseVersion fields.VarUint4 // Reuse version number from 1
+	Status       fields.VarUint1 // Closed and settled
 }
 
 func (r *RpcDataChannelInfo) GetLeftAndRightTotalAmount() *fields.Amount {
@@ -31,7 +31,7 @@ func (r *RpcDataChannelInfo) GetLeftAndRightTotalAmount() *fields.Amount {
 
 func ParseRpcDataChannelInfoByJSON(cid fields.ChannelId, bytes []byte) (*RpcDataChannelInfo, error) {
 
-	// 解析
+	// analysis
 	laddr, e := jsonparser.GetString(bytes, "left_address")
 	if e != nil && len(laddr) > 0 {
 		return nil, fmt.Errorf("Channel not find in rpc data api.")
@@ -48,7 +48,7 @@ func ParseRpcDataChannelInfoByJSON(cid fields.ChannelId, bytes []byte) (*RpcData
 	ramt, _ := jsonparser.GetString(bytes, "right_amount")
 	ramount, _ := fields.NewAmountFromFinString(ramt)
 
-	// 返回
+	// return
 	channel := &RpcDataChannelInfo{
 		//LockBlock:    fields.VarUint2(lockhei),
 		ChannelId:    cid,
@@ -62,7 +62,7 @@ func ParseRpcDataChannelInfoByJSON(cid fields.ChannelId, bytes []byte) (*RpcData
 	return channel, nil
 }
 
-// 向全节点请求数据
+// Request data from all nodes
 func RequestRpcReqChannelInfo(fullNodeRpcUrl string, cid fields.ChannelId) (*RpcDataChannelInfo, error) {
 
 	rurl := fullNodeRpcUrl +
@@ -71,18 +71,18 @@ func RequestRpcReqChannelInfo(fullNodeRpcUrl string, cid fields.ChannelId) (*Rpc
 	if e != nil {
 		return nil, e
 	}
-	// 请求成功
+	// Request succeeded
 	bytes, e := ioutil.ReadAll(resp.Body)
 	if e != nil {
 		return nil, e
 	}
 	//fmt.Println(rurl, string(bytes))
-	// 判断错误
+	// Misjudgment
 	errmsg, e := jsonparser.GetString(bytes, "errmsg")
 	if e == nil && len(errmsg) > 0 {
 		return nil, fmt.Errorf(errmsg)
 	}
-	// 解析
+	// analysis
 	return ParseRpcDataChannelInfoByJSON(cid, bytes)
 }
 
@@ -92,7 +92,7 @@ type RpcDataSernodeInfo struct {
 	Gateway fields.StringMax255
 }
 
-// 向全节点请求数据
+// Request data from all nodes
 func RequestChannelAndSernodeInfoFromLoginResolutionApi(apiUrl string, cid fields.ChannelId, sername string) (*RpcDataChannelInfo, *RpcDataSernodeInfo, error) {
 
 	requrl := apiUrl + fmt.Sprintf("/customer/login_resolution?channel_id=%s&servicer_name=%s", hex.EncodeToString(cid), sername)
@@ -101,17 +101,17 @@ func RequestChannelAndSernodeInfoFromLoginResolutionApi(apiUrl string, cid field
 	if e != nil {
 		return nil, nil, e
 	}
-	// 请求成功
+	// Request succeeded
 	bytes, e := ioutil.ReadAll(resp.Body)
 	if e != nil {
 		return nil, nil, e
 	}
-	// 判断错误
+	// Misjudgment
 	errmsg, e := jsonparser.GetString(bytes, "errmsg")
 	if e == nil && len(errmsg) > 0 {
 		return nil, nil, fmt.Errorf(errmsg)
 	}
-	// 解析1
+	// Resolution 1
 	bytes1, _, _, e := jsonparser.Get(bytes, "sernode")
 	if e != nil {
 		return nil, nil, e
@@ -123,7 +123,7 @@ func RequestChannelAndSernodeInfoFromLoginResolutionApi(apiUrl string, cid field
 	var nodeinfo = &RpcDataSernodeInfo{}
 	nodeinfo.Gateway = fields.CreateStringMax255(gateway)
 
-	// 解析2
+	// Resolution 2
 	bytes2, _, _, e := jsonparser.Get(bytes, "channel")
 	if e != nil {
 		return nil, nil, e
@@ -133,6 +133,6 @@ func RequestChannelAndSernodeInfoFromLoginResolutionApi(apiUrl string, cid field
 		return nil, nil, e
 	}
 
-	// 成功
+	// success
 	return chaninfo, nodeinfo, nil
 }

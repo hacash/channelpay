@@ -12,7 +12,7 @@ import (
  */
 func (s *Servicer) MsgHandlerClientInitiateReconciliation(newcur *chanpay.Customer, msg *protocol.MsgClientInitiateReconciliation) {
 
-	// 返回错误消息
+	// Return error message
 	errorReturnString := func(err string) {
 		errobj := &protocol.MsgError{
 			ErrCode: 1,
@@ -21,7 +21,7 @@ func (s *Servicer) MsgHandlerClientInitiateReconciliation(newcur *chanpay.Custom
 		protocol.SendMsg(newcur.ChannelSide.WsConn, errobj)
 	}
 
-	// 最新账单
+	// Latest bill
 	oldbill := newcur.ChannelSide.GetReconciliationBill()
 	if oldbill == nil {
 		errorReturnString("reconciliation bill bot find.")
@@ -35,22 +35,22 @@ func (s *Servicer) MsgHandlerClientInitiateReconciliation(newcur *chanpay.Custom
 	billobj := oldbill.(*channel.OffChainCrossNodeSimplePaymentReconciliationBill)
 	newbill := billobj.ConvertToRealtimeReconciliation()
 
-	// 检查并签署对账单
+	// Check and sign the statement
 	sign, e := s.signmachine.CheckReconciliationFillNeedSignature(newbill, &msg.SelfSign)
 	if e != nil || sign == nil {
 		errorReturnString("CheckReconciliationFillNeedSignature error.")
-		return // 签名检查失败
+		return // signature check failed
 	}
 
-	// 保存新的对账单
+	// Save new statement
 	s.billstore.UpdateStoreBalanceBill(billobj.GetChannelId(), newbill)
 	newcur.ChannelSide.SetReconciliationBill(newbill)
 
-	// 消息返回
+	// Message return
 	protocol.SendMsg(newcur.ChannelSide.WsConn, &protocol.MsgServicerRespondReconciliation{
 		SelfSign: *sign,
 	})
-	// 成功
+	// success
 	return
 
 }

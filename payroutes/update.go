@@ -13,7 +13,7 @@ import (
 
 /*
 
-// 更新文件格式
+// Update file format
 
 {
 	nodes: {
@@ -54,7 +54,7 @@ func createNodeFromJsonVal(data []byte, old *PayRelayNode) *PayRelayNode {
 	} else {
 		newnode = &PayRelayNode{}
 	}
-	// 解析
+	// analysis
 	// id
 	id, _ := jsonparser.GetInt(data, "id")
 	if id > 0 {
@@ -113,7 +113,7 @@ func createNodeFromJsonVal(data []byte, old *PayRelayNode) *PayRelayNode {
 	return newnode
 }
 
-// 更新
+// to update
 func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databytes []byte, filenum uint32) error {
 
 	var createNodeIdFromJsonVal = func(data []byte) uint32 {
@@ -121,22 +121,22 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 		return uint32(id)
 	}
 
-	// 节点
+	// node
 	jnodeval, _, _, _ := jsonparser.Get(databytes, "nodes")
 	if jnodeval != nil {
 
-		// 节点新增
+		// Node addition
 		ists, iststy, _, _ := jsonparser.Get(jnodeval, "insert")
 		if ists != nil && iststy == jsonparser.Array {
 			jsonparser.ArrayEach(ists, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				//fmt.Println(jsonparser.Get(value, "url"))
 				node := createNodeFromJsonVal(value, nil)
 				if node != nil && node.ID > 0 && node.IdentificationName.Len > 0 {
-					// 检查重复
+					// Check repetition
 					if _, has := p.nodeById[uint32(node.ID)]; has {
 						fmt.Printf("ForceUpdataNodesAndRelationshipByJsonBytes Insert Error: node id <%d> already exists.\n", node.ID)
 					} else {
-						// 插入节点
+						// Insert node
 						p.nodeById[uint32(node.ID)] = node
 						p.nodeByName[strings.ToLower(node.IdentificationName.Value())] = node
 					}
@@ -144,18 +144,18 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 			})
 		}
 
-		// 修改节点
+		// Modify node
 		chgts, chgty, _, _ := jsonparser.Get(jnodeval, "update")
 		if ists != nil && chgty == jsonparser.Array {
 			jsonparser.ArrayEach(chgts, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				//fmt.Println(jsonparser.Get(value, "url"))
 				nodeid := createNodeIdFromJsonVal(value)
 				if nodeid > 0 {
-					// 检查重复
+					// Check repetition
 					if oldnode, has := p.nodeById[uint32(nodeid)]; !has {
 						fmt.Printf("ForceUpdataNodesAndRelationshipByJsonBytes Update Error: node id <%d> not find.\n", nodeid)
 					} else {
-						// 更新节点
+						// Update node
 						delete(p.nodeByName, strings.ToLower(oldnode.IdentificationName.Value()))
 						newnode := createNodeFromJsonVal(value, oldnode) // 创建节点
 						p.nodeById[uint32(newnode.ID)] = newnode
@@ -165,18 +165,18 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 			})
 		}
 
-		// 删除节点
+		// Delete node
 		delts, delty, _, _ := jsonparser.Get(jnodeval, "delete")
 		if ists != nil && delty == jsonparser.Array {
 			jsonparser.ArrayEach(delts, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				//fmt.Println(jsonparser.Get(value, "url"))
 				nodeid := createNodeIdFromJsonVal(value)
 				if nodeid > 0 {
-					// 检查重复
+					// Check repetition
 					if oldnode, has := p.nodeById[uint32(nodeid)]; !has {
 						fmt.Printf("ForceUpdataNodesAndRelationshipByJsonBytes Delete Error: node id <%d> not find.\n", nodeid)
 					} else {
-						// 删除节点
+						// Delete node
 						delete(p.nodeByName, strings.ToLower(oldnode.IdentificationName.Value()))
 						delete(p.nodeById, uint32(oldnode.ID))
 					}
@@ -186,10 +186,10 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 
 	}
 
-	// 关系
+	// relationship
 	jgraphval, _, _, _ := jsonparser.Get(databytes, "graph")
 	if jgraphval != nil {
-		// 关系新增
+		// New relation
 		ists, iststy, _, _ := jsonparser.Get(jgraphval, "add")
 		if ists != nil && iststy == jsonparser.Array {
 			jsonparser.ArrayEach(ists, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
@@ -198,17 +198,17 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 				n2, _ := jsonparser.GetInt(value, "[1]")
 				id2 := fields.VarUint4(n2)
 				if id1 > 0 && id2 > 0 {
-					// add 查找
+					// Add lookup
 					hav := false
 					for _, v := range p.graphDatas {
 						if (v.LeftNodeID == id1 && v.RightNodeID == id2) ||
 							(v.LeftNodeID == id2 && v.RightNodeID == id1) {
-							hav = true // 已经存在
+							hav = true // Already exists
 							break
 						}
 					}
 					if !hav {
-						// 增加
+						// increase
 						p.graphDatas = append(p.graphDatas, &ChannelRelationship{
 							LeftNodeID:  id1,
 							RightNodeID: id2,
@@ -217,7 +217,7 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 				}
 			})
 		}
-		// 关系删除
+		// Relationship deletion
 		delts, delty, _, _ := jsonparser.Get(jgraphval, "del")
 		if delts != nil && delty == jsonparser.Array {
 			// del
@@ -227,17 +227,17 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 				n2, _ := jsonparser.GetInt(value, "[1]")
 				id2 := fields.VarUint4(n2)
 				if id1 > 0 && id2 > 0 {
-					// del 查找
+					// Del find
 					var hav int = -1
 					for i, v := range p.graphDatas {
 						if (v.LeftNodeID == id1 && v.RightNodeID == id2) ||
 							(v.LeftNodeID == id2 && v.RightNodeID == id1) {
-							hav = i // 已经存在
+							hav = i // Already exists
 							break
 						}
 					}
 					if hav > -1 {
-						// 删除数组元素
+						// Delete array elements
 						p.graphDatas = append(p.graphDatas[:hav], p.graphDatas[hav+1:]...)
 					}
 				}
@@ -246,7 +246,7 @@ func (p *RoutingManager) ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(databy
 		}
 	}
 
-	// 更新最新页码
+	// Update latest page number
 	p.nodeUpdateLastestPageNum = filenum
 	return nil
 }

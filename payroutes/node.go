@@ -23,7 +23,7 @@ type PayRelayNode struct {
 
 }
 
-// 是否为合法的节点名称
+// Is it a legal node name
 func IsValidServicerIdentificationName(name string) bool {
 	for _, v := range name {
 		if false == (v > 'a' && v < 'z' || v > 'A' && v < 'Z' || v > '0' && v < '9') {
@@ -165,10 +165,10 @@ func (m PayRelayNode) Serialize() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// 预估手续费
+// Estimated service charge
 func (m PayRelayNode) PredictFeeForPay(payamt *fields.Amount) *fields.Amount {
 	nofee := fields.NewEmptyAmount()
-	// 计算比例
+	// Calculate scale
 	bv := payamt.GetValue()
 	feeb := new(big.Int).Div(bv, new(big.Int).SetUint64(10000*10000))
 	feeb = new(big.Int).Mul(feeb, new(big.Int).SetUint64(uint64(m.FeeRatio)))
@@ -176,13 +176,13 @@ func (m PayRelayNode) PredictFeeForPay(payamt *fields.Amount) *fields.Amount {
 	if e != nil {
 		return nofee // error
 	}
-	// 限制高低
+	// Limit height
 	if m.FeeMin.IsNotEmpty() && fee.LessThan(&m.FeeMin) {
-		fee = m.FeeMin.Copy() // 最低
+		fee = m.FeeMin.Copy() // minimum
 	} else if m.FeeMax.IsNotEmpty() && fee.MoreThan(&m.FeeMax) {
-		fee = m.FeeMax.Copy() // 最高
+		fee = m.FeeMax.Copy() // highest
 	}
-	// 字段大小限制
+	// Field size limit
 	retfee, _, e := fee.CompressForMainNumLen(4, false)
 	if e != nil {
 		return nofee

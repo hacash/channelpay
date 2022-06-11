@@ -11,7 +11,7 @@ import (
  * 签名机
  */
 
-// 签名机
+// Signature machine
 type SignatureMachine struct {
 	acc *account.Account
 }
@@ -29,14 +29,14 @@ func (s *SignatureMachine) TemporaryStoragePrivateKeyForSign(string) {}
 func (s *SignatureMachine) RemovePrivateKey(fields.Address)          {}
 func (s *SignatureMachine) CleanAllPrivateKey()                      {}
 
-// 签署对账单并之后检查全部签名
+// Sign the statement and then check all signatures
 func (s *SignatureMachine) CheckReconciliationFillNeedSignature(bill *channel.OffChainFormPaymentChannelRealtimeReconciliation, checksign *fields.Sign) (*fields.Sign, error) {
 	return nil, nil
 }
 
-// 将通道交易送入签名机验证数据，并自动填充签名
+// Send the channel transaction to the signer to verify the data, and automatically fill in the signature
 func (s *SignatureMachine) CheckPaydocumentAndFillNeedSignature(paydocs *channel.ChannelPayCompleteDocuments, mustaddrs []fields.Address) (*fields.SignListMax255, error) {
-	// 检查账户
+	// Check account
 	if len(mustaddrs) != 1 {
 		return nil, fmt.Errorf("mustaddrs length error")
 	}
@@ -44,9 +44,9 @@ func (s *SignatureMachine) CheckPaydocumentAndFillNeedSignature(paydocs *channel
 		return nil, fmt.Errorf("mustaddrs error, need address %s but got %s",
 			s.acc.AddressReadable, mustaddrs[0].ToReadable())
 	}
-	// 下游是否完成签名，已经在调用本函数前完成检查
+	// Whether the downstream has completed the signature has been checked before calling this function
 
-	// 执行签名
+	// Execute signature
 	sghx := paydocs.ChainPayment.GetSignStuffHash()
 	signature, e := s.acc.Private.Sign(sghx)
 	if e != nil {
@@ -57,7 +57,7 @@ func (s *SignatureMachine) CheckPaydocumentAndFillNeedSignature(paydocs *channel
 		Signature: signature.Serialize64(),
 	}
 
-	// 返回签名
+	// Return signature
 	return &fields.SignListMax255{
 		Count: 1,
 		Signs: []fields.Sign{signobj},

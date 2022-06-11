@@ -4,10 +4,10 @@ package servicer
  * 票据相关
  *
 
-// 创建对账单
-// cusispay 客户方支付还是收款
+// Create statement
+// Cusispay customer payment or collection
 func (s *Servicer) CreateChannelPayTransferProveBody(usr *chanpay.Customer, trsAmt *fields.Amount, cusispay bool) (*channel.ChannelChainTransferProveBodyInfo, error) {
-	// 创建支付方对账单
+	// Create payer statement
 	var autoNumber1 = fields.VarUint8(1)
 	usrbill := usr.ChannelSide.GetReconciliationBill()
 	if usrbill != nil {
@@ -26,10 +26,10 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *chanpay.Customer, trsA
 	paySideBls := usr.GetChannelCapacityAmountForRemotePay()
 	collectSideBls := usr.GetChannelCapacityAmountForRemoteCollect()
 	if cusispay == false {
-		// 客户端收款, 调换位置
+		// Client collection, exchange location
 		paySideBls, collectSideBls = collectSideBls, paySideBls
 	}
-	// 检查
+	// inspect
 	if paySideBls.LessThan(trsAmt) {
 		return nil, fmt.Errorf("Channel customer balance not enough.")
 	}
@@ -41,7 +41,7 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *chanpay.Customer, trsA
 	if e != nil {
 		return nil, fmt.Errorf("Channel balance distribution error: %s", e.Error())
 	}
-	// 支付方向，通道分配
+	// Payment direction, channel allocation
 	cusisleft := usr.CustomerAddressIsLeft()
 	if cusisleft && cusispay {
 	}
@@ -54,35 +54,35 @@ func (s *Servicer) CreateChannelPayTransferProveBody(usr *chanpay.Customer, trsA
 		trsbody.PayDirection = channel.ChannelTransferProveBodyPayDirectionRightToLeft
 		trsbody.LeftBalance, trsbody.RightBalance = *collectSideDis, *paySideDis
 	}
-	// 创建成功
+	// Created successfully
 	return trsbody, nil
 }
 
-// 创建通道支付票据
+// Create channel payment ticket
 func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *chanpay.Customer, collectusr *chanpay.Customer, trsAmt *fields.Amount, realpayamtwithfee *fields.Amount, orderHashCheck fields.HashHalfChecker) (*channel.ChannelPayCompleteDocuments, error) {
 
-	// 创建支付方对账单
+	// Create payer statement
 	ispay1 := true
 	paybody, e := s.CreateChannelPayTransferProveBody(payusr, realpayamtwithfee, ispay1)
 	if e != nil {
 		return nil, fmt.Errorf("CreateChannelPayTransferProveBody for Pay side Error: %s", e.Error())
 	}
 
-	// 创建收款方对账单
+	// Create payee statement
 	ispay2 := false
 	collectbody, e := s.CreateChannelPayTransferProveBody(payusr, trsAmt, ispay2)
 	if e != nil {
 		return nil, fmt.Errorf("CreateChannelPayTransferProveBody for Collect side Error: %s", e.Error())
 	}
 
-	// realpayamtwithfee 和 trsAmt 的差额即为节点的手续费了
+	// The difference between realpayamtwithfee and trsamt is the service charge of the node
 
-	// 建立票据集合
+	// Create ticket collection
 	proveBodys := make([]*channel.ChannelChainTransferProveBodyInfo, 2)
 	proveBodys[0] = paybody
 	proveBodys[1] = collectbody
 
-	// 建立支付签名票据
+	// Create payment signature bill
 	bdchecker1 := paybody.GetSignStuffHashHalfChecker()
 	bdchecker2 := collectbody.GetSignStuffHashHalfChecker()
 	curtimes := fields.BlockTxTimestamp(time.Now().Unix())
@@ -97,21 +97,21 @@ func (s *Servicer) CreateChannelPayTransferTransactionForLocalPay(payusr *chanpa
 		},
 		MustSigns: nil,
 	}
-	// 地址去重和排序
+	// Address de duplication and sorting
 	billforsign.MustSignCount, billforsign.MustSignAddresses =
 		channel.CleanSortMustSignAddresses([]fields.Address{
 			payusr.ChannelSide.channelInfo.LeftAddress, payusr.ChannelSide.channelInfo.RightAddress,
 			collectusr.ChannelSide.channelInfo.LeftAddress, collectusr.ChannelSide.channelInfo.RightAddress,
 		})
 
-	// 空签名填充
+	// Empty signature fill
 	signnum := int(billforsign.MustSignCount)
 	billforsign.MustSigns = make([]fields.Sign, signnum)
 	for i := 0; i < signnum; i++ {
 		billforsign.MustSigns[i] = fields.CreateEmptySign()
 	}
 
-	// 创建完毕，返回
+	// After creation, return to
 	allbill := &channel.ChannelPayCompleteDocuments{
 		ProveBodys: &channel.ChannelPayProveBodyList{
 			Count: fields.VarUint1(2),

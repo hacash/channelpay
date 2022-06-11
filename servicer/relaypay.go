@@ -17,7 +17,7 @@ func (s *Servicer) dealRelayInitiatePayment(ws *websocket.Conn, msg *protocol.Ms
 	cid := msg.ChannelId
 	ourIsLeft := true
 
-	// 查询结算通道表
+	// Query settlement channel table
 	okfind := false
 	s.settlenoderChgLock.RLock()
 	nlist := s.settlenoder[sname]
@@ -39,26 +39,26 @@ func (s *Servicer) dealRelayInitiatePayment(ws *websocket.Conn, msg *protocol.Ms
 	side.WsConn = ws
 	e := s.InitializeChannelSide(side, nil, ourIsLeft)
 	if e != nil {
-		return e // 初始化 ChannelSide 错误
+		return e // Error initializing channelside
 	}
 
-	// 初始化 node
+	// Initialize node
 	node := chanpay.NewRelayPayNodeConnect(sname, cid, ourIsLeft, side)
 
-	// 调起支付
+	// Transfer payment
 	s.MsgHandlerRequestInitiatePayment(nil, node, &msg.InitPayMsg)
 
-	// 监听消息并等待
+	// Listen for messages and wait
 	msgch := make(chan protocol.Message, 1)
 	subobj := side.SubscribeMessage(msgch)
 
-	// 等待
+	// wait for
 	for {
 		select {
 		case <-subobj.Err():
 			return nil
 		case <-msgch:
-			continue // 等待
+			continue // wait for
 		}
 	}
 

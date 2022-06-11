@@ -29,7 +29,7 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 
 	window := app.NewWindow("Hacash Channel Chain Payment User Login")
 
-	// 显示登录窗口
+	// Show login window
 	loginBox := createLoginTab(app, window)
 	billBox := createOutputBillTab(app, window)
 
@@ -38,26 +38,26 @@ func CreateShowRunLoginWindow(app fyne.App) fyne.Window {
 		container.NewTabItem("Export bill", billBox),
 	)
 
-	// 显示窗口
+	// Display window
 	NewVScrollAndShowWindow(window, &windowSize, tabs)
 	return window
 
 }
 
-// 创建导出票据窗口
+// Create export ticket window
 func createOutputBillTab(app fyne.App, window fyne.Window) *fyne.Container {
 
 	objs := container.NewVBox()
 
 	// title
 	title := widget.NewLabel("\nExport locally stored payment bill")
-	title.Alignment = fyne.TextAlignCenter // 居中对齐
+	title.Alignment = fyne.TextAlignCenter // Center align
 	title.TextStyle = fyne.TextStyle{
 		Bold: true,
 	}
 	objs.Add(title)
 
-	// 通道id
+	// Channel ID
 	objs.Add(widget.NewLabel("Channel ID:"))
 	inputChannelID := widget.NewEntry()
 	objs.Add(inputChannelID)
@@ -71,9 +71,9 @@ func createOutputBillTab(app fyne.App, window fyne.Window) *fyne.Container {
 	resshow.Wrapping = fyne.TextWrapBreak
 	objs.Add(resshow)
 
-	// 点击导出按钮
+	// Click the Export button
 	okBtn.OnTapped = func() {
-		// 查询本地是否存在票据
+		// Query whether bills exist locally
 		chanid, e := hex.DecodeString(inputChannelID.Text)
 		if e != nil || chanid == nil || len(chanid) != stores.ChannelIdLength {
 			resshow.SetText("Channel ID error.")
@@ -86,7 +86,7 @@ func createOutputBillTab(app fyne.App, window fyne.Window) *fyne.Container {
 			resshow.Refresh()
 			return
 		}
-		// 显示票据
+		// Show tickets
 		content := "Bill exported successfully!\n"
 		content += "---- bill hex data start ----\n"
 		bldt, _ := bill.SerializeWithTypeCode()
@@ -99,14 +99,14 @@ func createOutputBillTab(app fyne.App, window fyne.Window) *fyne.Container {
 	return objs
 }
 
-// 创建登录窗口
+// Create login window
 func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 
 	objs := container.NewVBox()
 
 	// title
 	loginTitle := widget.NewLabel("\nChannel account login")
-	loginTitle.Alignment = fyne.TextAlignCenter // 居中对齐
+	loginTitle.Alignment = fyne.TextAlignCenter // Center align
 	loginTitle.TextStyle = fyne.TextStyle{
 		Bold: true,
 	}
@@ -121,12 +121,12 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	inputAddr.Cursor()
 	objs.Add(inputAddr)
 
-	// 密码or私钥
+	// Password or private key
 	objs.Add(widget.NewLabel("\nPrivate key or Password:"))
 	inputPrikey := widget.NewPasswordEntry()
 	objs.Add(inputPrikey)
 
-	// 对账票据
+	// Reconciliation bill
 	objs.Add(widget.NewLabel("\nReconciliation or payment bill:"))
 	inputBill := widget.NewMultiLineEntry()
 	inputBill.Wrapping = fyne.TextWrapBreak
@@ -146,15 +146,15 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	errorshow.Wrapping = fyne.TextWrapBreak
 	objs.Add(errorshow)
 
-	// 点击登录按钮
+	// Click the login button
 	loginBtn.OnTapped = func() {
 		go func() {
-			// 执行登录
+			// Execute login
 			e := HandlerLogin(inputAddr.Text, inputPrikey.Text, inputBill.Text, app, window, loginBtn)
 			if e != nil {
 				errorshow.SetText(e.Error())
 			} else {
-				// 登录成功，清空数据
+				// Login successful, clear data
 				if DevDebug == false {
 					//inputAddr.SetText("")
 					inputPrikey.SetText("")
@@ -166,7 +166,7 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 		}()
 	}
 
-	// 返回
+	// return
 	return objs
 }
 
@@ -174,12 +174,12 @@ func trimInput(addr string) string {
 	return strings.Trim(addr, " \n")
 }
 
-// 执行登录
+// Execute login
 var isInHandlerLoginState = false
 
 func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window fyne.Window, loginBtn *widget.Button) error {
 	if isInHandlerLoginState {
-		return nil // 正在处理中
+		return nil // Processing
 	}
 	if loginBtn != nil {
 		loginBtn.SetText("waiting...")
@@ -193,12 +193,12 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 		isInHandlerLoginState = false
 	}()
 
-	// 地址和私钥去掉前后空格和换行
+	// Address and private key remove space before and after and line feed
 	addr = trimInput(addr)
 	prikeyorpassword = trimInput(prikeyorpassword)
 	billhex = trimInput(billhex)
 
-	// 必填
+	// Required
 	if len(addr) == 0 {
 		return fmt.Errorf("Please enter the channel address.")
 	}
@@ -206,7 +206,7 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 		return fmt.Errorf("Please enter the Private key or Password.")
 	}
 
-	// 选填的对账票据
+	// Optional reconciliation bill
 	var inputbillobj channel.ReconciliationBalanceBill = nil
 	if len(billhex) > 0 {
 		billdata, e := hex.DecodeString(billhex)
@@ -219,19 +219,19 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 		}
 	}
 
-	// 检查地址格式
+	// Check address format
 	addrobj, e := protocol.ParseChannelAccountAddress(addr)
 	if e != nil {
 		return fmt.Errorf("Parse channel account address error: \n%s", e.Error())
 	}
 
-	// 检查私钥
+	// Check private key
 	loginAcc := account.GetAccountByPrivateKeyOrPassword(prikeyorpassword)
 	if addrobj.Address.NotEqual(loginAcc.Address) {
 		return fmt.Errorf("Private key or Password error.")
 	}
 
-	// 向网络请求服务商ip地址解析和通道状态数据
+	// Requesting IP address resolution and channel status data from the network service provider
 	apiurl := GetLoginResolutionApiDomain()
 	chaninfo, nodeinfo, e := protocol.RequestChannelAndSernodeInfoFromLoginResolutionApi(
 		apiurl, addrobj.ChannelId, addrobj.ServicerName.Value())
@@ -239,18 +239,18 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 		return fmt.Errorf("request %s login resolution error: %s", apiurl, e.Error())
 	}
 
-	// 请求完毕
+	// Request complete
 	//fmt.Println(chaninfo.Status, nodeinfo.Gateway.Value())
 
-	// 创建用户端
+	// Create client
 	userObj := CreateChannelPayUser(loginAcc, addrobj, chaninfo)
 
 	dtitle := "Reconciliation bill check"
-	// 等待确认对话框
+	// Waiting for confirmation dialog
 	waitConfirmDialog := func(msgcon string, cbfyes, cbfno func()) bool {
 		if window == nil {
 			cbfyes()
-			return true // 测试是直接选 yes
+			return true // The test is to directly select Yes
 		}
 		var resck bool
 		next := sync.WaitGroup{}
@@ -258,10 +258,10 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 		dia := dialog.NewConfirm(dtitle, msgcon, func(b bool) {
 			resck = b
 			if b && cbfyes != nil {
-				cbfyes() // yes 回调
+				cbfyes() // Yes callback
 			}
 			if !b && cbfno != nil {
-				cbfno() // no 回调
+				cbfno() // No callback
 			}
 			next.Done()
 		}, window)
@@ -270,26 +270,26 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 			Height: 200,
 		})
 		dia.Show()
-		next.Wait() // 等待
+		next.Wait() // wait for
 		return resck
 	}
 
-	// 读取本地票据
+	// Read local ticket
 	localbill, e := userObj.LoadLastBillFromDisk()
 
-	// 检查通道已经重启，票据作废
+	// Check that the channel has been restarted and the bill is voided
 	if localbill != nil {
 		l1 := localbill.GetReuseVersion()
 		if l1 != uint32(chaninfo.ReuseVersion) {
-			// 本地不存在票据，是否使用远程对账票据
+			// Bill does not exist locally, whether to use remote reconciliation bill
 			waitConfirmDialog("Your local reconciliation bill has expired.\n Are you sure to delete it?", func() {
-				// 确认删除本地过期票据
-				userObj.DeleteLastBillOnDisk() // 删除
+				// Confirm to delete local overdue bills
+				userObj.DeleteLastBillOnDisk() // delete
 			}, nil)
 		}
 	}
 
-	// 开始登录流程
+	// Start login process
 	wsptcl := "wss"
 	if DevDebug {
 		wsptcl = "ws"
@@ -297,98 +297,98 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 	wsurl := fmt.Sprintf("%s://%s/customer/connect", wsptcl, nodeinfo.Gateway.Value())
 	e = userObj.ConnectServicer(wsurl)
 	if e != nil {
-		// 登录失败
+		// Login failed
 		return fmt.Errorf("Connect servicer %s error: %s", wsurl, e.Error())
 	}
 	remotebill := userObj.GetReconciliationBalanceBillAfterLoginFromRemote()
 
-	// 输入票据对比
+	// Input bill comparison
 	if inputbillobj != nil {
 		if localbill == nil {
-			// 本地不存在票据，直接使用输入的票据
+			// There is no bill in the local area, and the entered bill is used directly
 			localbill = inputbillobj
 		} else {
-			// 对比票据版本
+			// Compare bill versions
 			if inputbillobj.GetReuseVersion() < localbill.GetReuseVersion() ||
 				inputbillobj.GetAutoNumber() < localbill.GetAutoNumber() {
-				// 输入的票据版本过小询问是否强制使用
+				// The entered bill version is too small. Ask whether to force use
 				waitConfirmDialog("The reconciliation bill version entered\n is older than that saved locally. \nDo you want to force the entered\n bill to be used?", func() {
 					localbill = inputbillobj
 				}, nil)
 			} else {
-				// 输入的票据版本大于本地保存，不询问，直接使用
+				// The entered bill version is greater than that saved locally. You can use it directly without asking
 				localbill = inputbillobj
 			}
 		}
 	}
 
-	// 远程票据对比
+	// Remote bill comparison
 	if remotebill != nil {
-		// 远程存在票据
+		// Remote presence ticket
 		var msgcon string = ""
 		if localbill == nil {
-			// 本地不存在对账票据，是否使用你的支付服务商发送的对账票据？
+			// There is no reconciliation bill in the local area. Do you want to use the reconciliation bill sent by your payment service provider?
 			msgcon = "There is no reconciliation bill \nin the local area. \nDo you want to use the reconciliation bill \nsent by your payment service provider?"
 		} else {
-			// 本地存在票据，对比票据版本
+			// Bills exist locally. Compare bill versions
 			l1, l2 := localbill.GetReuseVersionAndAutoNumber()
 			r1, r2 := remotebill.GetReuseVersionAndAutoNumber()
 			if l1 < r1 || l2 < r2 {
-				// 本地的对账票据序列号落后于远程，是否强制使用你的支付服务商发送的对账票据？
+				// The serial number of the local reconciliation bill lags behind that of the remote one. Is it mandatory to use the reconciliation bill sent by your payment service provider?
 				msgcon = "The serial number of the local \nreconciliation bill lags behind that \nof the remote reconciliation bill. \nIs it mandatory to use the reconciliation bill\n sent by your payment service provider?"
 			} else if l1 > r1 || l2 > r2 {
-				// 本地的对账票据序列号高于远程，是否强制使用你的支付服务商发送的对账票据？
+				// The serial number of the local reconciliation bill is higher than that of the remote reconciliation bill. Is it mandatory to use the reconciliation bill sent by your payment service provider?
 				msgcon = "The serial number of the local reconciliation bill\n is higher than that of the remote reconciliation bill.\n Is it mandatory to use the reconciliation bill\n sent by your payment service provider?"
 			}
 		}
 		if len(msgcon) > 0 {
-			// 本地不存在票据或者票据落后，是否使用远程对账票据
+			// Whether to use remote reconciliation bill if there is no bill in the local area or the bill is backward
 			useok := waitConfirmDialog(msgcon, func() {
-				userObj.SaveLastBillToDisk(remotebill) // 将远程票据保存到本地
-				localbill = remotebill                 // 使用远程票据
+				userObj.SaveLastBillToDisk(remotebill) // Save remote ticket locally
+				localbill = remotebill                 // Use remote ticket
 			}, nil)
 			if !useok {
 				userObj.Logout()
-				return nil // 不使用，则退出
+				return nil // Exit if not used
 			}
 		} else {
-			// 序列号检查一致，继续通过
+			// Serial number is consistent, continue to pass
 		}
 
 	} else {
-		// 远程不存在票据
+		// Remote ticket does not exist
 		if localbill != nil {
-			// 本地存在票据
+			// Locally existing bills
 			waitConfirmDialog("The bill does not exist remotely,\n but exists locally.\n Please contact your payment\n service provider for processing.", nil, nil)
 			userObj.Logout()
-			return nil // 不使用，则退出
+			return nil // Exit if not used
 		} else {
-			// 本地也不存在票据，通过
+			// There is no bill in the local area, and the
 		}
 	}
 
-	// 打开通道支付界面
+	// Open channel payment interface
 	client := CreateChannelPayClient(app, userObj, window)
 	e = client.ShowWindow()
 	if e != nil {
-		userObj.Logout() // 显示发生错误，退出
+		userObj.Logout() // Display error, exit
 		return e
 	}
 
-	// 设置票据
+	// Set up ticket
 	userObj.servicerStreamSide.ChannelSide.SetReconciliationBill(localbill)
 
-	// 打开消息监听
+	// Open message listening
 	client.startMsgHandler()
 
-	// 开始监听消息
+	// Start listening for messages
 	userObj.servicerStreamSide.ChannelSide.StartMessageListen()
 
-	// 登录窗口影藏
+	// Login window shadow
 	if DevDebug == false {
 		window.Hide()
 	}
 
-	// 成功完成
+	// Successfully completed
 	return nil
 }

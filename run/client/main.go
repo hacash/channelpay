@@ -9,7 +9,7 @@ import (
 
 func init() {
 
-	// 中文字体支持
+	// Chinese font support
 	fontPaths := findfont.List()
 	for _, path := range fontPaths {
 
@@ -35,10 +35,10 @@ func main() {
 }
 
 func mainRelease() {
-	// 开发者模式
+	// Developer mode
 	client.DevDebug = false
 
-	// 启动
+	// start-up
 	client.MainNewAppRun()
 
 	//回退字体设置
