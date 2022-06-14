@@ -13,7 +13,7 @@ import (
  */
 func (p *PayRoutesPublish) customerLoginResolution(w http.ResponseWriter, r *http.Request) {
 
-	// 通道id
+	// Channel ID
 	cidstr := protocol.CheckParamString(r, "channel_id", "")
 	if len(cidstr) == 0 {
 		protocol.ResponseErrorString(w, "channel_id must give.")
@@ -25,34 +25,34 @@ func (p *PayRoutesPublish) customerLoginResolution(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// 支付服务商名
+	// Name of payment service provider
 	svername := protocol.CheckParamString(r, "servicer_name", "")
 	if len(svername) == 0 {
 		protocol.ResponseErrorString(w, "servicer_name must give.")
 		return
 	}
 
-	// 查找服务商是否存在
+	// Find whether the service provider exists
 	snode := p.routingManager.FindNodeByName(svername)
 	if snode == nil {
 		protocol.ResponseError(w, fmt.Errorf("servicer %s not find in routes list.", svername))
 		return
 	}
 
-	// 读取通道状态
+	// Read channel status
 	channelInfo, e := protocol.RequestRpcReqChannelInfo(p.config.FullNodeRpcURL, cidbt)
 	if e != nil {
 		protocol.ResponseError(w, fmt.Errorf("request channel info error: ", e.Error()))
 		return
 	}
 
-	// 检查通道状态
+	// Check channel status
 	if channelInfo.Status != stores.ChannelStatusOpening {
 		protocol.ResponseError(w, fmt.Errorf("channel status is not on opening!"))
 		return
 	}
 
-	// 返回
+	// return
 	var nodeinfo = make(map[string]interface{})
 	var chaninfo = make(map[string]interface{})
 	// node
@@ -65,7 +65,7 @@ func (p *PayRoutesPublish) customerLoginResolution(w http.ResponseWriter, r *htt
 	chaninfo["right_address"] = channelInfo.RightAddress.ToReadable()
 	chaninfo["right_amount"] = channelInfo.RightAmount.ToFinString()
 
-	// 返回解析
+	// Return resolution
 	protocol.ResponseData(w, map[string]interface{}{
 		"sernode": nodeinfo,
 		"channel": chaninfo,

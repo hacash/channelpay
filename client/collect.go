@@ -27,36 +27,36 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 		}
 	}
 
-	// 是否关闭收款
+	// Close collection
 	if c.user.servicerStreamSide.ChannelSide.IsInCloseAutoCollectionStatus() {
 		returnErrorString("Target account closed collection.")
 		return
 	}
 
-	// 检查状态
+	// Check status
 	if c.user.servicerStreamSide.IsInBusinessExclusive() {
 		returnErrorString("target collection address channel occupied.")
 		return
 	}
 
-	// 创建支付操作包
+	// Create payment operation package
 	payact = chanpay.NewChannelPayActionInstance()
 	payact.SetUpstreamSide(c.user.servicerStreamSide)
-	// 设置签名机
+	// Setting up a signer
 	signmch := NewSignatureMachine(c.user.selfAcc)
 	payact.SetSignatureMachine(signmch)
-	// 设置我必须签名的地址
+	// Set the address I must sign
 	payact.SetMustSignAddresses([]fields.Address{c.user.servicerStreamSide.ChannelSide.OurAddress})
 
-	// 订阅日志，启动日志订阅
+	// Log subscription, start log subscription
 	logschan := make(chan *chanpay.PayActionLog, 2)
 	go func() {
 		for {
 			log := <-logschan
 			if log == nil || log.IsEnd {
-				return // 订阅结束
+				return // End of subscription
 			}
-			// 显示日志
+			// Show log
 			c.ShowLogString(log.Content, log.IsSuccess, log.IsError)
 		}
 	}()
@@ -64,22 +64,22 @@ func (c *ChannelPayClient) dealInitiatePayment(msg *protocol.MsgRequestInitiateP
 		IsSuccess: true,
 		Content:   fmt.Sprintf("---- new collecting %s at %s ----", msg.PayAmount.ToFinString(), time.Now().Format("2006-01-02 15:04:05.999")),
 	}
-	payact.SubscribeLogs(logschan) // 日志订阅
+	payact.SubscribeLogs(logschan) // Log subscription
 
-	// 启动消息监听
+	// Start message listening
 	payact.StartOneSideMessageSubscription(true, c.user.servicerStreamSide.ChannelSide)
 
-	// 支付、收款成功后的回调
+	// Callback after successful payment and collection
 	payact.SetSuccessedBackCall(c.callbackPaymentSuccessed)
 
-	// 初始化票据
+	// Initialize ticket
 	e := payact.InitCreateEmptyBillDocumentsByInitPayMsg(msg)
 	if e != nil {
-		returnErrorString(e.Error()) // 初始化错误
+		returnErrorString(e.Error()) // Initialization error
 		return
 	}
 
-	// 自动执行签名支付
+	// Automatic signature payment
 	return
 
 }

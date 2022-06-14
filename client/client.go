@@ -14,7 +14,7 @@ import (
 	"sync"
 )
 
-// 待支付结构
+// Structure to be paid
 type pendingPayment struct {
 	address     protocol.ChannelAccountAddress
 	amount      fields.Amount
@@ -29,11 +29,11 @@ type ChannelPayClient struct {
 	loginWindow fyne.Window
 	payui       lorca.UI
 	//window fyne.Window
-	user *ChannelPayUser // 用户端
-	// 待支付缓存数据
+	user *ChannelPayUser // Client
+	// Pending payment cache data
 	pendingPaymentObj *pendingPayment
 
-	// 状态锁定
+	// Status lock
 	statusMutex sync.Mutex
 }
 
@@ -46,7 +46,7 @@ func CreateChannelPayClient(app fyne.App, user *ChannelPayUser, lgwd fyne.Window
 	}
 }
 
-// 更新界面显示
+// Update interface display
 func (c *ChannelPayClient) UpdateBalanceShow() {
 	cside := c.user.servicerStreamSide.ChannelSide
 	bill := cside.GetReconciliationBill()
@@ -64,7 +64,7 @@ func (c *ChannelPayClient) UpdateBalanceShow() {
 	))
 }
 
-// 启动交易
+// Start transaction
 func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	//fmt.Println("BindFuncInitiatePayment:", addr, amt)
 	addr = strings.Trim(addr, "\n ")
@@ -75,10 +75,10 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	if len(amt) == 0 {
 		return "Please enter the amount."
 	}
-	// 解析 HDNS
+	// Resolve hdns
 	diakind, ok := protocol.IsHDNSaddress(addr)
 	if ok {
-		// 执行解析
+		// Perform resolution
 		apiurl := GetLoginResolutionApiDomain()
 		realaddr, err := protocol.RequestRpcReqDiamondNameServiceFromLoginResolutionApi(apiurl, diakind)
 		if err != nil {
@@ -87,7 +87,7 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 		addrary := strings.Split(addr, "_")
 		addrary[0] = realaddr
 		addr = strings.Join(addrary, "_")
-		// 解析日志打印
+		// Parsing log printing
 		c.ShowStatusLog(fmt.Sprintf("HDNS analyze: diamond(%s) => %s", diakind, realaddr))
 	}
 	acc, e := protocol.ParseChannelAccountAddress(addr)
@@ -98,13 +98,13 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	if e != nil {
 		return fmt.Sprintf("Amount format error: %s", e.Error()) // 错误
 	}
-	// 余额检查
+	// Balance check
 	amtcap := c.user.servicerStreamSide.ChannelSide.GetChannelCapacityAmountOfOur()
 	if amtcap.LessThan(amount) {
 		return fmt.Sprintf("Balance %s not enough for transfer %s",
-			amtcap.ToFinString(), amount.ToFinString()) // 余额不足
+			amtcap.ToFinString(), amount.ToFinString()) // Sorry, your credit is running low
 	}
-	// 发送预查询支付信息
+	// Send pre query payment information
 	//fmt.Println(addrobj, amount)
 	msg := &protocol.MsgRequestPrequeryPayment{
 		PayAmount:        *amount,
@@ -126,23 +126,23 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	return ""
 }
 
-// 是否关闭自动收款
+// Close automatic collection
 func (c *ChannelPayClient) BindFuncChangeAutoCollection(isopen int) {
 	if isopen == 0 {
-		// 关闭收款
-		c.user.servicerStreamSide.ChannelSide.StartCloseAutoCollectionStatus() // 启用状态
+		// Close collection
+		c.user.servicerStreamSide.ChannelSide.StartCloseAutoCollectionStatus() // Enable status
 	} else {
-		// 开启收款
-		c.user.servicerStreamSide.ChannelSide.ClearCloseAutoCollectionStatus() // 清除标记
+		// Open collection
+		c.user.servicerStreamSide.ChannelSide.ClearCloseAutoCollectionStatus() // Clear mark
 	}
 }
 
-// 显示支付错误
+// Show payment errors
 func (c *ChannelPayClient) ShowPaymentErrorString(err string) {
 	c.payui.Eval(fmt.Sprintf(`ShowPaymentError("%s")`, strings.Replace(err, `"`, ``, -1)))
 }
 
-// 显示日志
+// Show log
 func (c *ChannelPayClient) ShowLogString(log string, isok bool, iserr bool) {
 	okmark := "0"
 	if isok {
@@ -159,7 +159,7 @@ func (c *ChannelPayClient) ShowStatusLog(log string) {
 	c.payui.Eval(fmt.Sprintf(`ShowStatusLog("%s")`, strings.Replace(log, `"`, ``, -1)))
 }
 
-// 显示界面
+// Display interface
 func (c *ChannelPayClient) ShowWindow() error {
 
 	// Create UI with basic HTML passed via data URI
@@ -167,7 +167,7 @@ func (c *ChannelPayClient) ShowWindow() error {
 	ww := 965
 	wh := 665
 	if sysType == "windows" {
-		ww = 995 // win系统避免出现滚动条
+		ww = 995 // The win system avoids scrollbars
 		wh = 674
 	}
 	ui, err := lorca.New("", "", ww, wh)
@@ -181,31 +181,31 @@ func (c *ChannelPayClient) ShowWindow() error {
 
 	c.payui = ui // ui
 
-	// 绑定操作函数
+	// Binding operation function
 
-	// 开关自动收款
+	// Switch automatic collection
 	ui.Bind("ChangeAutoCollection", c.BindFuncChangeAutoCollection)
-	// 预查询支付
+	// Pre query payment
 	ui.Bind("PrequeryPayment", c.BindFuncPrequeryPayment)
-	// 确认或取消启动支付
+	// Confirm or cancel start payment
 	ui.Bind("ConfirmPayment", c.BindFuncConfirmPayment)
 	ui.Bind("CancelPayment", c.BindFuncCancelPayment)
 
-	// 初始化账户信息
+	// Initialize account information
 	ui.Eval(fmt.Sprintf(`InitAccount("%s","%s")`,
 		c.user.selfAddr.ChannelId.ToHex(), c.user.selfAddr.ToReadable(false)))
 	//fmt.Println(ui.Eval("2+2").Int())
 
-	// 更新余额
+	// Update balance
 	c.UpdateBalanceShow()
 
 	go func() {
 		<-ui.Done()
 		//fmt.Println("!!!!!!!!!!!!!!!!!!")
-		// 退出
+		// sign out
 		c.user.Logout()
 		if c.loginWindow != nil {
-			c.loginWindow.Show() // 重新显示登录窗口
+			c.loginWindow.Show() // Redisplay login window
 		}
 	}()
 
@@ -219,7 +219,7 @@ func (c *ChannelPayClient) ShowWindow_old() error {
 		panic("user   *ChannelPayUser == nil")
 	}
 
-	// 显示登录窗口
+	// Show login window
 	objsleft := container.NewVBox()
 	objsright := container.NewVBox()
 	sizevb := fyne.Size{
@@ -239,7 +239,7 @@ func (c *ChannelPayClient) ShowWindow_old() error {
 
 	objsright.Add(widget.NewLabel("123"))
 
-	// 左右布局
+	// Left and right layout
 	objsleft.Resize(sizevb)
 	objsleft.Move(fyne.Position{40,40})
 	objsright.Resize(sizevb)
@@ -250,30 +250,30 @@ func (c *ChannelPayClient) ShowWindow_old() error {
 
 	wraply.Refresh()
 
-	// 窗口布局
-	// 尺寸
+	// Window layout
+	// size
 	wsize := &fyne.Size{
 		Width:  960,
 		Height: 740,
 	}
 
-	// 创建并显示窗口
+	// Create and display windows
 	c.window = NewVScrollWindowAndShow(c.app, wsize, wraply, "Channel pay and collect")
 	c.window.SetPadded(true)
 
-	// 拦截关闭事件
+	// Intercept shutdown events
 	c.window.SetCloseIntercept(func() {
 		if c.user == nil || c.user.IsClosed() {
-			c.window.Close() // 未登录直接关闭
+			c.window.Close() // Close without login
 			return
 		}
-		// 询问是否关闭
+		// Ask whether to close
 		dia := dialog.NewConfirm("Attention", "You can't collect after closing. Do you want to close the window and logout?", func(b bool) {
 			if b {
-				c.window.Close() // 确认关闭
+				c.window.Close() // Confirm close
 			}
 		}, c.window)
-		dia.Show() // 显示
+		dia.Show() // display
 
 	})
 

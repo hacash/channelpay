@@ -7,7 +7,7 @@ import (
 	"github.com/hacash/core/channel"
 )
 
-// 对账返回
+// Reconciliation return
 func (c *ChannelPayClient) DealServicerRespondReconciliation(msg *protocol.MsgServicerRespondReconciliation) {
 
 	c.user.changeMux.Lock()
@@ -15,7 +15,7 @@ func (c *ChannelPayClient) DealServicerRespondReconciliation(msg *protocol.MsgSe
 
 	waitBill := c.user.waitRealtimeReconciliation
 	if waitBill == nil {
-		return // 没有单子
+		return // No list
 	}
 	tarAddr := account.NewAddressFromPublicKeyV0(msg.SelfSign.PublicKey)
 	if waitBill.LeftAddress.Equal(tarAddr) {
@@ -23,46 +23,46 @@ func (c *ChannelPayClient) DealServicerRespondReconciliation(msg *protocol.MsgSe
 	} else {
 		waitBill.RightSign = msg.SelfSign
 	}
-	// 检查单据签名
+	// Check document signature
 	if e := waitBill.CheckAddressAndSign(); e != nil {
-		c.user.waitRealtimeReconciliation = nil // 签名检查失败
+		c.user.waitRealtimeReconciliation = nil // signature check failed
 		return
 	}
 
-	// 更新票据状态
+	// Update bill status
 	c.updateReconciliationBalanceBill(waitBill)
 }
 
-// 启动对账
+// Start reconciliation
 func (c *ChannelPayClient) InitiateReconciliation(bill *channel.OffChainCrossNodeSimplePaymentReconciliationBill) {
 
 	//c.changeMux.Lock()
 	//defer c.changeMux.Unlock()
 
-	// 状态
+	// state
 	chanside := c.user.servicerStreamSide.ChannelSide
-	chanside.StartBusinessExclusive() // 状态独占
+	chanside.StartBusinessExclusive() // State exclusive
 	defer chanside.ClearBusinessExclusive()
 
-	// 转换为对账单
+	// Convert to statement
 	recbill := bill.ConvertToRealtimeReconciliation()
 
-	// 计算我方签名
+	// Calculate our signature
 	sign, _, e := recbill.FillTargetSignature(c.user.selfAcc)
 	if e != nil {
-		return // 失败
+		return // fail
 	}
 
-	// 记录
+	// record
 	c.user.waitRealtimeReconciliation = recbill
 
-	// 向服务端发送签名
+	// Send signature to the server
 	conn := chanside.WsConn
 	e = protocol.SendMsg(conn, &protocol.MsgClientInitiateReconciliation{
 		SelfSign: *sign,
 	})
 	if e != nil {
 		fmt.Println(e.Error())
-		return // 失败
+		return // fail
 	}
 }

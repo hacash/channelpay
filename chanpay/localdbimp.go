@@ -49,7 +49,7 @@ func (l *LocalDBImpOfDataSource) Init() error {
 	return nil
 }
 
-// 储存通用对账票据，检查对账单据的合法性
+// Save general reconciliation bills and check the validity of reconciliation documents
 func (l *LocalDBImpOfDataSource) UpdateStoreBalanceBill(channelId fields.ChannelId, bill channel.ReconciliationBalanceBill) error {
 	// data
 	data, e := bill.SerializeWithTypeCode()
@@ -60,12 +60,12 @@ func (l *LocalDBImpOfDataSource) UpdateStoreBalanceBill(channelId fields.Channel
 	return l.ldb.Put(l.key("bill", channelId), data, nil)
 }
 
-// 读取最新票据
+// Read latest ticket
 func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.ChannelId) (channel.ReconciliationBalanceBill, error) {
 	// save
 	data, e := l.ldb.Get(l.key("bill", channelId), nil)
 	if e != nil {
-		return nil, nil // 不存在，未找到
+		return nil, nil // Does not exist, not found
 	}
 	// parse
 	bill, _, e := channel.ParseReconciliationBalanceBillByPrefixTypeCode(data, 0)
@@ -74,7 +74,7 @@ func (l *LocalDBImpOfDataSource) GetLastestBalanceBill(channelId fields.ChannelI
 
 /********************************************************************/
 
-// 设定服务通道
+// Set service channel
 func (l *LocalDBImpOfDataSource) setupChannel(channelId fields.ChannelId, weAreRightSide bool) error {
 	key := l.key("chanset", channelId)
 	vside := uint8(1)
@@ -84,7 +84,7 @@ func (l *LocalDBImpOfDataSource) setupChannel(channelId fields.ChannelId, weAreR
 	return l.ldb.Put(key, []byte{vside}, nil)
 }
 
-// 查询服务通道
+// Query service channel
 func (l *LocalDBImpOfDataSource) checkChannel(channelId fields.ChannelId) (bool, bool) {
 	key := l.key("chanset", channelId)
 	data, e := l.ldb.Get(key, nil)
@@ -95,52 +95,52 @@ func (l *LocalDBImpOfDataSource) checkChannel(channelId fields.ChannelId) (bool,
 		}
 		return true, weAreRightSide
 	}
-	// 未找到
+	// not found
 	return false, false
 }
 
-// 取消服务通道
+// Cancel service channel
 func (l *LocalDBImpOfDataSource) cancelChannel(channelId fields.ChannelId) error {
 	key := l.key("chanset", channelId)
 	return l.ldb.Delete(key, nil)
 }
 
-// 设定服务通道
+// Set service channel
 func (l *LocalDBImpOfDataSource) SetupCustomerPayChannel(channelId fields.ChannelId) error {
 	weAreRightSide := true
 	return l.setupChannel(channelId, weAreRightSide)
 }
 
-// 查询服务通道
+// Query service channel
 func (l *LocalDBImpOfDataSource) CheckCustomerPayChannel(channelId fields.ChannelId) bool {
 	ok, _ := l.checkChannel(channelId)
 	return ok
 }
 
-// 取消服务通道
+// Cancel service channel
 func (l *LocalDBImpOfDataSource) CancelCustomerPayChannel(channelId fields.ChannelId) error {
 	return l.cancelChannel(channelId)
 }
 
 /********************************************************************/
 
-// 设定服务商结算通道，weAreRightSide 本方地址是否为右侧
+// Set the settlement channel of the service provider. Is our address on the right
 func (l *LocalDBImpOfDataSource) SetupRelaySettlementPayChannel(channelId fields.ChannelId, weAreRightSide bool) error {
 	return l.setupChannel(channelId, weAreRightSide)
 }
 
-// 查询服务商结算通道是否存在，前一个bool 表示是否存在，后一个bool=weIsRightSide
+// Query whether the settlement channel of the service provider exists. The previous bool indicates whether it exists, and the latter bool=weisrightside
 func (l *LocalDBImpOfDataSource) CheckRelaySettlementPayChannel(channelId fields.ChannelId) (bool, bool) {
 	return l.checkChannel(channelId)
 }
 
-// 取消服务商结算通道
+// Cancel the settlement channel of the service provider
 func (l *LocalDBImpOfDataSource) CancelRelaySettlementPayChannel(channelId fields.ChannelId) error {
 	return l.cancelChannel(channelId)
 }
 
 /********************************************************************/
-// 签名机
+// Signature machine
 
 func (s *LocalDBImpOfDataSource) TemporaryStoragePrivateKeyForSign(privatekeyOrPassword string) {
 	s.accMapLock.Lock()
@@ -150,14 +150,14 @@ func (s *LocalDBImpOfDataSource) TemporaryStoragePrivateKeyForSign(privatekeyOrP
 	//fmt.Println(acc.AddressReadable)
 }
 
-// 移除私钥
+// Remove private key
 func (s *LocalDBImpOfDataSource) RemovePrivateKey(address fields.Address) {
 	s.accMapLock.Lock()
 	defer s.accMapLock.Unlock()
 	delete(s.tempPrivateKeys, string(address))
 }
 
-// 移除私钥
+// Remove private key
 func (s *LocalDBImpOfDataSource) ReadPrivateKey(address fields.Address) *account.Account {
 	s.accMapLock.RLock()
 	defer s.accMapLock.RUnlock()
@@ -167,20 +167,20 @@ func (s *LocalDBImpOfDataSource) ReadPrivateKey(address fields.Address) *account
 	return nil
 }
 
-// 清除所有私钥
+// Clear all private keys
 func (s *LocalDBImpOfDataSource) CleanAllPrivateKey() {
 	s.accMapLock.Lock()
 	defer s.accMapLock.Unlock()
 	s.tempPrivateKeys = make(map[string]*account.Account)
 }
 
-// 签署对账单
+// Sign statement
 func (s *LocalDBImpOfDataSource) CheckReconciliationFillNeedSignature(bill *channel.OffChainFormPaymentChannelRealtimeReconciliation, checksign *fields.Sign) (*fields.Sign, error) {
 	var e error
 	leftacc := s.ReadPrivateKey(bill.LeftAddress)
 	var fillsign *fields.Sign = nil
 	if leftacc != nil {
-		// 填充签名
+		// Fill in signature
 		bill.RightSign = *checksign
 		fillsign, _, e = bill.FillTargetSignature(leftacc)
 		if e != nil {
@@ -188,10 +188,10 @@ func (s *LocalDBImpOfDataSource) CheckReconciliationFillNeedSignature(bill *chan
 		}
 	}
 	if fillsign == nil {
-		// 再次尝试右侧
+		// Try the right side again
 		rightacc := s.ReadPrivateKey(bill.RightAddress)
 		if rightacc != nil {
-			// 填充签名
+			// Fill in signature
 			bill.LeftSign = *checksign
 			fillsign, _, e = bill.FillTargetSignature(rightacc)
 			if e != nil {
@@ -202,18 +202,18 @@ func (s *LocalDBImpOfDataSource) CheckReconciliationFillNeedSignature(bill *chan
 	if fillsign == nil {
 		return nil, fmt.Errorf("No address of private key that can be signed.")
 	}
-	// 检查所有签名
+	// Check all signatures
 	if e = bill.CheckAddressAndSign(); e != nil {
 		return nil, fmt.Errorf("Signature verification failed.")
 	}
 
-	// 成功
+	// success
 	return fillsign, nil
 }
 
-// 签署支付
+// Signed payment
 func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *channel.ChannelPayCompleteDocuments, mustaddrs []fields.Address) (*fields.SignListMax255, error) {
-	// 检查时间戳，不签署已经过期 60s 后的票据
+	// Check the time stamp, and do not sign bills that have expired for 60s
 	ctimes := time.Now().Unix()
 	if int64(paydocs.ChainPayment.Timestamp) > ctimes {
 		return nil, fmt.Errorf("The bill timestamp error")
@@ -222,14 +222,14 @@ func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *c
 		return nil, fmt.Errorf("The bill has expired and cannot be signed")
 	}
 
-	// 检查服务的通道
-	// 找到两个通道，并且必须是顺序挨着的
+	// Check the channel of the service
+	// Two channels are found and must be next to each other in sequence
 	/*
 		var paychan1 *channel.ChannelChainTransferProveBodyInfo = nil
 		var paychan2 *channel.ChannelChainTransferProveBodyInfo = nil
 		bodys := paydocs.ProveBodys.ProveBodys
 		for i := 0; i < len(bodys)-1; i++ {
-			// 必须两个连续的通道
+			// Must be two consecutive channels
 			if hav1 := s.CheckCustomerPayChannel(bodys[i].ChannelId); hav1 {
 				if hav2 := s.CheckCustomerPayChannel(bodys[i+1].ChannelId); hav2 {
 					paychan1 = bodys[i]
@@ -238,23 +238,23 @@ func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *c
 			}
 		}
 		if paychan1 == nil || paychan2 == nil {
-			// 没找到支持的通道
+			// No supported channels found
 			return nil, fmt.Errorf("Channel not support in check list.")
 		}
 	*/
 
-	// 不做任何余额或者下游签名的检查，这些检查都放在外层
+	// Do not check any balances or downstream signatures. These checks are placed on the outer layer
 	// TODO:: 或者第三方签名机实现时再做必要的检查
-	// 这里直接找出需要的私钥，直接签名
+	// Here, you can find the required private key and sign it directly
 
-	// 填充签名，返回签名
+	// Fill in signature, return signature
 	s.accMapLock.RLock()
 	defer s.accMapLock.RUnlock()
 
-	// 签名表
+	// Signature form
 	var signs = fields.CreateEmptySignListMax255()
 
-	// 取出私钥
+	// Remove the private key
 	for _, v := range mustaddrs {
 		if acc, hav := s.tempPrivateKeys[string(v)]; hav {
 			sign, e := paydocs.ChainPayment.DoSignFillPosition(acc)
@@ -263,11 +263,11 @@ func (s *LocalDBImpOfDataSource) CheckPaydocumentAndFillNeedSignature(paydocs *c
 			}
 			signs.Append(*sign)
 		} else {
-			// 私钥没找到
+			// Private key not found
 			return nil, fmt.Errorf("Must sign address %s not find in sign machine account server list.", v.ToReadable())
 		}
 	}
 
-	// 签名成功，返回
+	// Signature succeeded, return
 	return signs, nil
 }

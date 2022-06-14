@@ -8,32 +8,32 @@ import (
 	"github.com/hacash/core/stores"
 )
 
-// 初始化通道
+// Initialize channel
 func (s *Servicer) InitializeChannelSide(side *chanpay.ChannelSideConn, remoteAddress fields.Address, weIsLeft bool) error {
 	if side == nil || side.ChannelId == nil {
 		return fmt.Errorf("side or side.ChannelId is nil")
 	}
 	cid := side.ChannelId
 
-	// 读取通道状态
+	// Read channel status
 	chanInfo, e := protocol.RequestRpcReqChannelInfo(s.config.FullNodeRpcUrl, cid)
 	if e != nil {
 		return fmt.Errorf("request channel info fail: %s", e.Error())
 	}
 
-	// 检查通道状态
+	// Check channel status
 	if chanInfo.Status != stores.ChannelStatusOpening {
 		return fmt.Errorf("channel status is not on opening!")
 	}
 
 	var remoteIsRight = true
 
-	// 查询是否在channel服务列表内
+	// Query whether it is in the channel service list
 	if remoteAddress != nil {
-		// 客户服务通道
+		// Customer service channel
 		serhav := s.chanset.CheckCustomerPayChannel(cid)
 		if serhav == false {
-			// 不在服务列表内
+			// Not in service list
 			return fmt.Errorf("channel %s is not in the service list.", cid.ToHex())
 		}
 		remoteIsLeft := remoteAddress.Equal(chanInfo.LeftAddress)
@@ -42,7 +42,7 @@ func (s *Servicer) InitializeChannelSide(side *chanpay.ChannelSideConn, remoteAd
 			return fmt.Errorf("remoteAddress %s is not in the channel addresses.", remoteAddress.ToReadable())
 		}
 	} else {
-		// 中继结算节点通道
+		// Relay settlement node channel
 		if weIsLeft {
 			remoteAddress = chanInfo.RightAddress
 			remoteIsRight = true
@@ -52,8 +52,8 @@ func (s *Servicer) InitializeChannelSide(side *chanpay.ChannelSideConn, remoteAd
 		}
 	}
 
-	// 处理
-	// 读取最新对账单
+	// handle
+	// Read the latest statement
 	bill, e := s.billstore.GetLastestBalanceBill(cid)
 	if e != nil {
 		return fmt.Errorf("load lastest balance bill error: %s", e.Error())
@@ -64,13 +64,13 @@ func (s *Servicer) InitializeChannelSide(side *chanpay.ChannelSideConn, remoteAd
 		side.SetReconciliationBill(bill)
 		if chanLeftAddr.NotEqual(bill.GetLeftAddress()) ||
 			chanRightAddr.NotEqual(bill.GetRightAddress()) {
-			// 票据和通道地址不匹配
+			// Ticket and channel address do not match
 			return fmt.Errorf("channel and bill address not match.")
 		}
 	}
 
-	// 通道和账户信息
-	side.ChannelInfo = chanInfo // 通道Info
+	// Channel and account information
+	side.ChannelInfo = chanInfo // Channel info
 	if remoteIsRight {
 		side.OurAddress = chanLeftAddr
 		side.RemoteAddress = chanRightAddr
@@ -82,17 +82,17 @@ func (s *Servicer) InitializeChannelSide(side *chanpay.ChannelSideConn, remoteAd
 	return nil
 }
 
-// 全新登录一个客户端
+// New login to a client
 func (s *Servicer) LoginNewCustomer(newcur *chanpay.Customer) error {
-	// 初始化
+	// initialization
 	e := s.InitializeChannelSide(newcur.ChannelSide, newcur.ChannelSide.RemoteAddress, false)
 	if e != nil {
 		return e
 	}
 
-	// 开始监听消息
+	// Start listening for messages
 	newcur.ChannelSide.StartMessageListen()
 
-	// 登录成功
+	// Login successful
 	return nil
 }

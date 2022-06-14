@@ -27,24 +27,24 @@ const (
 type ChannelPayUser struct {
 	changeMux sync.Mutex
 
-	// 账户地址
+	// Account address
 	selfAcc  *account.Account
 	selfAddr *protocol.ChannelAccountAddress
 	chanInfo *protocol.RpcDataChannelInfo
 
-	// 本地对账票据
+	// Local reconciliation bill
 	localLatestReconciliationBalanceBill channel.ReconciliationBalanceBill
 
-	// 等待对账单
+	// Waiting for statement
 	waitRealtimeReconciliation *channel.OffChainFormPaymentChannelRealtimeReconciliation
 
-	// 通道链
+	// Channel chain
 	servicerStreamSide *chanpay.RelayPaySettleNoder
 
-	// 消息订阅
+	// Message subscription
 	msgSubObj event.Subscription
 
-	// 是否已经关闭
+	// Has it been closed
 	isClosed bool
 }
 
@@ -57,66 +57,66 @@ func CreateChannelPayUser(acc *account.Account, addr *protocol.ChannelAccountAdd
 	}
 }
 
-// 检查收款通道是否被占用
+// Check whether the collection channel is occupied
 func (c *ChannelPayUser) IsInBusinessExclusive() bool {
 	return c.servicerStreamSide.IsInBusinessExclusive()
 }
 
-// 其中状态独占
+// Where state exclusive
 func (c *ChannelPayUser) StartBusinessExclusive() bool {
 	return c.servicerStreamSide.StartBusinessExclusive()
 }
 
-// 解除状态独占
+// Remove state exclusivity
 func (c *ChannelPayUser) ClearBusinessExclusive() {
 	c.servicerStreamSide.ClearBusinessExclusive()
 }
 
-// 开始发送心跳包
+// Start sending heartbeat packets
 func (c *ChannelPayUser) StartHeartbeat() {
 	for {
-		// 15秒一个心跳包
+		// A heartbeat packet in 15 seconds
 		time.Sleep(time.Second * 14)
 		c.changeMux.Lock()
 		if c.isClosed {
 			c.changeMux.Unlock()
-			return // 结束
+			return // end
 		}
 		c.changeMux.Unlock()
-		// 发送心跳包，忽略错误
+		// Send heartbeat packet, ignore error
 		//fmt.Println("protocol.SendMsg(c.servicerStreamSide.ChannelSide.WsConn, &protocol.MsgHeartbeat{})")
 		protocol.SendMsg(c.servicerStreamSide.ChannelSide.WsConn, &protocol.MsgHeartbeat{})
-		// 判断服务器返回的心跳
+		// Determine the heartbeat returned by the server
 		lastBeatTime := c.servicerStreamSide.ChannelSide.GetLastestHeartbeatTime()
 		tnck := time.Now().Unix() - 60
 		if lastBeatTime.Unix() < tnck {
-			// 60s一分钟都没有收到服务器的心跳包，自动断开
-			c.Logout() // 退出
+			// No heartbeat packet from the server has been received for 60 seconds, and it will be disconnected automatically
+			c.Logout() // sign out
 		}
 	}
 }
 
-// 退出
+// sign out
 func (c *ChannelPayUser) IsClosed() bool {
-	return c.isClosed // 是否已经退出、关闭
+	return c.isClosed // Have you exited or closed
 }
 
 func (c *ChannelPayUser) Logout() {
 	c.changeMux.Lock()
 	defer c.changeMux.Unlock()
 	if c.isClosed {
-		return // 已经退出
+		return // Has exited
 	}
 	c.isClosed = true
 	if c.servicerStreamSide != nil {
 		wsconn := c.servicerStreamSide.ChannelSide.WsConn
-		// 发送退出消息
+		// Send exit message
 		protocol.SendMsg(wsconn, &protocol.MsgCustomerLogout{
 			PostBack: fields.CreateStringMax255(""),
 		})
 		wsconn.Close()
 	}
-	// 关闭订阅
+	// Close subscription
 	if c.msgSubObj != nil {
 		c.msgSubObj.Unsubscribe()
 		c.msgSubObj = nil
@@ -132,52 +132,52 @@ func billfilepath(channelID fields.ChannelId) string {
 
 func LoadBillFromDisk(channelID fields.ChannelId) (channel.ReconciliationBalanceBill, error) {
 	var bill channel.ReconciliationBalanceBill = nil
-	// 读取本地目录
+	// Read local directory
 	fname := billfilepath(channelID)
 	fbts, e := ioutil.ReadFile(fname)
 	if e == nil || len(fbts) > 0 {
-		// 解析文件
+		// Parse file
 		bill, _, e = channel.ParseReconciliationBalanceBillByPrefixTypeCode(fbts, 0)
 	}
-	// 返回
+	// return
 	return bill, nil
 }
 
-// 删除本地票据
+// Delete local ticket
 func (c *ChannelPayUser) DeleteLastBillOnDisk() error {
-	// 读取本地目录
+	// Read local directory
 	fname := billfilepath(c.selfAddr.ChannelId)
 	c.localLatestReconciliationBalanceBill = nil
-	// 删除文件
+	// Delete file
 	return os.Remove(fname)
 }
 
-// 读取本地的对账票据
+// Read local reconciliation bills
 func (c *ChannelPayUser) LoadLastBillFromDisk() (channel.ReconciliationBalanceBill, error) {
 	var bill channel.ReconciliationBalanceBill = nil
-	// 读取本地目录
+	// Read local directory
 	ldbill, e := LoadBillFromDisk(c.selfAddr.ChannelId)
 	if e == nil {
 		bill = ldbill
 	}
 	c.localLatestReconciliationBalanceBill = bill
-	// 返回
+	// return
 	return bill, nil
 }
 
-// 保存对账票据
+// Save reconciliation bill
 func (c *ChannelPayUser) SaveLastBillToDisk(bill channel.ReconciliationBalanceBill) error {
 	if bill == nil {
 		return fmt.Errorf("bill is nil")
 	}
-	// 本地目录
+	// Local directory
 	fname := billfilepath(c.selfAddr.ChannelId)
 	fbts, e := channel.SerializeReconciliationBalanceBillWithPrefixTypeCode(bill)
 	if e == nil || len(fbts) > 0 {
-		// 保存
+		// preservation
 		e = ioutil.WriteFile(fname, fbts, 0777)
 		if e != nil {
-			return e // 返回错误
+			return e // Return error
 		}
 	}
 	c.localLatestReconciliationBalanceBill = bill
@@ -185,23 +185,23 @@ func (c *ChannelPayUser) SaveLastBillToDisk(bill channel.ReconciliationBalanceBi
 	return nil
 }
 
-// 登陆后从远程取得对账票据
+// Obtain reconciliation bills remotely after login
 func (c *ChannelPayUser) GetReconciliationBalanceBillAfterLoginFromRemote() channel.ReconciliationBalanceBill {
 	if c.servicerStreamSide != nil {
 		return c.servicerStreamSide.ChannelSide.LatestReconciliationBalanceBill
 	}
-	return nil // 不存在
+	return nil // non-existent
 }
 
-// 连接到服务端
+// Connect to the server
 func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
-	// 拨号
+	// dial
 	wsconn, e := websocket.Dial(wsurl, "", "http://127.0.0.1")
 	if e != nil {
 		return fmt.Errorf("Connect servicer %s error: %s", wsurl, e.Error())
 	}
 
-	// 发送身份
+	// Send identity
 	resmsg, _, e := protocol.SendMsgForResponseTimeout(wsconn, &protocol.MsgLogin{
 		ProtocolVersion: fields.VarUint2(protocol.LatestProtocolVersion),
 		ChannelId:       c.selfAddr.ChannelId,
@@ -213,7 +213,7 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 		return fmt.Errorf("Send login msg error: %s", e.Error())
 	}
 
-	// 登录错误
+	// Login error
 	resmsgty := resmsg.Type()
 	if resmsgty == protocol.MsgTypeError {
 		wsconn.Close()
@@ -221,17 +221,17 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 		return fmt.Errorf("Do login error: %s", msg.ErrTip.Value())
 	}
 
-	// 消息类型
+	// Message type
 	if resmsgty != protocol.MsgTypeLoginCheckLastestBill {
-		// 不支持的消息类型
+		// Unsupported message type
 		wsconn.Close()
 		return fmt.Errorf("Unsupported message reply type = %d", resmsgty)
 	}
 
-	// 登录成功
+	// Login successful
 	billmsg := resmsg.(*protocol.MsgLoginCheckLastestBill)
 
-	// 检查协议
+	// Inspection protocol
 	if uint16(billmsg.ProtocolVersion) > protocol.LatestProtocolVersion {
 		wsconn.Close()
 		return fmt.Errorf("You need to upgrade your client software, version %d => %d", protocol.LatestProtocolVersion, billmsg.ProtocolVersion)
@@ -241,7 +241,7 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 		return fmt.Errorf("Your servicer does not support the protocol version %d of your client software", protocol.LatestProtocolVersion)
 	}
 
-	// 创建 upstreamChannelSide
+	// Create upstreamchannelside
 	csobj := chanpay.NewChannelSideByConn(wsconn)
 	csobj.ChannelId = c.selfAddr.ChannelId
 	csobj.ChannelInfo = c.chanInfo
@@ -256,12 +256,12 @@ func (c *ChannelPayUser) ConnectServicer(wsurl string) error {
 		csobj.LatestReconciliationBalanceBill = billmsg.LastBill
 	}
 
-	// 通道端
+	// Channel end
 	c.servicerStreamSide = chanpay.NewRelayPayNodeConnect(c.selfAddr.ServicerName.Value(), csobj.ChannelId, ourIsLeft, csobj)
 
-	// 心跳保活
+	// Keep heartbeat alive
 	go c.StartHeartbeat()
 
-	// 成功
+	// success
 	return nil
 }

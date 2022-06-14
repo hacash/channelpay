@@ -12,9 +12,9 @@ import (
 type Customer struct {
 	updateMux sync.RWMutex
 
-	RegisteredID uint64 // 是否已完成注册，完成时分配一个随机编号
+	RegisteredID uint64 // Whether the registration has been completed and a random number will be assigned when it is completed
 
-	LanguageSet fields.StringMax255 // 语言设置 en_US zh_CN
+	LanguageSet fields.StringMax255 // Language settings en_ US zh_ CN
 
 	ChannelSide *ChannelSideConn
 
@@ -57,13 +57,13 @@ func CreateChannelSideConnWrapForCustomer(list []*Customer) ChannelSideConnListB
 	return res
 }
 
-// 更新心跳时间
+// Update heartbeat time
 func (c *Customer) UpdateLastestHeartbeatTime() {
 	c.updateMux.Lock()
 	defer c.updateMux.Unlock()
 	//fmt.Println("c *Customer UpdateLastestHeartbeatTime ", time.Now().Unix())
 	c.lastestHeartbeatTime = time.Now()
-	// 回复心跳
+	// Resume heartbeat
 	protocol.SendMsg(c.ChannelSide.WsConn, &protocol.MsgHeartbeat{})
 }
 func (c *Customer) GetLastestHeartbeatTime() time.Time {
@@ -72,41 +72,41 @@ func (c *Customer) GetLastestHeartbeatTime() time.Time {
 	return c.lastestHeartbeatTime
 }
 
-// 执行注册
+// Perform registration
 func (c *Customer) DoRegister(channelId fields.ChannelId, address fields.Address) {
 	c.RegisteredID = rand.Uint64()
 	c.ChannelSide.ChannelId = channelId
 	c.ChannelSide.RemoteAddress = address
 }
 
-// 被顶替下线
+// Replaced offline
 func (c *Customer) DoDisplacementOffline(newcur *Customer) {
-	// 拷贝数据
+	// Copy data
 	newcur.ChannelSide.LatestReconciliationBalanceBill = c.ChannelSide.LatestReconciliationBalanceBill
 	newcur.ChannelSide.RemoteAddress = c.ChannelSide.RemoteAddress
-	// 发送被顶替消息，被顶替者自动下线
+	// Send the replaced message, and the replaced will be automatically offline
 	protocol.SendMsg(c.ChannelSide.WsConn, &protocol.MsgDisplacementOffline{})
-	// 关闭连接
+	// Close connection
 	//fmt.Println("protocol.SendMsg(c.ChannelSide.WsConn, &protocol.MsgDisplacementOffline{})", c.ChannelSide.WsConn.RemoteAddr())
 	c.ChannelSide.WsConn.Close()
 }
 
-// 检查收款通道是否被占用
+// Check whether the collection channel is occupied
 func (c *Customer) IsInBusinessExclusive() bool {
 	return c.ChannelSide.IsInBusinessExclusive()
 }
 
-// 其中状态独占
+// Where state exclusive
 func (c *Customer) StartBusinessExclusive() bool {
 	return c.ChannelSide.StartBusinessExclusive()
 }
 
-// 解除状态独占
+// Remove state exclusivity
 func (c *Customer) ClearBusinessExclusive() {
 	c.ChannelSide.ClearBusinessExclusive()
 }
 
-// 判断
+// judge
 func (c *Customer) GetCustomerAddress() fields.Address {
 	return c.ChannelSide.RemoteAddress
 }
@@ -114,7 +114,7 @@ func (c *Customer) GetServicerAddress() fields.Address {
 	return c.ChannelSide.OurAddress
 }
 
-// 判断
+// judge
 func (c *Customer) CustomerAddressIsLeft() bool {
 	return c.ChannelSide.RemoteAddressIsLeft()
 }

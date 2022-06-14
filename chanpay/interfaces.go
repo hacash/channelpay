@@ -9,42 +9,42 @@ import (
  * 数据源接口
  */
 
-// 余额票据数据
+// Balance bill data
 type DataSourceOfBalanceBill interface {
-	Init() error // 初始化
-	// 储存通用对账票据，检查对账单据的合法性
+	Init() error // initialization
+	// Save general reconciliation bills and check the validity of reconciliation documents
 	UpdateStoreBalanceBill(channelId fields.ChannelId, bill channel.ReconciliationBalanceBill) error
-	// 读取最新票据
+	// Read latest ticket
 	GetLastestBalanceBill(channelId fields.ChannelId) (channel.ReconciliationBalanceBill, error)
 }
 
-// 通道载入数据
+// Channel load data
 type DataSourceOfServicerPayChannelSetup interface {
-	Init() error // 初始化
-	// 设定客户服务通道
+	Init() error // initialization
+	// Set customer service channel
 	SetupCustomerPayChannel(channelId fields.ChannelId) error
-	// 查询客户服务通道是否存在，
+	// Query whether the customer service channel exists,
 	CheckCustomerPayChannel(channelId fields.ChannelId) bool
-	// 取消客户服务通道
+	// Cancel customer service channel
 	CancelCustomerPayChannel(channelId fields.ChannelId) error
 
-	// 设定服务商结算通道，weIsRightSide 本方地址是否为右侧
+	// Set the settlement channel of the service provider, and whether the weisrightside address is on the right
 	//SetupRelaySettlementPayChannel(channelId fields.ChannelId, weIsRightSide bool) error
-	// 查询服务商结算通道是否存在，前一个bool 表示是否存在，后一个bool=weIsRightSide
+	// Query whether the settlement channel of the service provider exists. The previous bool indicates whether it exists, and the latter bool=weisrightside
 	//CheckRelaySettlementPayChannel(channelId fields.ChannelId) (bool, bool)
-	// 取消服务商结算通道
+	// Cancel the settlement channel of the service provider
 	//CancelRelaySettlementPayChannel(channelId fields.ChannelId) error
 }
 
-// 签名机
+// Signature machine
 type DataSourceOfSignatureMachine interface {
-	Init() error // 初始化
-	// 暂存私钥
+	Init() error // initialization
+	// Temporary private key
 	TemporaryStoragePrivateKeyForSign(privatekeyOrPassword string)
-	RemovePrivateKey(address fields.Address) // 移除私钥
-	CleanAllPrivateKey()                     // 清除所有私钥
-	// 签署对账单并之后检查全部签名
+	RemovePrivateKey(address fields.Address) // Remove private key
+	CleanAllPrivateKey()                     // Clear all private keys
+	// Sign the statement and then check all signatures
 	CheckReconciliationFillNeedSignature(bill *channel.OffChainFormPaymentChannelRealtimeReconciliation, checksign *fields.Sign) (*fields.Sign, error)
-	// 将通道交易送入签名机验证数据，并自动填充签名
+	// Send the channel transaction to the signer to verify the data, and automatically fill in the signature
 	CheckPaydocumentAndFillNeedSignature(paydocs *channel.ChannelPayCompleteDocuments, mustaddrs []fields.Address) (*fields.SignListMax255, error)
 }

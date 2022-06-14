@@ -10,11 +10,11 @@ import (
  * 消息处理
  */
 func (c *ChannelPayClient) startMsgHandler() {
-	// 订阅消息处理，
+	// Subscription message processing,
 	chanobj := make(chan protocol.Message, 1)
 	subObj := c.user.servicerStreamSide.ChannelSide.SubscribeMessage(chanobj)
 	c.user.msgSubObj = subObj
-	// 循环处理消息
+	// Cycle through messages
 	go func() {
 		//defer fmt.Println("ChannelPayUser.MsgHandler end")
 		for {
@@ -22,50 +22,50 @@ func (c *ChannelPayClient) startMsgHandler() {
 			case v := <-chanobj:
 				go c.dealMsg(v)
 			case <-subObj.Err():
-				c.logoutConnectWindowShow("Network exception. You have logged out") // 退出
-				return                                                              // 订阅关闭
+				c.logoutConnectWindowShow("Network exception. You have logged out") // sign out
+				return                                                              // Subscription off
 			}
 		}
 	}()
 }
 
-// 消息处理
+// Message processing
 func (c *ChannelPayClient) dealMsg(msg protocol.Message) {
 	ty := msg.Type()
 	switch ty {
-	// 发起收款
+	// Initiate collection
 	case protocol.MsgTypeInitiatePayment:
 		msgobj := msg.(*protocol.MsgRequestInitiatePayment)
 		c.dealInitiatePayment(msgobj)
 
-	// 支付预查询返回
+	// Payment pre query return
 	case protocol.MsgTypeResponsePrequeryPayment:
 		msgobj := msg.(*protocol.MsgResponsePrequeryPayment)
 		if msgobj.ErrCode > 0 {
-			// 错误显示
+			// Error display
 			c.ShowPaymentErrorString("Prequery payment error: " + msgobj.ErrTip.Value())
 			return
 		}
-		// 调用前端界面，开始支付
+		// Call the front-end interface to start payment
 		//fmt.Println("PayPathCount: ", msgobj.PathForms.PayPathCount)
 		c.dealPrequeryPaymentResult(msgobj)
 
-		// 对账返回
+		// Reconciliation return
 	case protocol.MsgTypeServicerRespondReconciliation:
 		msgobj := msg.(*protocol.MsgServicerRespondReconciliation)
 		c.DealServicerRespondReconciliation(msgobj)
 
-	// 被顶下线
+	// Top line
 	case protocol.MsgTypeDisplacementOffline:
-		c.logoutConnectWindowShow("You have login at another place and this connection has been exited") // 退出
+		c.logoutConnectWindowShow("You have login at another place and this connection has been exited") // sign out
 	}
 
 }
 
-// 退出登录
+// Log out
 func (c *ChannelPayClient) logoutConnectWindowShow(tip string) {
-	c.user.Logout() // 退出登录
-	// 向界面发出退出登录消息
+	c.user.Logout() // Log out
+	// Send an exit login message to the interface
 	lgv := c.payui.Eval(fmt.Sprintf(`Logout("%s")`, strings.Replace(tip, `"`, ``, -1))) // 退出
 	if DevDebug {
 		fmt.Println("Logout() => ", tip, lgv.String())

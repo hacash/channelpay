@@ -3,58 +3,58 @@ package protocol
 import "fmt"
 
 const (
-	LatestProtocolVersion uint16 = 1 // 最新的协议版本号
+	LatestProtocolVersion uint16 = 1 // Latest protocol version number
 )
 
 const (
-	// 通用
-	MsgTypeError uint8 = 0 // 发生错误
+	// currency
+	MsgTypeError uint8 = 0 // An error occurred
 
-	// 通道路由下发数据更新
-	MsgTypePayRouteRequestServiceNodes      uint8 = 255 // 请求节点列表
-	MsgTypePayRouteResponseServiceNodes     uint8 = 254 // 响应节点列表
-	MsgTypePayRouteRequestNodeRelationship  uint8 = 253 // 请求节点连接关系
-	MsgTypePayRouteResponseNodeRelationship uint8 = 252 // 响应节点连接关系
-	MsgTypePayRouteRequestUpdates           uint8 = 251 // 请求更新
-	MsgTypePayRouteResponseUpdates          uint8 = 250 // 响应更新
-	MsgTypePayRouteEndClose                 uint8 = 249 // 完成关闭
+	// Channel routing sends data updates
+	MsgTypePayRouteRequestServiceNodes      uint8 = 255 // Request node list
+	MsgTypePayRouteResponseServiceNodes     uint8 = 254 // Response node list
+	MsgTypePayRouteRequestNodeRelationship  uint8 = 253 // Request node connection relationship
+	MsgTypePayRouteResponseNodeRelationship uint8 = 252 // Response node connection
+	MsgTypePayRouteRequestUpdates           uint8 = 251 // Request update
+	MsgTypePayRouteResponseUpdates          uint8 = 250 // Response update
+	MsgTypePayRouteEndClose                 uint8 = 249 // Complete shutdown
 
-	// 服务端发送
-	MsgTypeDisplacementOffline     uint8 = 1 // 异地登录被顶下线
-	MsgTypeLoginCheckLastestBill   uint8 = 2 // 服务端发送最新对账单
-	MsgTypeResponsePrequeryPayment uint8 = 3 // 预查询支付信息
+	// Server send
+	MsgTypeDisplacementOffline     uint8 = 1 // Remote login is offline
+	MsgTypeLoginCheckLastestBill   uint8 = 2 // The server sends the latest statement
+	MsgTypeResponsePrequeryPayment uint8 = 3 // Pre query payment information
 
-	// 客户端发送
-	MsgTypeLogin                  uint8 = 4 // 顾客登录消息
-	MsgTypeLogout                 uint8 = 5 // 客户端主动下线
-	MsgTypeRequestPrequeryPayment uint8 = 6 // 预查询支付信息
-	MsgTypeInitiatePayment        uint8 = 7 // 发起支付
-	MsgTypeRelayInitiatePayment   uint8 = 8 // 中继节点支付消息
+	// Client send
+	MsgTypeLogin                  uint8 = 4 // Customer login message
+	MsgTypeLogout                 uint8 = 5 // Active client offline
+	MsgTypeRequestPrequeryPayment uint8 = 6 // Pre query payment information
+	MsgTypeInitiatePayment        uint8 = 7 // Initiate payment
+	MsgTypeRelayInitiatePayment   uint8 = 8 // Relay node payment message
 
-	// 支付相关
-	MsgTypeBroadcastChannelStatementProveBody uint8 = 9  // 广播对账单
-	MsgTypeBroadcastChannelStatementSignature uint8 = 10 // 广播通道支付签名
-	MsgTypeBroadcastChannelStatementError     uint8 = 11 // 广播通道支付错误
-	MsgTypeBroadcastChannelStatementSuccessed uint8 = 12 // 广播通道支付成功完成
+	// Payment related
+	MsgTypeBroadcastChannelStatementProveBody uint8 = 9  // Broadcast statement
+	MsgTypeBroadcastChannelStatementSignature uint8 = 10 // Broadcast channel payment signature
+	MsgTypeBroadcastChannelStatementError     uint8 = 11 // Broadcast channel payment error
+	MsgTypeBroadcastChannelStatementSuccessed uint8 = 12 // Broadcast channel payment completed successfully
 
-	// 对账相关
-	MsgTypeClientInitiateReconciliation  uint8 = 13 // 客户端发起对账
-	MsgTypeServicerRespondReconciliation uint8 = 14 // 服务端响应对账
+	// Reconciliation related
+	MsgTypeClientInitiateReconciliation  uint8 = 13 // Client initiated reconciliation
+	MsgTypeServicerRespondReconciliation uint8 = 14 // Server response reconciliation
 
-	// 客户端心跳包
+	// Client heartbeat package
 	MsgTypeHeartbeat uint8 = 15
 
 	/*
 
-		MsgTypeRequestChannelPayCollectionSign               uint8 = 101 // 向客户端请求收款签名
-		MsgTypeResponseChannelPayCollectionSign              uint8 = 102 // 获得签名
-		MsgTypeRequestChannelPayPaymentSign                  uint8 = 103 // 向客户端请求支付签名
-		MsgTypeResponseChannelPayPaymentSign                 uint8 = 104 // 获得签名
-		MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 105 // 发送完整票据给支付下游
+		MsgTypeRequestChannelPayCollectionSign               uint8 = 101 // Request collection signature from client
+		MsgTypeResponseChannelPayCollectionSign              uint8 = 102 // Get signature
+		MsgTypeRequestChannelPayPaymentSign                  uint8 = 103 // Request payment signature from client
+		MsgTypeResponseChannelPayPaymentSign                 uint8 = 104 // Get signature
+		MsgTypeSendChannelPayCompletedSignedBillToDownstream uint8 = 105 // Send complete bill to payment downstream
 
-		MsgTypeResponseRemoteChannelPayment           uint8 = 107 // 远程支付由目标终端最终响应
-		MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 108 // 向远程请求收款签名
-		MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 109 // 远程签名回复
+		MsgTypeResponseRemoteChannelPayment           uint8 = 107 // The remote payment is finally responded by the target terminal
+		MsgTypeRequestRemoteChannelPayCollectionSign  uint8 = 108 // Request collection signature from remote
+		MsgTypeResponseRemoteChannelPayCollectionSign uint8 = 109 // Remote signature reply
 	*/
 
 )
@@ -63,11 +63,11 @@ const (
  * 消息接口
  */
 type Message interface {
-	Type() uint8 // 类型
+	Type() uint8 // type
 	Size() uint32
 	Parse(buf []byte, seek uint32) (uint32, error)
-	Serialize() ([]byte, error)         // 序列化
-	SerializeWithType() ([]byte, error) // 序列化
+	Serialize() ([]byte, error)         // serialize
+	SerializeWithType() ([]byte, error) // serialize
 }
 
 /**
@@ -78,7 +78,7 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 	ty := buf[seek]
 	var msg Message = nil
 
-	// 类型
+	// type
 	switch ty {
 	case MsgTypeError:
 		msg = &MsgError{}
@@ -136,7 +136,7 @@ func ParseMessage(buf []byte, seek uint32) (Message, error) {
 		return nil, fmt.Errorf("Unsupported message type <%d>", ty)
 	}
 
-	// 解析
+	// analysis
 	_, e := msg.Parse(buf, seek+1)
 	if e != nil {
 		return nil, e

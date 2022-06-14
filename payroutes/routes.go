@@ -11,12 +11,12 @@ import (
 
 type RoutingManager struct {
 
-	// 数据
-	nodeUpdateLock           sync.Mutex               // 数据锁定
-	nodeUpdateLastestPageNum uint32                   // 最新数据更新翻页
-	nodeById                 map[uint32]*PayRelayNode // 节点
-	nodeByName               map[string]*PayRelayNode // 节点名称，不区分大小写
-	graphDatas               []*ChannelRelationship   // 关系表
+	// data
+	nodeUpdateLock           sync.Mutex               // Data locking
+	nodeUpdateLastestPageNum uint32                   // Latest data update flip
+	nodeById                 map[uint32]*PayRelayNode // node
+	nodeByName               map[string]*PayRelayNode // Node name, case insensitive
+	graphDatas               []*ChannelRelationship   // Relation table
 
 }
 

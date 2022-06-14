@@ -16,33 +16,33 @@ import (
  * 通道方
  */
 
-// 通道连接方
+// Channel connector
 type ChannelSideConn struct {
 	statusMux sync.RWMutex
 
-	// ws长连接
+	// Ws long connection
 	WsConn *websocket.Conn
 
-	// 数据
-	ChannelId   fields.ChannelId             // 通道链 ID
-	ChannelInfo *protocol.RpcDataChannelInfo // 通道当前的信息
+	// data
+	ChannelId   fields.ChannelId             // Channel Chain ID
+	ChannelInfo *protocol.RpcDataChannelInfo // Channel current information
 
-	OurAddress    fields.Address // 我方地址
-	RemoteAddress fields.Address // 对方地址（客户地址或结算通道对方地址）
+	OurAddress    fields.Address // Our address
+	RemoteAddress fields.Address // Opposite address (customer address or opposite address of settlement channel)
 
-	// 最新的对账票据
+	// Latest reconciliation bill
 	LatestReconciliationBalanceBill channel.ReconciliationBalanceBill
 
-	// 最近心跳时间
+	// Latest heartbeat time
 	lastestHeartbeatTime time.Time
 
-	// 关闭收款标记
+	// Close collection mark
 	businessCloseAutoCollectionStatus uint32
 
-	// 支付收款状态锁 0:未占用  1:占用状态
+	// Payment collection status lock 0:未占用  1:占用状态
 	businessExclusiveStatus uint32 //
 
-	// 消息订阅
+	// Message subscription
 	msgFeed     event.Feed
 	msgFeedErrs []event.Subscription
 }
@@ -71,7 +71,7 @@ func NewChannelSideByConn(conn *websocket.Conn) *ChannelSideConn {
 	}
 }
 
-// 获取心跳时间
+// Get heartbeat time
 
 func (c *ChannelSideConn) GetLastestHeartbeatTime() time.Time {
 	c.statusMux.RLock()
@@ -79,7 +79,7 @@ func (c *ChannelSideConn) GetLastestHeartbeatTime() time.Time {
 	return c.lastestHeartbeatTime
 }
 
-// 启动消息监听
+// Start message listening
 func (c *ChannelSideConn) StartMessageListen() {
 	go func() {
 		//defer fmt.Printf("ChannelSideConn %s message listen end.\n", c.WsConn.RemoteAddr())
@@ -87,23 +87,23 @@ func (c *ChannelSideConn) StartMessageListen() {
 			msg, _, e := protocol.ReceiveMsg(c.WsConn)
 			if e != nil {
 				for _, v := range c.msgFeedErrs {
-					v.Unsubscribe() // 连接断开，自动取消订阅
+					v.Unsubscribe() // Disconnect, auto unsubscribe
 				}
-				c.msgFeedErrs = make([]event.Subscription, 0) // 清空
-				return                                        // 发生错误，结束
+				c.msgFeedErrs = make([]event.Subscription, 0) // empty
+				return                                        // Error occurred, end
 			}
 			if msg.Type() == protocol.MsgTypeHeartbeat {
 				c.statusMux.Lock()
 				c.lastestHeartbeatTime = time.Now()
 				c.statusMux.Unlock()
 			}
-			// 广播消息
+			// Broadcast message
 			c.msgFeed.Send(msg)
 		}
 	}()
 }
 
-// 订阅消息处理
+// Subscription message processing
 func (c *ChannelSideConn) SubscribeMessage(chanobj chan protocol.Message) event.Subscription {
 	subobj := c.msgFeed.Subscribe(chanobj) // 订阅消息处理
 	c.msgFeedErrs = append(c.msgFeedErrs, subobj)
@@ -153,25 +153,25 @@ func (c *ChannelSideConn) GetReconciliationBill() channel.ReconciliationBalanceB
 	return c.LatestReconciliationBalanceBill
 }
 
-// 检查收款通道是否被占用
+// Check whether the collection channel is occupied
 func (c *ChannelSideConn) IsInBusinessExclusive() bool {
-	// 检查状态
+	// Check status
 	return atomic.LoadUint32(&c.businessExclusiveStatus) == 1
 }
 
-// 启用状态独占
+// Enable state exclusive
 func (c *ChannelSideConn) StartBusinessExclusive() bool {
 	return atomic.CompareAndSwapUint32(&c.businessExclusiveStatus, 0, 1)
 }
 
-// 解除状态独占
+// Remove state exclusivity
 func (c *ChannelSideConn) ClearBusinessExclusive() {
 	atomic.CompareAndSwapUint32(&c.businessExclusiveStatus, 1, 0)
 }
 
-// 检查是否关闭自动收款
+// Check whether automatic collection is closed
 func (c *ChannelSideConn) IsInCloseAutoCollectionStatus() bool {
-	// 检查状态
+	// Check status
 	return atomic.LoadUint32(&c.businessCloseAutoCollectionStatus) == 1
 }
 
@@ -180,17 +180,17 @@ func (c *ChannelSideConn) StartCloseAutoCollectionStatus() bool {
 	return atomic.CompareAndSwapUint32(&c.businessCloseAutoCollectionStatus, 0, 1)
 }
 
-// 解除关闭自动收款
+// Cancel closing automatic collection
 func (c *ChannelSideConn) ClearCloseAutoCollectionStatus() {
 	atomic.CompareAndSwapUint32(&c.businessCloseAutoCollectionStatus, 1, 0)
 }
 
-// 判断
+// judge
 func (c *ChannelSideConn) RemoteAddressIsLeft() bool {
 	return c.RemoteAddress.Equal(c.ChannelInfo.LeftAddress)
 }
 
-// 获取通道数据
+// Get channel data
 func (c *ChannelSideConn) GetAvailableReuseVersion() uint32 {
 	c.statusMux.RLock()
 	defer c.statusMux.RUnlock()
@@ -212,7 +212,7 @@ func (c *ChannelSideConn) GetAvailableAutoNumber() uint64 {
 	return uint64(0)
 }
 
-// 获取通道容量
+// Get channel capacity
 // side = our, remote
 func (c *ChannelSideConn) GetChannelCapacityAmount(side string) fields.Amount {
 	c.statusMux.RLock()
@@ -220,7 +220,7 @@ func (c *ChannelSideConn) GetChannelCapacityAmount(side string) fields.Amount {
 
 	leftAmt := c.ChannelInfo.LeftAmount
 	rightAmt := c.ChannelInfo.RightAmount
-	// 判断是否有收据
+	// Judge whether there is a receipt
 	bill := c.LatestReconciliationBalanceBill
 	if bill != nil {
 		leftAmt = bill.GetLeftBalance()
@@ -228,7 +228,7 @@ func (c *ChannelSideConn) GetChannelCapacityAmount(side string) fields.Amount {
 	}
 	remoteIsLeft := c.RemoteAddress.Equal(c.ChannelInfo.LeftAddress)
 	//fmt.Println(leftAmt.ToFinString(), rightAmt.ToFinString())
-	// 返回容量
+	// Return capacity
 	if (side == "remote" && remoteIsLeft) ||
 		(side == "our" && !remoteIsLeft) {
 		return leftAmt
@@ -244,10 +244,10 @@ func (c *ChannelSideConn) GetChannelCapacityAmountOfRemote() fields.Amount {
 	return c.GetChannelCapacityAmount("remote")
 }
 
-// 直接保存（不做检查）支付对账票据
+// Directly save (do not check) payment reconciliation bills
 func (c *ChannelSideConn) UncheckSignSaveBillByCompleteDocuments(bills *channel.ChannelPayCompleteDocuments) error {
 
-	// 找出对账单
+	// Find the statement
 	var proveBody *channel.ChannelChainTransferProveBodyInfo = nil
 	for _, v := range bills.ProveBodys.ProveBodys {
 		if v.ChannelId.Equal(c.ChannelId) {
@@ -255,11 +255,11 @@ func (c *ChannelSideConn) UncheckSignSaveBillByCompleteDocuments(bills *channel.
 			break
 		}
 	}
-	// 是否存在
+	// Whether it exists
 	if proveBody == nil {
 		return fmt.Errorf("proveBody of channel id %s not find", c.ChannelId.ToHex())
 	}
-	// 检查对账流水号
+	// Check reconciliation serial number
 	if c.ChannelInfo.ReuseVersion != proveBody.ReuseVersion {
 		return fmt.Errorf("ReuseVersion not match need %d but got %d", c.ChannelInfo.ReuseVersion, proveBody.ReuseVersion)
 	}
@@ -271,13 +271,13 @@ func (c *ChannelSideConn) UncheckSignSaveBillByCompleteDocuments(bills *channel.
 		return fmt.Errorf("BillAutoNumber not match need %d but got %d", needBillAutoNumber, proveBody.BillAutoNumber)
 	}
 
-	// 保存
+	// preservation
 	c.SetReconciliationBill(&channel.OffChainCrossNodeSimplePaymentReconciliationBill{
 		ChannelChainTransferTargetProveBody: *proveBody,
 		ChannelChainTransferData:            *bills.ChainPayment,
 	})
 
-	// 成功
+	// success
 	return nil
 }
 
@@ -287,7 +287,7 @@ type ChannelSideConnWrap interface {
 	GetChannelCapacityAmountForRemoteCollect() fields.Amount
 }
 
-// 按通道容量排序
+// Sort by channel capacity
 type ChannelSideConnListByCollectCapacity []ChannelSideConnWrap
 
 func (c ChannelSideConnListByCollectCapacity) Len() int {

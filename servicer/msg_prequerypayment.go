@@ -12,18 +12,18 @@ import (
  */
 func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, msg *protocol.MsgRequestPrequeryPayment) {
 
-	// 返回错误消息
+	// Return error message
 	errorReturn := func(e error) {
 		errobj := protocol.NewMsgResponsePrequeryPayment(1)
 		errobj.ErrTip = fields.CreateStringMax65535(e.Error())
 		protocol.SendMsg(newcur.ChannelSide.WsConn, errobj)
 	}
 
-	// 查询支付路径
+	// Query payment path
 	chanAddr := protocol.ChannelAccountAddress{}
 	e := chanAddr.Parse(msg.PayeeChannelAddr.Value())
 	if e != nil {
-		// 地址格式错误，发送错误信息
+		// Address format error, sending error message
 		errorReturn(e)
 		return
 	}
@@ -34,7 +34,7 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 		return
 	}
 
-	// 目标是否为本地服务商支付
+	// Whether the target is paid by the local service provider
 	localServicerName := s.config.SelfIdentificationName
 	localnode := s.payRouteMng.FindNodeByName(localServicerName)
 	if localnode == nil {
@@ -43,19 +43,19 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 	}
 
 	if chanAddr.CompareServiceName(localServicerName) {
-		// 本地支付
+		// Local Payment
 		forms := CreatePayPathFormsBySingleNodePath(localnode, &msg.PayAmount)
 		resmsg := protocol.NewMsgResponsePrequeryPayment(0)
 		resmsg.Notes = fields.CreateStringMax65535("")
 		resmsg.PathForms = forms
-		// 消息返回
+		// Message return
 		protocol.SendMsg(newcur.ChannelSide.WsConn, resmsg)
-		// 成功
+		// success
 		return
 	}
 
-	// 远程支付，查询路由
-	// 目标服务商是否存在
+	// Remote payment, query routing
+	// Whether the target service provider exists
 	tarNodeName := chanAddr.ServicerName.Value()
 	targetnode := s.payRouteMng.FindNodeByName(tarNodeName)
 	if targetnode == nil {
@@ -63,26 +63,26 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 		return
 	}
 
-	// 查询路由
+	// Query route
 	pathResults, e := s.payRouteMng.SearchNodePath(localServicerName, tarNodeName)
 	if e != nil {
 		errorReturn(e)
 		return
 	}
 	if len(pathResults) == 0 {
-		// 未找到路径
+		// the path was not found
 		errorReturn(fmt.Errorf("Can not find the pay routes path from node %s to %s.",
 			localServicerName, tarNodeName))
 		return
 	}
 	forms := CreatePayPathForms(pathResults, &msg.PayAmount) // 路径列表
-	// 消息
+	// news
 	resmsg := protocol.NewMsgResponsePrequeryPayment(0)
 	resmsg.Notes = fields.CreateStringMax65535("")
 	resmsg.PathForms = forms
-	// 消息返回
+	// Message return
 	protocol.SendMsg(newcur.ChannelSide.WsConn, resmsg)
-	// 成功
+	// success
 	return
 
 }

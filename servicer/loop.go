@@ -2,20 +2,20 @@ package servicer
 
 import "time"
 
-// 启动事件循环
+// Start event cycle
 func (s *Servicer) loop() {
 
-	// 8 小时更新一次路由更改
+	// Route changes are updated every 8 hours
 	loadUpdateFileTicker := time.NewTicker(time.Hour * 8)
 	checkCustomerActiveTicker := time.NewTicker(time.Second * 35)
 
 	for {
 		select {
 		case <-loadUpdateFileTicker.C:
-			// 自动更新路由
+			// Automatically update routes
 			s.LoadRoutesUpdate()
 		case <-checkCustomerActiveTicker.C:
-			// 检查客户端心跳
+			// Check client heartbeat
 			s.checkCustomerActive()
 		}
 	}

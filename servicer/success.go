@@ -9,53 +9,53 @@ import (
  * 处理远程支付
  */
 
-// 支付成功的回调
+// Callback of successful payment
 func (s *Servicer) callbackPaymentSuccessed(newbill *channel.OffChainCrossNodeSimplePaymentReconciliationBill) {
-	// 通道
+	// passageway
 	tarcid := newbill.GetChannelId()
 	oldbill, e := s.billstore.GetLastestBalanceBill(tarcid)
 	if e != nil {
-		return // 返回
+		return // return
 	}
-	// 保存
+	// preservation
 	if oldbill == nil ||
 		(newbill.GetReuseVersion() == oldbill.GetReuseVersion() &&
 			newbill.GetAutoNumber() == oldbill.GetAutoNumber()+1) {
-		// 符合保存条件，执行保存
+		// If the saving conditions are met, execute saving
 		s.billstore.UpdateStoreBalanceBill(tarcid, newbill)
 		//fmt.Println("UpdateStoreBalanceBill: ", tarcid.ToHex(), newbill.GetAutoNumber())
 	}
 
-	// 更新通道侧
+	// Update channel side
 	var side *chanpay.ChannelSideConn = nil
-	// 搜索结算通道
+	// Search settlement channel
 	s.settlenoderChgLock.RLock()
 	for _, v := range s.settlenoder {
 		for _, node := range v {
 			if node.ChannelId.Equal(tarcid) {
-				// 找到了
+				// eureka
 				side = node.ChannelSide
 				break
 			}
 		}
 	}
 	s.settlenoderChgLock.RUnlock()
-	// 更新票据
+	// Update ticket
 	if side != nil {
 		side.SetReconciliationBill(newbill)
 	}
 
-	// 查询客户端连接
+	// Query client connections
 	s.customerChgLock.RLock()
 	for _, u := range s.customers {
 		if u.ChannelSide.ChannelId.Equal(tarcid) {
-			// 找到了
+			// eureka
 			side = u.ChannelSide
 			break
 		}
 	}
 	s.customerChgLock.RUnlock()
-	// 更新票据
+	// Update ticket
 	if side != nil {
 		side.SetReconciliationBill(newbill)
 	}

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// 让前端选择支付
+// Let the front end choose payment
 func (c *ChannelPayClient) dealPrequeryPaymentResult(msg *protocol.MsgResponsePrequeryPayment) {
 	params := make([]string, 0)
 	paths := msg.PathForms.PayPaths
@@ -18,16 +18,16 @@ func (c *ChannelPayClient) dealPrequeryPaymentResult(msg *protocol.MsgResponsePr
 		item := fmt.Sprintf(`"%s, total fee: %s"`, strings.Replace(v.Describe.Value(), `"`, ``, -1), v.PredictPathFee.ToFinString())
 		params = append(params, item)
 	}
-	// 支付状态
+	// Payment status
 	c.statusMutex.Lock()
 	if c.pendingPaymentObj == nil {
-		return // 支付状态已经取消
+		return // Payment status cancelled
 	}
 	c.pendingPaymentObj.prequeryMsg = msg
 	payobj := c.pendingPaymentObj
 	c.statusMutex.Unlock()
 
-	// 调起选择支付渠道
+	// Select payment channel
 	checkinfo := fmt.Sprintf(`Transfer %s (%sMei) to %s`,
 		payobj.amount.ToFinString(), payobj.amount.ToMeiString(),
 		payobj.address.Address.ToReadable())
@@ -35,8 +35,8 @@ func (c *ChannelPayClient) dealPrequeryPaymentResult(msg *protocol.MsgResponsePr
 		checkinfo, strings.Join(params, ",")))
 }
 
-// 确定发动交易
-// return string 返回错误或者为空
+// Confirm to launch transaction
+// Return string returns an error or is empty
 func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	c.statusMutex.Lock()
 	payobj := c.pendingPaymentObj
@@ -45,7 +45,7 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	}
 	c.statusMutex.Unlock()
 
-	// 判断路径选择
+	// Judge path selection
 	ops := payobj.prequeryMsg.PathForms.PayPaths
 	pidx := pathselect - 1
 	if pathselect <= 0 || pidx >= len(ops) {
@@ -53,17 +53,17 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	}
 	tarpath := ops[pidx]
 	//fmt.Println("发起支付", pathselect)
-	// 抢占通道支付状态
+	// Preemption channel payment status
 	if c.user.servicerStreamSide.ChannelSide.StartBusinessExclusive() == false {
 		return "The channel status is occupied. Please try again later"
 	}
 
-	// 发送调起支付消息
+	// Send call up payment message
 	randtrsid := rand.Uint64()
 	ttimest := time.Now().Unix()
 	odidckr := make([]byte, 16)
 	rand.Read(odidckr)
-	// 总手续费不超过预估手续费的两倍
+	// The total handling fee shall not exceed twice the estimated handling fee
 	maxfee, _ := tarpath.PredictPathFee.Add(&tarpath.PredictPathFee)
 	paymsg := &protocol.MsgRequestInitiatePayment{
 		TransactionDistinguishId: fields.VarUint8(randtrsid),
@@ -75,17 +75,17 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 		TargetPath:               *tarpath.NodeIdPath,
 	}
 
-	// 创建支付状态机
+	// Create payment state machine
 	payaction := chanpay.NewChannelPayActionInstance()
-	// 启动日志订阅
+	// Start log subscription
 	logschan := make(chan *chanpay.PayActionLog, 2)
 	go func() {
 		for {
 			log := <-logschan
 			if log == nil || log.IsEnd {
-				return // 订阅结束
+				return // End of subscription
 			}
-			// 显示日志
+			// Show log
 			c.ShowLogString(log.Content, log.IsSuccess, log.IsError)
 		}
 	}()
@@ -93,47 +93,47 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 		IsSuccess: true,
 		Content:   fmt.Sprintf("---- start new payment at %s ----", time.Now().Format("2006-01-02 15:04:05.999")),
 	}
-	payaction.SubscribeLogs(logschan) // 日志订阅
+	payaction.SubscribeLogs(logschan) // Log subscription
 
-	// 我发起的支付，我是源头，服务商设置为下游
+	// I am the source of payment initiated by me, and the service provider is set as downstream
 	payaction.SetDownstreamSide(c.user.servicerStreamSide)
 
-	// 设置签名机
+	// Setting up a signer
 	signmch := NewSignatureMachine(c.user.selfAcc)
 	payaction.SetSignatureMachine(signmch)
-	// 设置我必须签名的地址
+	// Set the address I must sign
 	payaction.SetMustSignAddresses([]fields.Address{c.user.servicerStreamSide.ChannelSide.OurAddress})
 
-	// 启动消息监听
+	// Start message listening
 	isupordown := false // 下游
 	payaction.StartOneSideMessageSubscription(isupordown, c.user.servicerStreamSide.ChannelSide)
 
-	// 支付、收款成功后的回调
+	// Callback after successful payment and collection
 	payaction.SetSuccessedBackCall(c.callbackPaymentSuccessed)
 
-	// 初始化票据信息
+	// Initialize ticket information
 	be := payaction.InitCreateEmptyBillDocumentsByInitPayMsg(paymsg)
 	if be != nil {
-		payaction.Destroy() // 终止支付，自动解除状态独占
+		payaction.Destroy() // Terminate the payment and automatically remove the exclusive status
 		return "Initiate payment create bill documents error: " + be.Error()
 	}
 
-	// 发送消息并创建支付状态机
+	// Send message and create payment state machine
 	se := protocol.SendMsg(c.user.servicerStreamSide.ChannelSide.WsConn, paymsg)
 	if se != nil {
-		payaction.Destroy() // 终止支付，自动解除状态独占
+		payaction.Destroy() // Terminate the payment and automatically remove the exclusive status
 		return "Initiate payment send msg error: " + se.Error()
 	}
 
-	// 等待支付响应
+	// Waiting for payment response
 
-	// 暂无错误
+	// No error
 	return ""
 }
 
-// 取消支付
+// Cancel payment
 func (c *ChannelPayClient) BindFuncCancelPayment() {
 	c.statusMutex.Lock()
 	defer c.statusMutex.Unlock()
-	c.pendingPaymentObj = nil // 取消
+	c.pendingPaymentObj = nil // cancel
 }

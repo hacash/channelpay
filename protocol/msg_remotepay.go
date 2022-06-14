@@ -1,15 +1,15 @@
 package protocol
 
-// 发起远程支付消息
+// Initiate remote payment message
 /*
 type MsgRequestLaunchRemoteChannelPayment struct {
-	OrderNoteHashHalfChecker fields.HashHalfChecker // 订单详情数据哈希
+	OrderNoteHashHalfChecker fields.HashHalfChecker // Order detail data hash
 
-	HighestAcceptanceFee fields.Amount       // 最高可接受的总手续费数额
-	PayAmount            fields.Amount       // 支付金额，必须为正整数
-	PayeeChannelAddr     fields.StringMax255 // 收款人通道地址，例如： 1Ke39SGbnrsDzkThANzTAFJmDhcc8qvM2Z__HACorg
+	HighestAcceptanceFee fields.Amount       // Maximum acceptable total handling fee amount
+	PayAmount            fields.Amount       // Payment amount must be a positive integer
+	PayeeChannelAddr     fields.StringMax255 // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
 
-	// 指定的路由节点ID列表
+	// Specified routing node ID list
 	TargetPath NodeIdPath
 }
 
@@ -104,13 +104,13 @@ func (m *MsgRequestLaunchRemoteChannelPayment) CopyFromInitiatePayment(msg *MsgR
 
 //////////////////////////////////////////////////////
 
-// 终端节点响应支付消息
+// Terminal node responds to payment message
 type MsgResponseRemoteChannelPayment struct {
-	OperationNum fields.VarUint8 // 操作单号
-	// 包含错误
+	OperationNum fields.VarUint8 // Operation No
+	// Contains errors
 	ErrorCode fields.VarUint2
 	ErrorMsg  fields.StringMax255
-	// 正常响应
+	// Normal response
 	ChannelPayBodyList *channel.ChannelPayProveBodyList
 }
 
@@ -121,8 +121,8 @@ func (m MsgResponseRemoteChannelPayment) Type() uint8 {
 ///////////////////////////////////////////////////////
 
 type MsgRequestRemoteChannelPayCollectionSign struct {
-	OperationNum fields.VarUint8                      // 操作单号
-	Bills        *channel.ChannelPayCompleteDocuments // 全部票据
+	OperationNum fields.VarUint8                      // Operation No
+	Bills        *channel.ChannelPayCompleteDocuments // All bills
 }
 
 func (m MsgRequestRemoteChannelPayCollectionSign) Type() uint8 {
@@ -136,16 +136,16 @@ func (m MsgRequestRemoteChannelPayCollectionSign) Size() uint32 {
 func (c MsgRequestRemoteChannelPayCollectionSign) Serialize() ([]byte, error) {
 	var bt []byte
 	var buffer bytes.Buffer
-	bt, _ = c.OperationNum.Serialize() // 数据体
+	bt, _ = c.OperationNum.Serialize() // Data body
 	buffer.Write(bt)
-	bt, _ = c.Bills.Serialize() // 数据体
+	bt, _ = c.Bills.Serialize() // Data body
 	buffer.Write(bt)
 	return buffer.Bytes(), nil
 }
 
 func (c *MsgRequestRemoteChannelPayCollectionSign) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
-	// 通道
+	// passageway
 	seek, e = c.OperationNum.Parse(buf, seek)
 	if e != nil {
 		return 0, e
@@ -154,7 +154,7 @@ func (c *MsgRequestRemoteChannelPayCollectionSign) Parse(buf []byte, seek uint32
 	if e != nil {
 		return 0, e
 	}
-	// 完成
+	// complete
 	return seek, nil
 }
 
@@ -172,10 +172,10 @@ func (m MsgRequestRemoteChannelPayCollectionSign) SerializeWithType() ([]byte, e
 /**************************************************
 
 type MsgResponseRemoteChannelPayCollectionSign struct {
-	OperationNum fields.VarUint8     // 操作单号
-	ErrorCode    fields.VarUint2     // 如果错误的消息
-	ErrorMsg     fields.StringMax255 // 如果错误的消息
-	Sign         fields.Sign         // 如果成功的签名
+	OperationNum fields.VarUint8     // Operation No
+	ErrorCode    fields.VarUint2     // If the wrong message
+	ErrorMsg     fields.StringMax255 // If the wrong message
+	Sign         fields.Sign         // If successful signature
 }
 
 func (m MsgResponseRemoteChannelPayCollectionSign) Type() uint8 {
@@ -189,13 +189,13 @@ func (m MsgResponseRemoteChannelPayCollectionSign) Size() uint32 {
 func (c MsgResponseRemoteChannelPayCollectionSign) Serialize() ([]byte, error) {
 	var bt []byte
 	var buffer bytes.Buffer
-	bt, _ = c.OperationNum.Serialize() // 数据体
+	bt, _ = c.OperationNum.Serialize() // Data body
 	buffer.Write(bt)
-	bt, _ = c.ErrorCode.Serialize() // 数据体
+	bt, _ = c.ErrorCode.Serialize() // Data body
 	buffer.Write(bt)
-	bt, _ = c.ErrorMsg.Serialize() // 数据体
+	bt, _ = c.ErrorMsg.Serialize() // Data body
 	buffer.Write(bt)
-	bt, _ = c.Sign.Serialize() // 数据体
+	bt, _ = c.Sign.Serialize() // Data body
 	buffer.Write(bt)
 	return buffer.Bytes(), nil
 }
@@ -218,7 +218,7 @@ func (c *MsgResponseRemoteChannelPayCollectionSign) Parse(buf []byte, seek uint3
 	if e != nil {
 		return 0, e
 	}
-	// 完成
+	// complete
 	return seek, nil
 }
 

@@ -19,14 +19,14 @@ func (p *PayRoutesPublish) customerAnalyzeHDNS(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// 判断
+	// judge
 	diaok := x16rs.IsDiamondNameOrNumber(diastr)
 	if !diaok {
 		protocol.ResponseErrorString(w, fmt.Sprintf("<%s> is not a valid diamond name or number.", diastr))
 		return
 	}
 
-	// 读取钻石归属地址
+	// Read diamond home address
 	apiUrl := p.config.FullNodeRpcURL + "/query?action=hdns&diamond=" + diastr
 	realaddr, e := protocol.RequestRpcReqDiamondNameServiceInCommonUse(apiUrl)
 	if e != nil {
@@ -34,7 +34,7 @@ func (p *PayRoutesPublish) customerAnalyzeHDNS(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// 成功返回
+	// Successful return
 	data := map[string]interface{}{
 		"address": realaddr,
 	}

@@ -15,11 +15,11 @@ func (p *PayRoutesPublish) ReadUpdateLogFile(pagenum uint32) ([]byte, error) {
 	return ioutil.ReadFile(upfilen)
 }
 
-// 读取日志文件并更新
-// 返回最后更新成功的页数
+// Read log file and update
+// Returns the number of pages that were last successfully updated
 func (p *PayRoutesPublish) DoUpdateByReadLogFile() uint32 {
 
-	// 锁定
+	// locking
 	p.routingManager.UpdateLock()
 	defer p.routingManager.UpdateUnlock()
 
@@ -27,36 +27,36 @@ func (p *PayRoutesPublish) DoUpdateByReadLogFile() uint32 {
 	curnum := lastestPageNum + 1
 
 	for {
-		// 读取文件
+		// read file
 		upfbts, e := p.ReadUpdateLogFile(curnum)
 		if e != nil {
 			curnum--
-			break // 不存在
+			break // non-existent
 		}
-		// 更新
+		// to update
 		fmt.Println("readUpdateLogFile:", curnum)
 		p.routingManager.ForceUpdataNodesAndRelationshipByJsonBytesUnsafe(upfbts, curnum)
-		curnum++ // 下一页
+		curnum++ // next page
 	}
 	if curnum > lastestPageNum {
 		lastestPageNum = curnum
 	} else {
-		// 没有更新
+		// No updates
 		fmt.Println("not find any new update log file.")
 		return lastestPageNum
 	}
 
-	// 写入磁盘
+	// Write to disk
 	fmt.Println("flushAllNodesAndRelationshipToDisk.")
 	e := p.routingManager.FlushAllNodesAndRelationshipToDiskUnsafe(
 		p.config.DataSourceDir,
-		&p.dataAllNodes, // 拷贝数据
-		&p.dataAllGraph, // 拷贝数据
+		&p.dataAllNodes, // Copy data
+		&p.dataAllGraph, // Copy data
 	)
 	if e != nil {
 		fmt.Println(e.Error())
 	}
 
-	// 返回最后有效的页数
+	// Returns the last valid pages
 	return lastestPageNum
 }

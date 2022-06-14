@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// 判断是否为 HDNS 钻石域名服务地址
+// Determine whether it is the hdns diamond domain name service address
 func IsHDNSaddress(addrstr string) (string, bool) {
 	addrObj := strings.Split(addrstr, "_")
 	if len(addrObj) < 1 {
@@ -18,45 +18,45 @@ func IsHDNSaddress(addrstr string) (string, bool) {
 	}
 	diakind := addrObj[0]
 	if x16rs.IsDiamondValueString(diakind) {
-		return diakind, true // 钻石字面值
+		return diakind, true // Diamond face value
 	}
 	if num, ok := strconv.Atoi(diakind); ok == nil && num > 0 && num < 16777216 {
-		return diakind, true // 钻石编号
+		return diakind, true // Diamond number
 	}
 	return "", false
 }
 
-// 向全节点请求 HDNS 解析数据
+// Request hdns resolution data from all nodes
 func RequestRpcReqDiamondNameServiceFromLoginResolutionApi(apiDomain string, diakind string) (string, error) {
-	// hdns 服务
+	// Hdns service
 	requrl := apiDomain + fmt.Sprintf("/customer/hdns_analyze?diamond=%s", diakind)
 	//fmt.Println(requrl)
 	return RequestRpcReqDiamondNameServiceInCommonUse(requrl)
 }
 
-// 向全节点请求 HDNS 解析数据
+// Request hdns resolution data from all nodes
 func RequestRpcReqDiamondNameServiceInCommonUse(apiUrl string) (string, error) {
-	// hdns 服务
+	// Hdns service
 	//fmt.Println(requrl)
 	resp, e := http.Get(apiUrl)
 	if e != nil {
 		return "", e
 	}
-	// 请求成功
+	// Request succeeded
 	bytes, e := ioutil.ReadAll(resp.Body)
 	if e != nil {
 		return "", e
 	}
-	// 判断错误
+	// Misjudgment
 	errmsg, e := jsonparser.GetString(bytes, "errmsg")
 	if e == nil && len(errmsg) > 0 {
 		return "", fmt.Errorf(errmsg)
 	}
-	// 去地址
+	// To address
 	address, e := jsonparser.GetString(bytes, "address")
 	if e != nil {
 		return "", e
 	}
-	// 解析成功
+	// Resolution succeeded
 	return address, nil
 }

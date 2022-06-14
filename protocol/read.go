@@ -6,37 +6,37 @@ import (
 	"time"
 )
 
-// 接受消息
+// Accept message
 func ReceiveMsg(wsconn *websocket.Conn) (Message, []byte, error) {
 	var msgdata []byte = nil
 	e := websocket.Message.Receive(wsconn, &msgdata)
 	if e != nil {
 		return nil, nil, e
 	}
-	// 解析消息错误，断开连接
+	// Error parsing message, disconnect
 	msgobj, err := ParseMessage(msgdata, 0)
 	if err != nil {
 		return nil, nil, err
 	}
-	// 成功
+	// success
 	return msgobj, msgdata, nil
 }
 
-// 接受消息
-// timeoutsec 超时秒
+// Accept message
+// Timeoutsec timeout seconds
 func ReceiveMsgOfTimeout(wsconn *websocket.Conn, timeoutsec int) (Message, []byte, error) {
 
-	// 管道
+	// The Conduit
 	var msgdata []byte = nil
 	var msgobj Message = nil
 	resErrChan := make(chan error, 2)
 
-	// 超时
+	// overtime
 	ttk := time.AfterFunc(time.Duration(timeoutsec)*time.Second, func() {
-		resErrChan <- fmt.Errorf("Receive message timeout") // 超时退出
+		resErrChan <- fmt.Errorf("Receive message timeout") // Timeout exit
 	})
 
-	// 读取消息
+	// Read message
 	go func() {
 		var mdata []byte = nil
 		e := websocket.Message.Receive(wsconn, &msgdata)
@@ -44,26 +44,26 @@ func ReceiveMsgOfTimeout(wsconn *websocket.Conn, timeoutsec int) (Message, []byt
 			resErrChan <- e
 			return
 		}
-		// 解析消息错误，断开连接
+		// Error parsing message, disconnect
 		mobj, err := ParseMessage(msgdata, 0)
 		if err != nil {
 			resErrChan <- e
 			return
 		}
-		// 停止超时回调
+		// Stop timeout callback
 		ttk.Stop()
-		// 成功
+		// success
 		msgdata, msgobj = mdata, mobj
 		resErrChan <- nil
 		return
 	}()
 
-	// 等待
+	// wait for
 	err := <-resErrChan
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// 答复成功
+	// Reply succeeded
 	return msgobj, msgdata, nil
 }

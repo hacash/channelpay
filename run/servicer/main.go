@@ -12,7 +12,7 @@ import (
 
 func main() {
 
-	// 启动服务端
+	// Start the server
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
@@ -31,18 +31,18 @@ func main() {
 
 	hinicnf, _ := sys.LoadInicnf(target_ini_file)
 
-	// 配置
+	// to configure
 	svcnf := servicer.NewServicerConfig(hinicnf)
 	sev := servicer.NewServicer(svcnf)
 
-	// 数据源
+	// data source
 	localsto, e := chanpay.NewLocalDBImpOfDataSource(svcnf.PaySourceDataDir)
 	if e != nil {
 		fmt.Println(e.Error())
 	} else {
-		// 设置数据源
+		// set up data sources
 		sev.SetDataSource(localsto, localsto, localsto)
-		// 启动
+		// start-up
 		sev.Start()
 	}
 

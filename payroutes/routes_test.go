@@ -10,14 +10,14 @@ import (
 
 func Test_t1(t *testing.T) {
 
-	// 测试路由查询
+	// Test route query
 	mng := RoutingManager{
 		nodeById:   make(map[uint32]*PayRelayNode, 0),
 		nodeByName: make(map[string]*PayRelayNode, 0),
 		graphDatas: make([]*ChannelRelationship, 0),
 	}
 
-	// 添加十个节点
+	// Add ten nodes
 	overdueTime := time.Now().Unix() + 99999
 	for i := 1; i <= 10; i++ {
 		name := fmt.Sprintf("node%d", i)
@@ -30,7 +30,7 @@ func Test_t1(t *testing.T) {
 		mng.nodeByName[strings.ToLower(name)] = node
 	}
 
-	// 添加关系表
+	// Add relation table
 	createRelationship := func(ships [][]uint32) []*ChannelRelationship {
 		res := make([]*ChannelRelationship, len(ships))
 		for i, v := range ships {
@@ -52,7 +52,7 @@ func Test_t1(t *testing.T) {
 		{4, 10},
 	})
 
-	// 测试路由查找
+	// Test route lookup
 	pathnodes, e := mng.SearchNodePath("node1", "node5")
 	if e != nil {
 		fmt.Println(e.Error())

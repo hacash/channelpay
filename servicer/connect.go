@@ -9,56 +9,56 @@ import (
 	"time"
 )
 
-// 客户端连接
+// Client connection
 func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 
-	// 创建客户连接
+	// Create customer connection
 	customer := chanpay.NewCustomer(ws)
 
-	// 如果 5 秒钟之内还未注册，则关闭连接
+	// If not registered within 5 seconds, close the connection
 	time.AfterFunc(time.Second*5, func() {
 		if customer.RegisteredID == 0 {
-			ws.Close() // 超时未注册，关闭
+			ws.Close() // Timeout unregistered, closed
 		}
 	})
 
-	// 循环读取消息
+	// Loop read message
 	for {
-		// 读取消息，解析消息错误，断开连接
+		// Read message, parse message error, disconnect
 		msgobj, _, err := protocol.ReceiveMsg(ws)
 		if err != nil {
 			break
 		}
-		// 首条消息必须为注册消息
+		// The first message must be a registration message
 		if customer.RegisteredID == 0 {
 			if msgobj.Type() == protocol.MsgTypeLogin {
 				tarobj := msgobj.(*protocol.MsgLogin)
-				customer.DoRegister(tarobj.ChannelId, tarobj.CustomerAddress) // 执行注册
-				// 找出旧连接
+				customer.DoRegister(tarobj.ChannelId, tarobj.CustomerAddress) // Perform registration
+				// Find old connections
 				old := s.FindCustomersByChannel(tarobj.ChannelId)
-				// 处理旧的客户端连接
+				// Process old client connections
 				if old != nil {
-					// 从管理池里移除
+					// Remove from management pool
 					s.RemoveCustomerFromPool(old)
-					// 拷贝数据，顶替下线
+					// Copy data, replace offline
 					old.DoDisplacementOffline(customer)
 				} else {
-					// 全新登录
+					// New login
 					e := s.LoginNewCustomer(customer)
 					if e != nil {
-						// 登录失败，发送错误消息
+						// Login failed, send error message
 						emsg := &protocol.MsgError{
 							ErrCode: 1,
 							ErrTip:  fields.CreateStringMax65535(e.Error()),
 						}
 						protocol.SendMsg(ws, emsg)
-						// 断开连接
+						// Disconnect
 						break
 					}
 				}
-				// 添加新连接
+				// Add new connection
 				s.AddCustomerToPool(customer)
-				// 发送对账单消息
+				// Send statement message
 				billmsg := &protocol.MsgLoginCheckLastestBill{
 					ProtocolVersion: fields.VarUint2(protocol.LatestProtocolVersion),
 					BillIsExistent:  fields.CreateBool(false),
@@ -69,45 +69,45 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 					billmsg.LastBill = cusbill
 				}
 				protocol.SendMsg(customer.ChannelSide.WsConn, billmsg)
-				// 继续接受消息，订阅消息
+				// Continue to accept messages and subscribe to messages
 				s.dealOtherMessage(customer)
-				// 成功返回
+				// Successful return
 				break
 			} else if msgobj.Type() == protocol.MsgTypeHeartbeat {
-				// 心跳包
-				customer.UpdateLastestHeartbeatTime() // 心跳保活
+				// Heartbeat 
+				customer.UpdateLastestHeartbeatTime() // Keep heartbeat alive
 			} else {
-				// 消息类型错误，直接退出
+				// Message type error, exit directly
 				break
 			}
 		}
 
 	}
 
-	// 从管理池里移除
+	// Remove from management pool
 	s.RemoveCustomerFromPool(customer)
 
-	// 断开连接
+	// Disconnect
 	ws.Close()
 }
 
-// 中继支付服务连接
+// Relay payment service connection
 func (s *Servicer) dealOtherMessage(customer *chanpay.Customer) {
 
 	msgch := make(chan protocol.Message, 2)
 	subobj := customer.ChannelSide.SubscribeMessage(msgch) // 订阅消息
 
-	// 处理其它类型消息
+	// Processing other types of messages
 	for {
 		select {
 		case <-subobj.Err(): // 消息订阅错误
-			// 从管理池里移除
+			// Remove from management pool
 			s.RemoveCustomerFromPool(customer)
-			// 断开连接
+			// Disconnect
 			customer.ChannelSide.WsConn.Close()
 			return
 		case msg := <-msgch:
-			// 处理其他消息
+			// Process other messages
 			go s.msgHandler(customer, msg)
 		}
 
@@ -115,56 +115,56 @@ func (s *Servicer) dealOtherMessage(customer *chanpay.Customer) {
 
 }
 
-// 中继支付服务连接
+// Relay payment service connection
 func (s *Servicer) connectRelayPayHandler(ws *websocket.Conn) {
 
-	// 返回错误消息
+	// Return error message
 	errorReturn := func(e error) {
 		errmsg := &protocol.MsgError{
 			ErrCode: 0,
 			ErrTip:  fields.CreateStringMax65535(e.Error()),
 		}
 		protocol.SendMsg(ws, errmsg)
-		ws.Close() // 断开
+		ws.Close() // to break off
 	}
 
 	isLaunchPay := false
 
-	// 如果 5 秒钟之内还未收到发起支付消息，则关闭连接
+	// If the initiate payment message is not received within 5 seconds, close the connection
 	time.AfterFunc(time.Second*5, func() {
 		if isLaunchPay == false {
-			ws.Close() // 超时未注册，关闭
+			ws.Close() // Timeout unregistered, closed
 		}
 	})
 
-	// 读取消息，解析消息错误，断开连接
+	// Read message, parse message error, disconnect
 	msgobj, _, err := protocol.ReceiveMsg(ws)
 	if err != nil {
 		ws.Close()
-		return // 断开
+		return // to break off
 	}
 
 	mty := msgobj.Type()
 	if mty == protocol.MsgTypeRelayInitiatePayment {
-		// 发起支付消息
+		// Initiate payment message
 		initpaymsg, ok := msgobj.(*protocol.MsgRequestRelayInitiatePayment)
 		if !ok {
 			errorReturn(fmt.Errorf("MsgRequestRelayInitiatePayment format error"))
-			return // 消息解析错误
+			return // Message parsing error
 		}
 
-		isLaunchPay = true                              // 标记已经调起
+		isLaunchPay = true                              // Mark has been set
 		e := s.dealRelayInitiatePayment(ws, initpaymsg) // 处理支付
 		if e != nil {
 			errorReturn(fmt.Errorf("DealRelayInitiatePayment error: %s", e.Error()))
-			return // 错误
+			return // error
 		}
 
 	} else {
 
-		// 只接受远程支付消息
+		// Only accept remote payment messages
 		errorReturn(fmt.Errorf("Msg type error"))
-		return // 错误
+		return // error
 
 	}
 
