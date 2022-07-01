@@ -90,13 +90,13 @@ func (r *RoutingManager) doSearchPath(recursion, start, target uint32, prefixPat
 	}
 	//// 右侧，第二步查找
 	//prevs := r.findOutRelationship(target, subfixPath)
-	// recursive lookup 
+	// recursive lookup
 	for _, v := range nexts {
 		if v != target && v != start && !isContainUint32(prefixPath, v) {
 			newPrefixPath := make([]uint32, len(prefixPath))
 			copy(newPrefixPath, prefixPath)
 			newPrefixPath = append(newPrefixPath, start)
-			// recursive lookup 
+			// recursive lookup
 			r.doSearchPath(recursion, v, target, newPrefixPath, respath)
 		}
 	}

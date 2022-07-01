@@ -10,7 +10,7 @@ import (
 type Servicer struct {
 	config *ServicerConfig
 
-	// data interface 
+	// data interface
 	billstore   chanpay.DataSourceOfBalanceBill             // Bill storage
 	chanset     chanpay.DataSourceOfServicerPayChannelSetup // Channel configuration
 	signmachine chanpay.DataSourceOfSignatureMachine        // Signing machine

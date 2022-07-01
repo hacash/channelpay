@@ -74,7 +74,7 @@ func (s *Servicer) connectCustomerHandler(ws *websocket.Conn) {
 				// Successful return
 				break
 			} else if msgobj.Type() == protocol.MsgTypeHeartbeat {
-				// Heartbeat 
+				// Heartbeat
 				customer.UpdateLastestHeartbeatTime() // Keep heartbeat alive
 			} else {
 				// Message type error, exit directly

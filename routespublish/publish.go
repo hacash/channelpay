@@ -49,7 +49,7 @@ func (p *PayRoutesPublish) Start() {
 	// Read update log from disk
 	p.DoUpdateByReadLogFile()
 
-	// event processing 
+	// event processing
 	go p.loop()
 
 	// monitor
