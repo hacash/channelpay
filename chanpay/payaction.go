@@ -86,7 +86,7 @@ type ChannelPayActionInstance struct {
 	// Callback of successful payment
 	successedBackCall []func(newbill *channel.OffChainCrossNodeSimplePaymentReconciliationBill)
 
-	// timeout handler 
+	// timeout handler
 	clearTimeout chan bool
 }
 

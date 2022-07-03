@@ -8,14 +8,14 @@ const AccUIhtmlContent = `
     <meta name="google" content="notranslate" />
 
     <title>Hacash channel pay client</title>
-    
+
     <style>
-    
+
 *{
     border: none;
     padding: 0;
     margin: 0;
-    font: 11px/1.5 tahoma,arial,'Hiragino Sans GB', '微软雅黑', 'sans-serif'; 
+    font: 11px/1.5 tahoma,arial,'Hiragino Sans GB', '微软雅黑', 'sans-serif';
     list-style: none;
     text-decoration: none;
 }
@@ -129,7 +129,7 @@ h3.tt {
     cursor: pointer;
     border-radius: 100px;
     margin-left: 10px;
-} 
+}
 .cid label {
     width: 130px;
     display: block;
@@ -331,7 +331,7 @@ h3.tt {
 
 /****************************************/
 
-.dopay {    
+.dopay {
     display: none;
     position: fixed;
     top: 0;
@@ -471,8 +471,8 @@ h3.tt {
         <h3 class="ttt">Select and confirm your payment</h3>
         <p class="check"></p>
         <p class="note">Note: Please select a payment path. If it fails, you can try to select another path to initiate payment again. Once the payment is successful, it is irrevocable.</p>
-        <form id="slctps"> 
-            <label class="pil"><input name="ptitem" type="radio" value="1" /></label> 
+        <form id="slctps">
+            <label class="pil"><input name="ptitem" type="radio" value="1" /></label>
         </form>
         <div class="btns">
             <button class="cancel">Cancel</button>
@@ -490,7 +490,7 @@ h3.tt {
  * PrequeryPayment(string,string) string
  * ConfirmPayment(pathselect) string
  * CancelPayment()
- * 
+ *
  * // Called function
  * Logout()
  * ShowLogOnPrint(string, bool)
@@ -498,7 +498,7 @@ h3.tt {
  * InitAccount(...)
  * UpdateBalance(...)
  * ShowPaymentError(string)
- * 
+ *
  */
 
 
