@@ -4,7 +4,7 @@ import (
 	"github.com/hacash/node/websocket"
 )
 
-// 发送消息
+// send message
 func SendMsg(wsconn *websocket.Conn, msg Message) error {
 	bt, e := msg.SerializeWithType()
 	if e != nil {
@@ -14,16 +14,16 @@ func SendMsg(wsconn *websocket.Conn, msg Message) error {
 	return e
 }
 
-// 发送消息并取得回复
-// timeoutsec 超时秒
+// Send a message and get a reply
+// Timeoutsec timeout seconds
 func SendMsgForResponseTimeout(wsconn *websocket.Conn, msg Message, timeoutsec int) (Message, []byte, error) {
 
-	// 发送消息
+	// send message
 	e := SendMsg(wsconn, msg)
 	if e != nil {
 		return nil, nil, e
 	}
 
-	// 读取回复
+	// Read reply
 	return ReceiveMsgOfTimeout(wsconn, timeoutsec)
 }

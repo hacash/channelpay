@@ -6,70 +6,70 @@ import (
 	"time"
 )
 
-// 发起连接
-// 发送消息并取得回复
-// timeoutsec 超时秒
+// Initiate connection
+// Send a message and get a reply
+// Timeoutsec timeout seconds
 func OpenConnectAndSendMsgForResponseTimeout(wsurl string, msg Message, timeoutsec int) (*websocket.Conn, Message, []byte, error) {
 
 	var wsconn *websocket.Conn
 	var errchan = make(chan error, 2)
 
-	// 超时
+	// overtime
 	ttt := time.AfterFunc(time.Second*time.Duration(timeoutsec), func() {
 		errchan <- fmt.Errorf("Dial %d second time out.")
 	})
 
 	go func() {
-		// 发起连接
+		// Initiate connection
 		conn, e := websocket.Dial(wsurl, "", "http://127.0.0.1/")
-		wsconn = conn // 赋值
+		wsconn = conn // assignment
 		ttt.Stop()
 		errchan <- e
 	}()
 
-	// 等待响应
+	// Waiting for response
 	e := <-errchan
 	if e != nil {
 		return nil, nil, nil, e
 	}
 
-	// 发送消息
+	// send message
 	e = SendMsg(wsconn, msg)
 	if e != nil {
 		return nil, nil, nil, e
 	}
 
-	// 读取回复
+	// Read reply
 	msgobj, msgdata, e := ReceiveMsgOfTimeout(wsconn, timeoutsec)
 	if e != nil {
 		return nil, nil, nil, e
 	}
 
-	// 完成
+	// complete
 	return wsconn, msgobj, msgdata, nil
 }
 
-// 连接
+// connect
 func OpenConnectAndSendMsg(wsurl string, msg Message) (*websocket.Conn, error) {
 
-	// 发起连接
+	// Initiate connection
 	conn, e := websocket.Dial(wsurl, "", "http://127.0.0.1/")
 	if e != nil {
 		return nil, e
 	}
 
-	// 发送消息
+	// send message
 	e = SendMsg(conn, msg)
 	if e != nil {
 		return nil, e
 	}
 
-	// 完成
+	// complete
 	return conn, nil
 }
 
-// 连接
+// connect
 func OpenConnect(wsurl string) (*websocket.Conn, error) {
-	// 发起连接
+	// Initiate connection
 	return websocket.Dial(wsurl, "", "http://127.0.0.1/")
 }

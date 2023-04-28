@@ -7,20 +7,20 @@ import (
 )
 
 var (
-	DevDebug bool = false // 全局开发者测试模式
+	DevDebug bool = false // Global developer test mode
 )
 
 func MainNewAppRun() fyne.App {
 
 	a := app.New()
 
-	// 明亮主题
+	// Bright theme
 	a.Settings().SetTheme(theme.LightTheme())
 
-	// 显示登录窗口
+	// Show login window
 	CreateShowRunLoginWindow(a)
 
-	// 启动
+	// start-up
 	a.Run()
 
 	return a

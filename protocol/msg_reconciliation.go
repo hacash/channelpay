@@ -7,9 +7,9 @@ import (
 
 ////////////////////////////////////////////
 
-// 客户端发起对账
+// Client initiated reconciliation
 type MsgClientInitiateReconciliation struct {
-	SelfSign fields.Sign // 对账我方签名
+	SelfSign fields.Sign // Reconciliation our signature
 }
 
 func (m MsgClientInitiateReconciliation) Type() uint8 {
@@ -53,9 +53,9 @@ func (m MsgClientInitiateReconciliation) SerializeWithType() ([]byte, error) {
 
 ////////////////////////////////////////////
 
-// 服务端响应对账
+// Server response reconciliation
 type MsgServicerRespondReconciliation struct {
-	SelfSign fields.Sign // 对账我方签名
+	SelfSign fields.Sign // Reconciliation our signature
 }
 
 func (m MsgServicerRespondReconciliation) Type() uint8 {

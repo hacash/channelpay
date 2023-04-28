@@ -9,7 +9,7 @@ import (
  * 支付节点路由下载同步
  */
 
-// 完成并关闭
+// Complete and close
 type MsgPayRouteEndClose struct {
 }
 
@@ -42,7 +42,7 @@ func (m MsgPayRouteEndClose) SerializeWithType() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// 请求全部节点列表
+// Request list of all nodes
 type MsgPayRouteRequestServiceNodes struct {
 }
 
@@ -75,7 +75,7 @@ func (m MsgPayRouteRequestServiceNodes) SerializeWithType() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// 响应全部节点
+// Respond to all nodes
 type MsgPayRouteResponseServiceNodes struct {
 	LastestUpdatePageNum fields.VarUint4
 	AllNodesBytes        fields.StringMax16777215
@@ -129,7 +129,7 @@ func (m MsgPayRouteResponseServiceNodes) SerializeWithType() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// 请求全部关系
+// Request all relationships
 type MsgPayRouteRequestNodeRelationship struct {
 }
 
@@ -162,7 +162,7 @@ func (m MsgPayRouteRequestNodeRelationship) SerializeWithType() ([]byte, error) 
 	return buf.Bytes(), nil
 }
 
-// 响应全部关系
+// Respond to all relationships
 type MsgPayRouteResponseNodeRelationship struct {
 	AllRelationships fields.StringMax16777215
 }
@@ -206,9 +206,9 @@ func (m MsgPayRouteResponseNodeRelationship) SerializeWithType() ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-// 请求路由修改
+// Request route modification
 type MsgPayRouteRequestUpdates struct {
-	QueryPageNum fields.VarUint4 // 请求的页数
+	QueryPageNum fields.VarUint4 // Requested pages
 }
 
 func (m MsgPayRouteRequestUpdates) Type() uint8 {
@@ -252,7 +252,7 @@ func (m MsgPayRouteRequestUpdates) SerializeWithType() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// 响应路由更新
+// Response route update
 type MsgPayRouteResponseUpdates struct {
 	DataStatus            fields.VarUint1 // 数据状态  0.错误 1.正常 2.已超出最新 4.没找到
 	AllUpdatesOfJsonBytes fields.StringMax16777215

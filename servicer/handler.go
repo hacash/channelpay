@@ -5,34 +5,34 @@ import (
 	"github.com/hacash/channelpay/protocol"
 )
 
-// 消息处理
+// Message processing
 func (s *Servicer) msgHandler(customer *chanpay.Customer, msgobj protocol.Message) {
 
 	switch msgobj.Type() {
 
-	// 退出
+	// sign out
 	case protocol.MsgTypeLogout:
-		customer.ChannelSide.WsConn.Close() // 直接关闭连接
+		customer.ChannelSide.WsConn.Close() // Close connection directly
 		break
 
-	// 预查询支付
+	// Pre query payment
 	case protocol.MsgTypeRequestPrequeryPayment:
 		s.MsgHandlerRequestPrequeryPayment(customer, msgobj.(*protocol.MsgRequestPrequeryPayment))
 		break
 
-	// 确定发起支付
+	// Confirm to initiate payment
 	case protocol.MsgTypeInitiatePayment:
 		s.MsgHandlerRequestInitiatePayment(customer, nil, msgobj.(*protocol.MsgRequestInitiatePayment))
 		break
 
-	// 发起对账
+	// Initiate reconciliation
 	case protocol.MsgTypeClientInitiateReconciliation:
 		s.MsgHandlerClientInitiateReconciliation(customer, msgobj.(*protocol.MsgClientInitiateReconciliation))
 		break
 
-	// 心跳包
+	// Heartbeat
 	case protocol.MsgTypeHeartbeat:
-		customer.UpdateLastestHeartbeatTime() // 心跳保活
+		customer.UpdateLastestHeartbeatTime() // Keep heartbeat alive
 		break
 
 	}

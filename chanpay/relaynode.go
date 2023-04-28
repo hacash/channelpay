@@ -4,10 +4,10 @@ import (
 	"github.com/hacash/core/fields"
 )
 
-// 中继支付连接通道
+// Relay payment connection channel
 type RelayPaySettleNoder struct {
 
-	// 服务名称
+	// Service name
 	IdentificationName string
 	ChannelId          fields.ChannelId
 	OurAddressIsLeft   bool
@@ -36,17 +36,17 @@ func (c *RelayPaySettleNoder) GetChannelCapacityAmountForRemoteCollect() fields.
 	return c.ChannelSide.GetChannelCapacityAmountOfOur()
 }
 
-// 检查收款通道是否被占用
+// Check whether the collection channel is occupied
 func (c *RelayPaySettleNoder) IsInBusinessExclusive() bool {
 	return c.ChannelSide.IsInBusinessExclusive()
 }
 
-// 其中状态独占
+// Where state exclusive
 func (c *RelayPaySettleNoder) StartBusinessExclusive() bool {
 	return c.ChannelSide.StartBusinessExclusive()
 }
 
-// 解除状态独占
+// Remove state exclusivity
 func (c *RelayPaySettleNoder) ClearBusinessExclusive() {
 	c.ChannelSide.ClearBusinessExclusive()
 }

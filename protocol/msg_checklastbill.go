@@ -11,8 +11,8 @@ import (
  */
 
 type MsgLoginCheckLastestBill struct {
-	ProtocolVersion fields.VarUint2 // 服务端的最新协议版本号，用于提醒客户端更新软件版本
-	BillIsExistent  fields.Bool     // 是否存在对账单
+	ProtocolVersion fields.VarUint2 // The latest protocol version number of the server, which is used to remind the client to update the software version
+	BillIsExistent  fields.Bool     // Whether there is a statement
 	LastBill        channel.ReconciliationBalanceBill
 }
 
@@ -63,7 +63,7 @@ func (m MsgLoginCheckLastestBill) Serialize() ([]byte, error) {
 	}
 	buf.Write(bt)
 	if m.BillIsExistent.Check() {
-		// 必须带上 code
+		// Code is required
 		bt, e = m.LastBill.SerializeWithTypeCode()
 		if e != nil {
 			return nil, e

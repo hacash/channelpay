@@ -12,7 +12,7 @@ import (
 
 func AssembleUIfiles(fpath string) {
 
-	// 读取文件
+	// read file
 	p1 := path.Join(fpath, "pay.html")
 	p2 := path.Join(fpath, "pay.css")
 	p3 := path.Join(fpath, "pay.js")
@@ -23,7 +23,7 @@ func AssembleUIfiles(fpath string) {
 	htmlcon := strings.Replace(string(con1), "/*=*csscon*=*/", string(con2), 1)
 	htmlcon = strings.Replace(htmlcon, "/*=*jscon*=*/", string(con3), 1)
 
-	// 写入文件
+	// write file
 	bdir := path.Dir(fpath)
 	rfp := path.Join(bdir, "accui.go")
 

@@ -7,51 +7,51 @@ import (
 	"sort"
 )
 
-// 添加客户到连接管理池，返回旧的
+// Add customers to the connection management pool and return to the old
 func (s *Servicer) AddCustomerToPool(newcur *chanpay.Customer) error {
 	if newcur.RegisteredID == 0 {
 		return fmt.Errorf("Customer unregistered")
 	}
-	// 并发锁
+	// Concurrent lock
 	s.customerChgLock.Lock()
 	defer s.customerChgLock.Unlock()
 	//
-	// 插入新的
+	// Insert new
 	s.customers[newcur.RegisteredID] = newcur
-	// 添加成功
+	// Successfully added
 	return nil
 }
 
-// 从管理池移除
+// Remove from management pool
 func (s *Servicer) RemoveCustomerFromPool(cur *chanpay.Customer) {
-	// 并发锁
+	// Concurrent lock
 	s.customerChgLock.Lock()
 	defer s.customerChgLock.Unlock()
-	// 移除
+	// remove
 	s.RemoveCustomerFromPoolUnsafe(cur)
 	// ok
 	return
 }
 
-// 从管理池移除
+// Remove from management pool
 func (s *Servicer) RemoveCustomerFromPoolUnsafe(cur *chanpay.Customer) {
 	if cur.RegisteredID == 0 {
 		return
 	}
-	// 移除
+	// remove
 	delete(s.customers, cur.RegisteredID)
 	// ok
 	return
 }
 
-// 查询客户端连接
+// Query client connections
 func (s *Servicer) FindCustomersByChannel(cid fields.ChannelId) *chanpay.Customer {
 
-	// 并发锁
+	// Concurrent lock
 	s.customerChgLock.RLock()
 	defer s.customerChgLock.RUnlock()
 
-	// 搜索
+	// search
 	for _, v := range s.customers {
 		if v.ChannelSide.ChannelId.Equal(cid) {
 			return v
@@ -60,15 +60,15 @@ func (s *Servicer) FindCustomersByChannel(cid fields.ChannelId) *chanpay.Custome
 	return nil
 }
 
-// 查询客户端连接
+// Query client connections
 func (s *Servicer) FindCustomersByAddress(addr fields.Address) []*chanpay.Customer {
 
-	// 并发锁
+	// Concurrent lock
 	s.customerChgLock.RLock()
 	defer s.customerChgLock.RUnlock()
 
 	users := make([]*chanpay.Customer, 0)
-	// 搜索
+	// search
 	for _, v := range s.customers {
 		if v.ChannelSide.RemoteAddress.Equal(addr) {
 			users = append(users, v)
@@ -77,20 +77,20 @@ func (s *Servicer) FindCustomersByAddress(addr fields.Address) []*chanpay.Custom
 	return users
 }
 
-// 找出通道容量最大的客户端连接
-// 查询客户端连接
+// Find the client connection with the largest channel capacity
+// Query client connections
 func (s *Servicer) FindAndStartBusinessExclusiveWithOneCustomersByAddress(addr fields.Address, payamt *fields.Amount) (*chanpay.Customer, error) {
 
 	users := s.FindCustomersByAddress(addr)
 	if len(users) == 0 {
-		return nil, fmt.Errorf("Target Address Not online.") // 地址不在线
+		return nil, fmt.Errorf("Target Address Not online.") // Address not online
 	}
 
-	// 按收款通道容量排序
+	// Sort by collection channel capacity
 	list := chanpay.CreateChannelSideConnWrapForCustomer(users)
-	sort.Sort(list) // 排序
+	sort.Sort(list) // sort
 
-	// 查询并锁定
+	// Query and lock
 	capok := false
 	for i, v := range list {
 		usr := users[i]
@@ -98,17 +98,17 @@ func (s *Servicer) FindAndStartBusinessExclusiveWithOneCustomersByAddress(addr f
 		if !capamt.LessThan(payamt) {
 			capok = true
 			if usr.StartBusinessExclusive() {
-				// 锁定成功
+				// Locking succeeded
 				return usr, nil
 			}
 		}
 	}
 
 	if !capok {
-		// 通道容量不足
+		// Insufficient channel capacity
 		return nil, fmt.Errorf("Target Address collection channel capacity not enough.")
 	}
 
-	// 通道全部被占用
+	// All channels are occupied
 	return nil, fmt.Errorf("Target Address collection channels are being occupied.")
 }

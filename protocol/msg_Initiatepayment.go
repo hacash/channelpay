@@ -9,16 +9,16 @@ import (
  * 发起支付
  */
 type MsgRequestInitiatePayment struct {
-	TransactionDistinguishId fields.VarUint8 // 交易识别id
+	TransactionDistinguishId fields.VarUint8 // Transaction identification ID
 
-	Timestamp                fields.BlockTxTimestamp // 交易时间戳
-	OrderNoteHashHalfChecker fields.HashHalfChecker  // 订单详情数据哈希
+	Timestamp                fields.BlockTxTimestamp // Transaction timestamp
+	OrderNoteHashHalfChecker fields.HashHalfChecker  // Order detail data hash
 
-	HighestAcceptanceFee fields.Amount       // 最高可接受的总手续费数额
-	PayAmount            fields.Amount       // 支付金额，必须为正整数
-	PayeeChannelAddr     fields.StringMax255 // 收款人通道地址，例如： 1Ke39SGbnrsDzkThANzTAFJmDhcc8qvM2Z__HACorg
+	HighestAcceptanceFee fields.Amount       // Maximum acceptable total handling fee amount
+	PayAmount            fields.Amount       // Payment amount must be a positive integer
+	PayeeChannelAddr     fields.StringMax255 // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
 
-	// 指定的路由节点ID列表
+	// Specified routing node ID list
 	TargetPath NodeIdPath
 }
 

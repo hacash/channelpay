@@ -10,10 +10,10 @@ import (
  * 支付相关
  */
 
-// 广播对账单
+// Broadcast statement
 type MsgBroadcastChannelStatementProveBody struct {
-	TransactionDistinguishId fields.VarUint8 // 交易识别id
-	ProveBodyIndex           fields.VarUint1 // 对账单位置 index 从零开始
+	TransactionDistinguishId fields.VarUint8 // Transaction identification ID
+	ProveBodyIndex           fields.VarUint1 // Statement position index starts from zero
 	ProveBodyInfo            *channel.ChannelChainTransferProveBodyInfo
 }
 
@@ -79,10 +79,10 @@ func (m MsgBroadcastChannelStatementProveBody) SerializeWithType() ([]byte, erro
 
 /////////////////////////////////////////////////////////////
 
-// 广播通道支付签名
+// Broadcast channel payment signature
 type MsgBroadcastChannelStatementSignature struct {
-	TransactionDistinguishId fields.VarUint8 // 交易识别id
-	// 签名
+	TransactionDistinguishId fields.VarUint8 // Transaction identification ID
+	// autograph
 	Signs fields.SignListMax255
 }
 
@@ -138,7 +138,7 @@ func (m MsgBroadcastChannelStatementSignature) SerializeWithType() ([]byte, erro
 
 //////////////////////////////////////////////////////////////
 
-// 通道支付错误
+// Channel payment error
 type MsgBroadcastChannelStatementError struct {
 	ErrCode fields.VarUint2
 	ErrTip  fields.StringMax65535
@@ -194,7 +194,7 @@ func (m MsgBroadcastChannelStatementError) SerializeWithType() ([]byte, error) {
 
 //////////////////////////////////////////////////////////////
 
-// 通道支付成功
+// Channel payment succeeded
 type MsgBroadcastChannelStatementSuccessed struct {
 	SuccessTip fields.StringMax65535
 }

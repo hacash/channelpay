@@ -10,7 +10,7 @@ func (p *PayRoutesPublish) loop() {
 	for {
 		select {
 		case <-readUpdateFileTick.C:
-			// 读取更新文件
+			// Read update file
 			p.DoUpdateByReadLogFile()
 
 		}

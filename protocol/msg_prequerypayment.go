@@ -61,8 +61,8 @@ func (m NodeIdPath) Serialize() ([]byte, error) {
 //
 type PayPathDescribe struct {
 	NodeIdPath     *NodeIdPath
-	PredictPathFee fields.Amount         // 路径预估手续费
-	Describe       fields.StringMax65535 // 通道支付描述
+	PredictPathFee fields.Amount         // Estimated service charge for route
+	Describe       fields.StringMax65535 // Channel payment description
 }
 
 func (m PayPathDescribe) Size() uint32 {
@@ -114,8 +114,8 @@ func (m PayPathDescribe) Serialize() ([]byte, error) {
 
 //
 type PayPathForms struct {
-	PayPathCount fields.VarUint1    // 支付路径数
-	PayPaths     []*PayPathDescribe // 支付路径列表
+	PayPathCount fields.VarUint1    // Number of payment paths
+	PayPaths     []*PayPathDescribe // Payment path list
 }
 
 func (m PayPathForms) Size() uint32 {
@@ -170,8 +170,8 @@ func (m PayPathForms) Serialize() ([]byte, error) {
  */
 
 type MsgRequestPrequeryPayment struct {
-	PayAmount        fields.Amount       // 支付金额，必须为正整数
-	PayeeChannelAddr fields.StringMax255 // 收款人通道地址，例如： 1Ke39SGbnrsDzkThANzTAFJmDhcc8qvM2Z__HACorg
+	PayAmount        fields.Amount       // Payment amount must be a positive integer
+	PayeeChannelAddr fields.StringMax255 // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
 }
 
 func (m MsgRequestPrequeryPayment) Type() uint8 {
@@ -225,12 +225,12 @@ func (m MsgRequestPrequeryPayment) SerializeWithType() ([]byte, error) {
 
 /***************************************************/
 
-// 支付预查询 响应
+// Payment pre query response
 type MsgResponsePrequeryPayment struct {
-	ErrCode   fields.VarUint2       // 当有错误时的错误码 > 0
-	ErrTip    fields.StringMax65535 // 错误消息
-	Notes     fields.StringMax65535 // 描述信息
-	PathForms *PayPathForms         // 可选择的支付通道列表
+	ErrCode   fields.VarUint2       // Error code when there is an error > 0
+	ErrTip    fields.StringMax65535 // Error message
+	Notes     fields.StringMax65535 // Descriptive information
+	PathForms *PayPathForms         // List of selectable payment channels
 }
 
 func NewMsgResponsePrequeryPayment(ecode uint16) *MsgResponsePrequeryPayment {

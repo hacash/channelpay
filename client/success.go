@@ -5,7 +5,7 @@ import (
 	"github.com/hacash/core/channel"
 )
 
-// 支付成功的回调
+// Callback of successful payment
 func (c *ChannelPayClient) callbackPaymentSuccessed(newbill *channel.OffChainCrossNodeSimplePaymentReconciliationBill) {
 	c.statusMutex.Lock()
 	defer c.statusMutex.Unlock()
@@ -14,17 +14,17 @@ func (c *ChannelPayClient) callbackPaymentSuccessed(newbill *channel.OffChainCro
 		c.ShowLogString(err, false, true)
 	}
 
-	// 通道对不上
+	// Channel mismatch
 	if false == newbill.GetChannelId().Equal(c.user.chanInfo.ChannelId) {
-		return // 忽略错误并返回
+		return // Ignore errors and return
 	}
 
-	// 检查票据签名
+	// Check bill signature
 	if nil != newbill.ChannelChainTransferData.CheckMustAddressAndSigns() {
-		return // 忽略错误并返回
+		return // Ignore errors and return
 	}
 
-	// 检查票据流水号
+	// Check bill serial number
 	lcbill := c.user.localLatestReconciliationBalanceBill
 	lcruv := uint32(1)
 	lcatn := uint64(0)
@@ -32,38 +32,38 @@ func (c *ChannelPayClient) callbackPaymentSuccessed(newbill *channel.OffChainCro
 		lcruv, lcatn = lcbill.GetReuseVersionAndAutoNumber()
 	}
 
-	// 检查票据状态
+	// Check bill status
 	newruv, newatn := newbill.GetReuseVersionAndAutoNumber()
 	if lcruv != newruv {
-		return // 忽略错误，直接返回
+		return // Ignore the error and return directly
 	}
 	if newatn != lcatn+1 {
 		showError(fmt.Sprintf("Callback payment successed error: %d != %d + 1",
 			newatn, lcatn))
-		return // 流水号对不上，错误返回
+		return // Serial number cannot be matched, error returned
 	}
 
-	// 更新票据状态
+	// Update bill status
 	c.updateReconciliationBalanceBill(newbill)
 
-	// 发起对账
+	// Initiate reconciliation
 	go c.InitiateReconciliation(newbill)
 }
 
-// 修改票据状态
+// Modify bill status
 func (c *ChannelPayClient) updateReconciliationBalanceBill(newbill channel.ReconciliationBalanceBill) {
 
-	// 修改票据和余额状态
+	// Modify bill and balance status
 	var servicerSide = c.user.servicerStreamSide.ChannelSide
 	servicerSide.SetReconciliationBill(newbill)
 
-	// 保存票据至磁盘
+	// Save ticket to disk
 	e := c.user.SaveLastBillToDisk(newbill)
 	if e != nil {
-		return // 出错,返回
+		return // Error, return
 	}
 	// fmt.Println("ChannelPayClient SetReconciliationBill: ", newbill.TypeCode(), newbill.GetAutoNumber())
 
-	// 重新显示余额
+	// Redisplay balance
 	go c.UpdateBalanceShow()
 }

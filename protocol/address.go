@@ -14,13 +14,13 @@ import (
  */
 
 type ChannelAccountAddress struct {
-	Address      fields.Address      // 地址
-	ChannelId    fields.ChannelId    // 通道链id
-	ServicerName fields.StringMax255 // 服务商名称
+	Address      fields.Address      // address
+	ChannelId    fields.ChannelId    // Channel Chain ID
+	ServicerName fields.StringMax255 // Name of service provider
 
 }
 
-// 解析新地址
+// Resolve new address
 func ParseChannelAccountAddress(addrstr string) (*ChannelAccountAddress, error) {
 	addr := &ChannelAccountAddress{}
 	e := addr.Parse(addrstr)
@@ -30,7 +30,7 @@ func ParseChannelAccountAddress(addrstr string) (*ChannelAccountAddress, error) 
 	return addr, nil
 }
 
-// 对比运营商名称
+// Comparison operator name
 func (c *ChannelAccountAddress) CompareServiceName(sname string) bool {
 	if strings.Compare(
 		strings.ToLower(c.ServicerName.Value()),
@@ -38,11 +38,11 @@ func (c *ChannelAccountAddress) CompareServiceName(sname string) bool {
 	) == 0 {
 		return true
 	}
-	// 不同
+	// Different
 	return false
 }
 
-// 可读地址
+// Readable address
 func (c *ChannelAccountAddress) ToReadable(isstrict bool) string {
 	addr := c.Address.ToReadable()
 	if isstrict && len(c.ChannelId) == stores.ChannelIdLength {
@@ -52,7 +52,7 @@ func (c *ChannelAccountAddress) ToReadable(isstrict bool) string {
 	return addr
 }
 
-// 解析地址
+// Resolve address
 func (c *ChannelAccountAddress) Parse(addrstr string) error {
 	addrstr1 := regexp.MustCompile(`^_+|_+$`).ReplaceAllString(addrstr, "")
 	addrstr2 := regexp.MustCompile(`_+`).ReplaceAllString(addrstr1, "_")
@@ -92,6 +92,6 @@ func (c *ChannelAccountAddress) Parse(addrstr string) error {
 	}
 	c.ServicerName = fields.CreateStringMax255(serName)
 
-	// 解析成功
+	// Resolution succeeded
 	return nil
 }

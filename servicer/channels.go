@@ -14,11 +14,11 @@ import (
 	"strings"
 )
 
-// 初始化密码
+// Initialize password
 func (s *Servicer) setupPasswordSettings() {
 	var passwordstr string = s.config.SignatureMachinePrivateKeySetupList
 	if path.Ext(s.config.SignatureMachinePrivateKeySetupList) == ".txt" {
-		// 读取文件
+		// read file
 		fpth := sys.AbsDir(s.config.SignatureMachinePrivateKeySetupList)
 		bts, e := ioutil.ReadFile(fpth)
 		if e == nil {
@@ -27,21 +27,21 @@ func (s *Servicer) setupPasswordSettings() {
 	}
 	s.settlenoderChgLock.Lock()
 	defer s.settlenoderChgLock.Unlock()
-	// 取出换行和空格
+	// Take out line breaks and spaces
 	passwordstr = strings.Replace(passwordstr, " ", "", -1)
 	passwordstr = strings.Replace(passwordstr, "\n", "", -1)
-	// 解析密码
+	// Parse password
 	//fmt.Println(passwordstr)
 	for _, v := range strings.Split(passwordstr, ",") {
 		s.signmachine.TemporaryStoragePrivateKeyForSign(v)
 	}
 }
 
-// 初始化结算通道
+// Initialize settlement channel
 func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 	var jsonfilecon []byte = []byte(s.config.RelaySettlementChannelsJsonFile)
 	if path.Ext(s.config.RelaySettlementChannelsJsonFile) == ".json" {
-		// 读取文件
+		// read file
 		fpth := sys.AbsDir(s.config.RelaySettlementChannelsJsonFile)
 		bts, e := ioutil.ReadFile(fpth)
 		if e == nil {
@@ -50,7 +50,7 @@ func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 	}
 	s.settlenoderChgLock.Lock()
 	defer s.settlenoderChgLock.Unlock()
-	// 解析json
+	// Parsing JSON
 	var chnumcount = 0
 	fmt.Printf("[InitializeChannelSide]")
 	jsonparser.ObjectEach(jsonfilecon, func(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
@@ -60,23 +60,23 @@ func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 				s.settlenoder[k] = make([]*chanpay.RelayPaySettleNoder, 0)
 			}
 			fmt.Printf(" " + k + ":")
-			// 循环多个通道
+			// Cycle multiple channels
 			jsonparser.ArrayEach(value, func(item []byte, dataType jsonparser.ValueType, offset int, err error) {
 				if len(item) == 32+2 {
 					cidstr := string(item[2:])
 					cid, _ := hex.DecodeString(cidstr)
 					if len(cid) != stores.ChannelIdLength {
-						return // 错误
+						return // error
 					}
 					weLeft := true
 					if item[0] == 'r' {
 						weLeft = false
 					}
-					// 新建通道
+					// New channel
 					sise := chanpay.NewChannelSideById(cid)
 					e := s.InitializeChannelSide(sise, nil, weLeft)
 					if e != nil {
-						// 初始化结算通道错误
+						// Error initializing settlement channel
 						fmt.Printf("InitializeChannelSide %s error:\n", cidstr)
 						fmt.Println(e.Error())
 						os.Exit(0)
@@ -84,7 +84,7 @@ func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 					}
 					fmt.Printf(" %s", cidstr)
 					node := chanpay.NewRelayPayNodeConnect(k, cid, weLeft, sise)
-					// 添加一个通道
+					// Add a channel
 					s.settlenoder[k] = append(s.settlenoder[k], node)
 					chnumcount++
 				}
@@ -96,15 +96,15 @@ func (s *Servicer) setupRelaySettlementChannelDataSettings() {
 
 }
 
-// 修改通道数据设定
+// Modify channel data settings
 func (s *Servicer) modifyChannelDataSettings() {
-	// 删除客户服务通道
+	// Delete customer service channel
 	sccs := strings.Split(strings.Replace(s.config.ServiceCustomerChannelsCancel, " ", "", -1), ",")
 	sccssn := 0
 	for _, v := range sccs {
 		cid, e := hex.DecodeString(v)
 		if e == nil && len(cid) == stores.ChannelIdLength {
-			s.chanset.CancelCustomerPayChannel(cid) // 取消服务
+			s.chanset.CancelCustomerPayChannel(cid) // Cancel service
 			sccssn++
 		}
 	}
@@ -112,13 +112,13 @@ func (s *Servicer) modifyChannelDataSettings() {
 		fmt.Printf("[Config] ServiceCustomerChannels Cancel %d channels.\n", sccssn)
 	}
 
-	// 添加客户服务通道
+	// Add customer service channel
 	scas := strings.Split(strings.Replace(s.config.ServiceCustomerChannelsAdd, " ", "", -1), ",")
 	scassn := 0
 	for _, v := range scas {
 		cid, e := hex.DecodeString(v)
 		if e == nil && len(cid) == stores.ChannelIdLength {
-			s.chanset.SetupCustomerPayChannel(cid) // 添加服务
+			s.chanset.SetupCustomerPayChannel(cid) // Add service
 			scassn++
 		}
 	}

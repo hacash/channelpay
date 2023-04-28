@@ -22,14 +22,14 @@ func (p *PayRoutesPublish) listen(port int) {
 		w.Write([]byte(GetHomePageHtml()))
 	})
 
-	// websocket 下载分发通道路由数据
+	// Websocket downloading distribution channel routing data
 	mux.Handle("/routesdata/distribute", websocket.Handler(p.connectHandler))
 
-	// 通道链用户登录解析
+	// Channel chain user login resolution
 	mux.HandleFunc("/customer/login_resolution", p.customerLoginResolution)
 	mux.HandleFunc("/customer/hdns_analyze", p.customerAnalyzeHDNS)
 
-	// 设置监听的端口
+	// Set listening port
 	portstr := strconv.Itoa(port)
 
 	server := &http.Server{
@@ -49,41 +49,41 @@ func (p *PayRoutesPublish) listen(port int) {
 
 }
 
-// 处理消息
+// Processing messages
 func (p *PayRoutesPublish) connectHandler(ws *websocket.Conn) {
 
 	for {
-		// 读取消息
+		// Read message
 		msgobj, _, err := protocol.ReceiveMsg(ws)
 		if err != nil {
 			break
 		}
-		// 消息必须请求更新或请求全部数据
+		// Message must request update or request all data
 		mt := msgobj.Type()
 		if mt == protocol.MsgTypePayRouteRequestServiceNodes {
-			// 发送全部服务节点信息
+			// Send all service node information
 			p.SendAllNodesData(ws)
 
 		} else if mt == protocol.MsgTypePayRouteRequestNodeRelationship {
-			// 发送全部服务节点信息
+			// Send all service node information
 			p.SendAllGraphData(ws)
 
 		} else if mt == protocol.MsgTypePayRouteRequestUpdates {
-			// 发送全部服务节点信息
+			// Send all service node information
 			upmg := msgobj.(*protocol.MsgPayRouteRequestUpdates)
 			p.SendTargetUpdateData(ws, uint32(upmg.QueryPageNum))
 
 		} else if mt == protocol.MsgTypePayRouteEndClose {
-			// 完成并关闭
+			// Complete and close
 			break
 
 		} else {
-			// 不支持的消息类型，直接断开
+			// Unsupported message type, disconnect directly
 			break
 		}
 
 	}
 
-	// 断开连接
+	// Disconnect
 	ws.Close()
 }

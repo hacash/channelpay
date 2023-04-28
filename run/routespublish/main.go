@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	// 启动服务端
+	// Start the server
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
@@ -30,11 +30,11 @@ func main() {
 
 	hinicnf, _ := sys.LoadInicnf(target_ini_file)
 
-	// 配置
+	// to configure
 	svcnf := routespublish.NewPayRoutesPublishConfig(hinicnf)
 	sev := routespublish.NewPayRoutesPublish(svcnf)
 
-	// 启动
+	// start-up
 	sev.Start()
 
 	// ok

@@ -10,22 +10,22 @@ import (
 type Servicer struct {
 	config *ServicerConfig
 
-	// 数据接口
-	billstore   chanpay.DataSourceOfBalanceBill             // 票据储存
-	chanset     chanpay.DataSourceOfServicerPayChannelSetup // 通道配置
-	signmachine chanpay.DataSourceOfSignatureMachine        // 签名机器
+	// data interface
+	billstore   chanpay.DataSourceOfBalanceBill             // Bill storage
+	chanset     chanpay.DataSourceOfServicerPayChannelSetup // Channel configuration
+	signmachine chanpay.DataSourceOfSignatureMachine        // Signing machine
 
-	// 客户连接池
+	// Customer connection pool
 	customerChgLock sync.RWMutex
-	customers       map[uint64]*chanpay.Customer // 客户端
+	customers       map[uint64]*chanpay.Customer // client
 
-	// 结算通道连接池
+	// Settlement channel connection pool
 	settlenoderChgLock sync.RWMutex
-	settlenoder        map[string][]*chanpay.RelayPaySettleNoder // 结算通道
+	settlenoder        map[string][]*chanpay.RelayPaySettleNoder // Settlement channel
 
-	// 路由管理器
+	// Routing manager
 	payRouteMng      *payroutes.RoutingManager
-	localServiceNode *payroutes.PayRelayNode // 本地服务节点
+	localServiceNode *payroutes.PayRelayNode // Local service node
 }
 
 func NewServicer(cnf *ServicerConfig) *Servicer {
@@ -40,21 +40,21 @@ func NewServicer(cnf *ServicerConfig) *Servicer {
 	return ser
 }
 
-// 启动
+// start-up
 func (s *Servicer) Start() {
 
 	var e error
 
-	// 初始化结算通道
+	// Initialize settlement channel
 	s.setupRelaySettlementChannelDataSettings()
 
-	// 初始化结算通道
+	// Initialize settlement channel
 	s.setupPasswordSettings()
 
-	// 设置服务客户通道
+	// Set up service customer channel
 	s.modifyChannelDataSettings()
 
-	// 从本地磁盘读取路由
+	// Read route from local disk
 	var d1 []byte
 	var d2 []byte
 	e = s.payRouteMng.LoadAllNodesAndRelationshipFormDisk(s.config.RoutesSourceDataDir, &d1, &d2)
@@ -62,7 +62,7 @@ func (s *Servicer) Start() {
 		fmt.Println(e)
 	}
 
-	// 从远程加载路由
+	// Load route from remote
 	s.checkInitLoadRoutes()
 
 	go s.loop()
@@ -71,7 +71,7 @@ func (s *Servicer) Start() {
 
 }
 
-// 设置数据来源接口
+// Set data source interface
 func (s *Servicer) SetDataSource(
 	billstore chanpay.DataSourceOfBalanceBill,
 	chanset chanpay.DataSourceOfServicerPayChannelSetup,
@@ -82,7 +82,7 @@ func (s *Servicer) SetDataSource(
 	s.signmachine = signmachine
 }
 
-// 设置数据来源接口
+// Set data source interface
 func (s *Servicer) GetLocalServiceNode() (*payroutes.PayRelayNode, error) {
 	if s.localServiceNode != nil {
 		return s.localServiceNode, nil
