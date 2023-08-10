@@ -18,8 +18,10 @@ type RpcDataChannelInfo struct {
 	ChannelId    fields.ChannelId
 	LeftAddress  fields.Address
 	LeftAmount   fields.Amount // Mortgage amount 1
+	LeftSatoshi  fields.Satoshi
 	RightAddress fields.Address
 	RightAmount  fields.Amount   // Mortgage amount 2
+	RightSatoshi fields.Satoshi
 	ReuseVersion fields.VarUint4 // Reuse version number from 1
 	Status       fields.VarUint1 // Closed and settled
 }
@@ -45,8 +47,11 @@ func ParseRpcDataChannelInfoByJSON(cid fields.ChannelId, bytes []byte) (*RpcData
 
 	lamt, _ := jsonparser.GetString(bytes, "left_amount")
 	lamount, _ := fields.NewAmountFromFinString(lamt)
+	lsat, _ := jsonparser.GetInt(bytes, "left_satoshi")
+
 	ramt, _ := jsonparser.GetString(bytes, "right_amount")
 	ramount, _ := fields.NewAmountFromFinString(ramt)
+	rsat, _ := jsonparser.GetInt(bytes, "right_satoshi")
 
 	// return
 	channel := &RpcDataChannelInfo{
@@ -56,8 +61,10 @@ func ParseRpcDataChannelInfoByJSON(cid fields.ChannelId, bytes []byte) (*RpcData
 		Status:       fields.VarUint1(status),
 		LeftAddress:  *leftaddr,
 		LeftAmount:   *lamount,
+		LeftSatoshi:  fields.Satoshi(lsat),
 		RightAddress: *rightaddr,
 		RightAmount:  *ramount,
+		RightSatoshi:  fields.Satoshi(rsat),
 	}
 	return channel, nil
 }

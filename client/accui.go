@@ -1,5 +1,4 @@
 package client
-
 const AccUIhtmlContent = `
 <html>
 <head>
@@ -8,14 +7,14 @@ const AccUIhtmlContent = `
     <meta name="google" content="notranslate" />
 
     <title>Hacash channel pay client</title>
-
+    
     <style>
-
+    
 *{
     border: none;
     padding: 0;
     margin: 0;
-    font: 11px/1.5 tahoma,arial,'Hiragino Sans GB', '微软雅黑', 'sans-serif';
+    font: 11px/1.5 tahoma,arial,'Hiragino Sans GB', '微软雅黑', 'sans-serif'; 
     list-style: none;
     text-decoration: none;
 }
@@ -129,7 +128,7 @@ h3.tt {
     cursor: pointer;
     border-radius: 100px;
     margin-left: 10px;
-}
+} 
 .cid label {
     width: 130px;
     display: block;
@@ -153,6 +152,9 @@ h3.tt {
     padding: 10px 0;
     background-image: linear-gradient(to right, #005700, #7d7804);
     border-radius: 4px;
+}
+.blsw table {
+    width: 100%;
 }
 .blsw * {
     vertical-align: baseline;
@@ -331,7 +333,7 @@ h3.tt {
 
 /****************************************/
 
-.dopay {
+.dopay {    
     display: none;
     position: fixed;
     top: 0;
@@ -413,8 +415,16 @@ h3.tt {
     <div class="pay">
         <div class="blsw">
             <table>
-                <tr><td><label>Channel balance: </label></td><td><b class="amt" id="blsamt">ㄜ91,616,204:240</b></td></tr>
-                <tr><td><label>Collection capacity: </label></td><td><b class="cap" id="blscap">ㄜ132:247</b></td></tr>
+                <tr>
+                    <td><label>Channel balance: </label></td>
+                    <td><b class="amt" id="blsamt">ㄜ91,616,204:240</b></td>
+                    <td><b class="amt" id="blssat">0 sats</b></td>
+                </tr>
+                <tr>
+                    <td><label>Collection capacity: </label></td>
+                    <td><b class="cap" id="blscap">ㄜ132:247</b></td>
+                    <td><b class="cap" id="satcap">0 sats</b></td>
+                </tr>
             </table>
         </div>
 
@@ -471,8 +481,8 @@ h3.tt {
         <h3 class="ttt">Select and confirm your payment</h3>
         <p class="check"></p>
         <p class="note">Note: Please select a payment path. If it fails, you can try to select another path to initiate payment again. Once the payment is successful, it is irrevocable.</p>
-        <form id="slctps">
-            <label class="pil"><input name="ptitem" type="radio" value="1" /></label>
+        <form id="slctps"> 
+            <label class="pil"><input name="ptitem" type="radio" value="1" /></label> 
         </form>
         <div class="btns">
             <button class="cancel">Cancel</button>
@@ -485,20 +495,20 @@ h3.tt {
 
 <script>
 /**
- * // Bound function
+ * // 绑定的函数
  * ChangeAutoCollection(int)
  * PrequeryPayment(string,string) string
  * ConfirmPayment(pathselect) string
  * CancelPayment()
- *
- * // Called function
+ * 
+ * // 调用的函数
  * Logout()
  * ShowLogOnPrint(string, bool)
  * ShowStatusLog(string)
  * InitAccount(...)
  * UpdateBalance(...)
  * ShowPaymentError(string)
- *
+ * 
  */
 
 
@@ -508,7 +518,7 @@ function Logout(tip) {
     setTimeout(function (){
         tip = tip || "You have logged out. Please login again to collect money"
         alert("[Logout Attention] " + tip)
-        window.close() // close window
+        window.close() // 关闭窗口
     }, 100)
 }
 
@@ -518,7 +528,7 @@ var logw = document.getElementById("logw")
     , statlog = document.getElementById("statlog")
 ;
 function noticeLog() {
-    // Attract attention
+    // 吸引注意
     logbg.className = "flicker"
     setTimeout(function(){
         logbg.className = ""
@@ -550,19 +560,23 @@ function InitAccount(pcid, paddr) {
 
 /* 更新余额显示 */
 var blsamt = document.getElementById("blsamt")
-, blscap = document.getElementById("blscap")
+    , blscap = document.getElementById("blscap")
+    ,blssat = document.getElementById("blssat")
+    , satcap = document.getElementById("satcap")
 , blrun = document.getElementById("blrun")
 , blanb = document.getElementById("blanb")
 , nobill = document.getElementById("nobill")
 , bdts = document.getElementById("bdts")
 ;
-function UpdateBalance(bls, cap, reusenum, billno, billbodyhex) {
-    // amount
+function UpdateBalance(bls, cap, sat_bls, sat_cap, reusenum, billno, billbodyhex) {
+    // 数额
     blsamt.innerText = bls;
     blscap.innerText = cap;
+    blssat.innerText = sat_bls + " sats";
+    satcap.innerText = sat_cap + " sats";
     blrun.innerText = reusenum;
     blanb.innerText = billno;
-    // bill
+    // 票据
     if(billbodyhex) {
         bdts.value = billbodyhex;
         bdts.style.display = "block";
@@ -591,25 +605,25 @@ var dopay = document.getElementById("dopay")
 , slpvalue = 0
 ;
 slpcancel.onclick = function(){
-    dopay.style.display = "none" // close window
-    CancelPayment() // Cancel payment
+    dopay.style.display = "none" // 关闭窗口
+    CancelPayment() // 取消支付
 }
 slpsubmit.onclick = async function(){
-    // Confirm payment
+    // 确认支付
     if(slpvalue == 0){
         return alert("Please select payment path")
     }
-    // Alert ("initiate payment!"+ slpvalue)
+    // alert("发起支付！" + slpvalue)
     var err = await ConfirmPayment(slpvalue)
     if(err) {
         return alert("Do payment error: " + err)
     }
-    // Successfully initiated payment
-    dopay.style.display = "none" // close window
-    noticeLog() // Draw attention to the log
+    // 成功发起支付
+    dopay.style.display = "none" // 关闭窗口
+    noticeLog() // 吸引目光到日志
 }
 function SelectPaymentPaths(noteinfo, paths) {
-    slpvalue = 0 // Reset
+    slpvalue = 0 // 重置
     dopay.style.display = "block"
     var itemshtml = ""
     for(var i in paths){
@@ -617,7 +631,7 @@ function SelectPaymentPaths(noteinfo, paths) {
         , one = paths[i];
         itemshtml += '<label class="pil"><input name="ptitem" type="radio" value="'+v+'" />'+one+'</label>';
     }
-    slctps.innerHTML = itemshtml; // fill
+    slctps.innerHTML = itemshtml; // 填充
     slpcheck.innerText = "Check: " + noteinfo;
     var items = slctps.getElementsByClassName("pil")
     , clearActives = function(){
@@ -643,7 +657,7 @@ function SelectPaymentPaths(noteinfo, paths) {
 /* 初始化运行 */
 (function () {
 
-    // View exact address
+    // 查看切确地址
     var ufadr = document.getElementById("ufadr")
     ;
     ufadr.onclick = function(){
@@ -652,12 +666,12 @@ function SelectPaymentPaths(noteinfo, paths) {
         ufadr.style.display = "none"
     }
 
-    // Automatically select all to copy bills
+    // 自动全选复制票据
     var bdts = document.getElementById("bdts")
     ;
     bdts.onclick = function(){
         bdts.select();
-        document.execCommand("Copy"); // Execute browser copy command
+        document.execCommand("Copy"); // 执行浏览器复制命令
     }
 
     /* 开关自动收款 */
@@ -678,14 +692,14 @@ function SelectPaymentPaths(noteinfo, paths) {
             clctt2.style.display = "none"
             clctt1.style.display = "inline-block"
         }
-        // Callback binding
+        // 回调绑定
         await ChangeAutoCollection(clcttIsOpen?1:0)
     }
 
     /* 点击开始支付 */
     var paybtn = document.getElementById("paybtn")
     , clearErr = function(){
-        ShowPaymentError("") // clean up mistakes
+        ShowPaymentError("") // 清除错误
     };
     payaddr.onchange = clearErr
     payamt.onchange = clearErr
@@ -695,17 +709,17 @@ function SelectPaymentPaths(noteinfo, paths) {
         }
         paybtn.className = "trsbtn ban"
         setTimeout(function(){
-            paybtn.className = "trsbtn" // Button status fallback
+            paybtn.className = "trsbtn" // 按钮状态回退
         }, 2000)
         var errmsg = await PrequeryPayment(payaddr.value, payamt.value)
         if(errmsg) {
-            // Display error
+            // 显示错误
             ShowPaymentError(errmsg)
             return
         }
-        // Successfully initiated payment
+        // 成功发起支付
         clearErr()
-        // Fallback status
+        // 回退状态
         paybtn.className = "trsbtn"
     }
 
@@ -721,4 +735,4 @@ function SelectPaymentPaths(noteinfo, paths) {
 </body>
 </html>
 
-`
+`;

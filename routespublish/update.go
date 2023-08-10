@@ -12,6 +12,7 @@ import (
 
 func (p *PayRoutesPublish) ReadUpdateLogFile(pagenum uint32) ([]byte, error) {
 	upfilen := path.Join(p.config.DataSourceDir, fmt.Sprintf("update%d.json", pagenum))
+	fmt.Println("[Config] Read update log file:", upfilen)
 	return ioutil.ReadFile(upfilen)
 }
 

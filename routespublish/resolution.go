@@ -62,8 +62,10 @@ func (p *PayRoutesPublish) customerLoginResolution(w http.ResponseWriter, r *htt
 	chaninfo["reuse_version"] = channelInfo.ReuseVersion
 	chaninfo["left_address"] = channelInfo.LeftAddress.ToReadable()
 	chaninfo["left_amount"] = channelInfo.LeftAmount.ToFinString()
+	chaninfo["left_satoshi"] = channelInfo.LeftSatoshi
 	chaninfo["right_address"] = channelInfo.RightAddress.ToReadable()
 	chaninfo["right_amount"] = channelInfo.RightAmount.ToFinString()
+	chaninfo["right_satoshi"] = channelInfo.RightSatoshi
 
 	// Return resolution
 	protocol.ResponseData(w, map[string]interface{}{

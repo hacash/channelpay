@@ -55,9 +55,11 @@ func (c *ChannelPayClient) UpdateBalanceShow() {
 		bts, _ := bill.SerializeWithTypeCode()
 		billhex = hex.EncodeToString(bts)
 	}
-	c.payui.Eval(fmt.Sprintf(`UpdateBalance("%s","%s",%d,%d,"%s")`,
+	c.payui.Eval(fmt.Sprintf(`UpdateBalance("%s","%s",%d,%d,%d,%d,"%s")`,
 		cside.GetChannelCapacityAmountOfOur().ToFinString(),
 		cside.GetChannelCapacityAmountOfRemote().ToFinString(),
+		cside.GetChannelCapacitySatoshiOfOur(),
+		cside.GetChannelCapacitySatoshiOfRemote(),
 		cside.GetAvailableReuseVersion(),
 		cside.GetAvailableAutoNumber(),
 		billhex,

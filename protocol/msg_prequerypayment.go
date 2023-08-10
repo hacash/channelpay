@@ -171,6 +171,7 @@ func (m PayPathForms) Serialize() ([]byte, error) {
 
 type MsgRequestPrequeryPayment struct {
 	PayAmount        fields.Amount       // Payment amount must be a positive integer
+	PaySatoshi       fields.SatoshiVariation // bitcoin if
 	PayeeChannelAddr fields.StringMax255 // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
 }
 
@@ -180,12 +181,17 @@ func (m MsgRequestPrequeryPayment) Type() uint8 {
 
 func (m MsgRequestPrequeryPayment) Size() uint32 {
 	return m.PayAmount.Size() +
+		m.PaySatoshi.Size() +
 		m.PayeeChannelAddr.Size()
 }
 
 func (m *MsgRequestPrequeryPayment) Parse(buf []byte, seek uint32) (uint32, error) {
 	var e error
 	seek, e = m.PayAmount.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
+	seek, e = m.PaySatoshi.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
@@ -198,7 +204,12 @@ func (m *MsgRequestPrequeryPayment) Parse(buf []byte, seek uint32) (uint32, erro
 
 func (m MsgRequestPrequeryPayment) Serialize() ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	b2, e := m.PayAmount.Serialize()
+	b1, e := m.PayAmount.Serialize()
+	if e != nil {
+		return nil, e
+	}
+	buf.Write(b1)
+	b2, e := m.PaySatoshi.Serialize()
 	if e != nil {
 		return nil, e
 	}

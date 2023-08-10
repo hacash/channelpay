@@ -1,0 +1,46 @@
+{
+  "nodes": {
+    "insert": [{
+      "id": 1,
+      "country_code": "  ",
+      "identification_name": "TN1",
+      "fee_min": "1:244",
+      "fee_ratio": 100000,
+      "fee_max": "1:247",
+      "gateway_1": "127.0.0.1:9001",
+      "gateway_2": "127.0.0.1:9001",
+      "overdue_time": 1999147448,
+      "register_time": 1661683448
+    },{
+      "id": 2,
+      "country_code": "  ",
+      "identification_name": "TN2",
+      "fee_min": "1:244",
+      "fee_ratio": 100000,
+      "fee_max": "1:247",
+      "gateway_1": "127.0.0.1:9002",
+      "gateway_2": "127.0.0.1:9002",
+      "overdue_time": 1990147448,
+      "register_time": 1661683448
+    },{
+      "id": 3,
+      "country_code": "  ",
+      "identification_name": "TN3",
+      "fee_min": "1:244",
+      "fee_ratio": 100000,
+      "fee_max": "1:247",
+      "gateway_1": "127.0.0.1:9003",
+      "gateway_2": "127.0.0.1:9003",
+      "overdue_time": 1999947448,
+      "register_time": 1661683448
+    }]
+  },
+  "graph": {
+    "add": [
+      [1,2],
+      [2,3],
+      [3,1]
+    ]
+  }
+}
+
