@@ -30,7 +30,8 @@ const (
 	CollectSide PayActionInstanceType = 3
 )
 
-/**
+/*
+*
 * 单次支付行为操作
 * 初始化调用：
 0. SetUpstreamSide or ...
@@ -309,7 +310,7 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 		// inspect
 		// If you pay from right to left
 		var a1, a2 = v.LeftAddress, v.RightAddress
-		if uint8(v.PayDirection) == channel.ChannelTransferDirectionHacashRightToLeft {
+		if uint8(v.PayDirection) == channel.ChannelTransferDirectionRightToLeft {
 			a2, a1 = a1, a2
 		}
 		if prevlast.Equal(a1) {
@@ -372,7 +373,7 @@ func (c *ChannelPayActionInstance) checkMaybeCanDoSign() (bool, error) {
 }
 
 // Create statement
-func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fields.Amount) (*channel.ChannelChainTransferProveBodyInfo, error) {
+func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fields.Amount, collectSat *fields.SatoshiVariation) (*channel.ChannelChainTransferProveBodyInfo, error) {
 
 	// Find the channel
 	var chanSide *ChannelSideConn = nil
@@ -389,6 +390,10 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	if amtcap.LessThan(collectAmt) {
 		return nil, fmt.Errorf("up side channel capacity balance not enough.")
 	}
+	satcap := chanSide.GetChannelCapacitySatoshiOfRemote()
+	if uint64(satcap) < uint64(collectSat.GetRealSatoshi()) {
+		return nil, fmt.Errorf("up side channel capacity balance not enough.")
+	}
 
 	// Create statement
 	chaninfo := chanSide.ChannelInfo
@@ -398,10 +403,14 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	//fmt.Printf("1:%p, 2:%p\n", chanSide, lastbill)
 	oldleftamt := chaninfo.LeftAmount
 	oldrightamt := chaninfo.RightAmount
+	oldleftsat := chaninfo.LeftSatoshi
+	oldrightsat := chaninfo.RightSatoshi
 	if lastbill != nil {
 		//fmt.Println("chanSide.GetReconciliationBill()", lastbill.GetAutoNumber())
 		oldleftamt = lastbill.GetLeftBalance()
 		oldrightamt = lastbill.GetRightBalance()
+		oldleftsat = lastbill.GetLeftSatoshi()
+		oldrightsat = lastbill.GetRightSatoshi()
 		blrn, blan := lastbill.GetReuseVersionAndAutoNumber()
 		if reuseversion != blrn {
 			return nil, fmt.Errorf("Channel Reuse Version %d in last bill and %d in channel info not match.", blrn, reuseversion)
@@ -409,13 +418,16 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 		billautonumber = uint64(blan) + 1 // Autoincrement
 	}
 	// direction
-	paydirection := channel.ChannelTransferDirectionHacashRightToLeft
+	paydirection := channel.ChannelTransferDirectionRightToLeft
 	oldpayamt := oldrightamt
 	oldcollectamt := oldleftamt
+	oldpaysat := oldrightsat
+	oldcollectsat := oldleftsat
 	remoteisleft := chanSide.RemoteAddressIsLeft()
 	if remoteisleft {
-		paydirection = channel.ChannelTransferDirectionHacashLeftToRight // Always paid to me
-		oldpayamt, oldcollectamt = oldcollectamt, oldpayamt              // reverse
+		paydirection = channel.ChannelTransferDirectionLeftToRight // Always paid to me
+		oldpayamt, oldcollectamt = oldcollectamt, oldpayamt        // reverse
+		oldpaysat, oldcollectsat = oldcollectsat, oldpaysat        // reverse
 	}
 	// Calculate latest allocation
 	newpayamt, e := oldpayamt.Sub(collectAmt) // 支付端扣除
@@ -425,6 +437,11 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	if newpayamt == nil || newpayamt.IsNegative() {
 		return nil, fmt.Errorf("pay error: balance not enough.")
 	}
+	if oldpaysat < collectSat.GetRealSatoshi() {
+		return nil, fmt.Errorf("pay error: satoshi not enough.")
+	}
+	newpaysat := oldpaysat - collectSat.GetRealSatoshi()
+	// add
 	newcollectamt, e := oldcollectamt.Add(collectAmt) // 收款段增加
 	if e != nil {
 		return nil, fmt.Errorf("collect error: %s", e.Error())
@@ -432,10 +449,15 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	if newcollectamt == nil || newpayamt.IsNegative() {
 		return nil, fmt.Errorf("collect error: balance is Negative.")
 	}
+	newcollectsat := oldcollectsat + collectSat.GetRealSatoshi()
+	// ok deal
 	newleftamt := newcollectamt
 	newrightamt := newpayamt
+	newleftsat := newcollectsat
+	newrightsat := newpaysat
 	if remoteisleft {
 		newleftamt, newrightamt = newrightamt, newleftamt // reverse
+		newleftsat, newrightsat = newrightsat, newleftsat // reverse
 	}
 	//fmt.Println("createMyProveBodyByRemotePay: billautonumber=", billautonumber)
 	// establish
@@ -444,11 +466,13 @@ func (c *ChannelPayActionInstance) createMyProveBodyByRemotePay(collectAmt *fiel
 	body.BillAutoNumber = fields.VarUint8(billautonumber)
 	body.PayDirection = fields.VarUint1(paydirection)
 	body.PayAmount = *collectAmt
+	body.PaySatoshi = *collectSat
 	body.LeftBalance = *newleftamt
 	body.RightBalance = *newrightamt
+	body.LeftSatoshi = fields.NewSatoshiVariation(uint64(newleftsat))
+	body.RightSatoshi = fields.NewSatoshiVariation(uint64(newrightsat))
 	body.LeftAddress = chaninfo.LeftAddress
 	body.RightAddress = chaninfo.RightAddress
-
 	// return
 	return body, nil
 }
@@ -471,7 +495,7 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 		}
 		// Create statement
 		bodyindex = c.channelLength - 1
-		bodyinfo, e = c.createMyProveBodyByRemotePay(&msg.PayAmount)
+		bodyinfo, e = c.createMyProveBodyByRemotePay(&msg.PayAmount, &msg.PaySatoshi)
 		if e != nil {
 			return false, fmt.Errorf("create my prove body by remote pay error: %s", e.Error())
 		}
@@ -496,6 +520,7 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 		}
 		// Downstream payment
 		var downSideColletAmt *fields.Amount = nil
+		var downSideColletSat *fields.Satoshi = nil
 		var payaddr *fields.Address = nil
 		bdlist := c.billDocuments.ProveBodys.ProveBodys
 		for i := len(bdlist) - 1; i >= 0; i-- {
@@ -503,13 +528,15 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 			if one != nil && one.ChannelId.Equal(downSide.ChannelId) {
 				bodyindex = i - 1
 				downSideColletAmt = &one.PayAmount
+				realsat := one.PaySatoshi.GetRealSatoshi()
+				downSideColletSat = &realsat
 				payaddr = &one.LeftAddress
-				if uint8(one.PayDirection) == channel.ChannelTransferDirectionHacashRightToLeft {
+				if uint8(one.PayDirection) == channel.ChannelTransferDirectionRightToLeft {
 					payaddr = &one.RightAddress
 				}
 			}
 		}
-		if downSideColletAmt == nil {
+		if downSideColletAmt == nil || downSideColletSat == nil {
 			// The downstream has not broadcast the statement, waiting for the next test
 			// No error returned
 			return false, nil
@@ -540,13 +567,15 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 			return false, fmt.Errorf("local servicer node is nil.")
 		}
 		// Service Charge
-		appendfee := lcsnode.PredictFeeForPay(downSideColletAmt)
-		newpayamt, e := downSideColletAmt.Add(appendfee)
+		appendfeeamt, appendfeesat := lcsnode.PredictFeeForPay(downSideColletAmt, downSideColletSat)
+		newpayamt, e := downSideColletAmt.Add(appendfeeamt)
 		if e != nil {
 			return false, fmt.Errorf("add predict fee for pay error: %s", e.Error())
 		}
+		newpaysatreal := *downSideColletSat + *appendfeesat
 		// Create statement
-		bodyinfo, e = c.createMyProveBodyByRemotePay(newpayamt)
+		newpaysat := fields.NewSatoshiVariation(uint64(newpaysatreal))
+		bodyinfo, e = c.createMyProveBodyByRemotePay(newpayamt, &newpaysat)
 		if e != nil {
 			return false, fmt.Errorf("create my prove body of channel id %s by remote pay error: %s", upSide.ChannelId.ToHex(), e.Error())
 		}
@@ -580,8 +609,8 @@ func (c *ChannelPayActionInstance) checkMaybeReportMyProveBody(msg *protocol.Msg
 func (c *ChannelPayActionInstance) InitCreateEmptyBillDocumentsByInitPayMsg(msg *protocol.MsgRequestInitiatePayment) error {
 	c.statusUpdateMux.Lock()
 	defer c.statusUpdateMux.Unlock()
-	c.log(fmt.Sprintf("init: create pay bill documents for transfer %s to %s",
-		msg.PayAmount.ToFinString(), msg.PayeeChannelAddr.Value()))
+	c.log(fmt.Sprintf("init: create pay bill documents for transfer %s and %d sats to %s",
+		msg.PayAmount.ToFinString(), msg.PaySatoshi.GetRealSatoshi(), msg.PayeeChannelAddr.Value()))
 	// Channel length
 	var paychanlen = int(msg.TargetPath.NodeIdCount) + 1
 	c.channelLength = paychanlen

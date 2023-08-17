@@ -14,9 +14,10 @@ type MsgRequestInitiatePayment struct {
 	Timestamp                fields.BlockTxTimestamp // Transaction timestamp
 	OrderNoteHashHalfChecker fields.HashHalfChecker  // Order detail data hash
 
-	HighestAcceptanceFee fields.Amount       // Maximum acceptable total handling fee amount
-	PayAmount            fields.Amount       // Payment amount must be a positive integer
-	PayeeChannelAddr     fields.StringMax255 // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
+	HighestAcceptanceFee fields.Amount           // Maximum acceptable total handling fee amount
+	PayAmount            fields.Amount           // Payment amount must be a positive integer
+	PaySatoshi           fields.SatoshiVariation // Payment amount satoshi
+	PayeeChannelAddr     fields.StringMax255     // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
 
 	// Specified routing node ID list
 	TargetPath NodeIdPath
@@ -32,6 +33,7 @@ func (m MsgRequestInitiatePayment) Size() uint32 {
 		m.OrderNoteHashHalfChecker.Size() +
 		m.HighestAcceptanceFee.Size() +
 		m.PayAmount.Size() +
+		m.PaySatoshi.Size() +
 		m.PayeeChannelAddr.Size() +
 		m.TargetPath.Size()
 }
@@ -55,6 +57,10 @@ func (m *MsgRequestInitiatePayment) Parse(buf []byte, seek uint32) (uint32, erro
 		return 0, e
 	}
 	seek, e = m.PayAmount.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
+	seek, e = m.PaySatoshi.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
@@ -94,6 +100,11 @@ func (m MsgRequestInitiatePayment) Serialize() ([]byte, error) {
 	}
 	buf.Write(bt)
 	bt, e = m.PayAmount.Serialize()
+	if e != nil {
+		return nil, e
+	}
+	buf.Write(bt)
+	bt, e = m.PaySatoshi.Serialize()
 	if e != nil {
 		return nil, e
 	}

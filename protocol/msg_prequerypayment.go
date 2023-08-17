@@ -58,15 +58,15 @@ func (m NodeIdPath) Serialize() ([]byte, error) {
 
 /***************************************************/
 
-//
 type PayPathDescribe struct {
-	NodeIdPath     *NodeIdPath
-	PredictPathFee fields.Amount         // Estimated service charge for route
-	Describe       fields.StringMax65535 // Channel payment description
+	NodeIdPath        *NodeIdPath
+	PredictPathFeeAmt fields.Amount // Estimated service charge for route
+	PredictPathFeeSat fields.SatoshiVariation
+	Describe          fields.StringMax65535 // Channel payment description
 }
 
 func (m PayPathDescribe) Size() uint32 {
-	return m.NodeIdPath.Size() + m.PredictPathFee.Size() + m.Describe.Size()
+	return m.NodeIdPath.Size() + m.PredictPathFeeAmt.Size() + m.PredictPathFeeSat.Size() + m.Describe.Size()
 }
 
 func (m *PayPathDescribe) Parse(buf []byte, seek uint32) (uint32, error) {
@@ -76,7 +76,11 @@ func (m *PayPathDescribe) Parse(buf []byte, seek uint32) (uint32, error) {
 	if e != nil {
 		return 0, e
 	}
-	seek, e = m.PredictPathFee.Parse(buf, seek)
+	seek, e = m.PredictPathFeeAmt.Parse(buf, seek)
+	if e != nil {
+		return 0, e
+	}
+	seek, e = m.PredictPathFeeSat.Parse(buf, seek)
 	if e != nil {
 		return 0, e
 	}
@@ -96,7 +100,12 @@ func (m PayPathDescribe) Serialize() ([]byte, error) {
 		return nil, e
 	}
 	buf.Write(bt)
-	bt, e = m.PredictPathFee.Serialize()
+	bt, e = m.PredictPathFeeAmt.Serialize()
+	if e != nil {
+		return nil, e
+	}
+	buf.Write(bt)
+	bt, e = m.PredictPathFeeSat.Serialize()
 	if e != nil {
 		return nil, e
 	}
@@ -112,7 +121,6 @@ func (m PayPathDescribe) Serialize() ([]byte, error) {
 
 /***************************************************/
 
-//
 type PayPathForms struct {
 	PayPathCount fields.VarUint1    // Number of payment paths
 	PayPaths     []*PayPathDescribe // Payment path list
@@ -170,9 +178,9 @@ func (m PayPathForms) Serialize() ([]byte, error) {
  */
 
 type MsgRequestPrequeryPayment struct {
-	PayAmount        fields.Amount       // Payment amount must be a positive integer
+	PayAmount        fields.Amount           // Payment amount must be a positive integer
 	PaySatoshi       fields.SatoshiVariation // bitcoin if
-	PayeeChannelAddr fields.StringMax255 // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
+	PayeeChannelAddr fields.StringMax255     // Receiver channel address, for example: 1ke39sgbnrsdzkthanztafjmdhcc8qvm2z__ HACorg
 }
 
 func (m MsgRequestPrequeryPayment) Type() uint8 {

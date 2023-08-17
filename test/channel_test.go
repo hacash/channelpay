@@ -29,30 +29,27 @@ go build -o ./test/test_run_payservicer2 run/servicer/main.go && ./test/test_run
 go build -o ./test/test_run_l2wallet1/w run/client/main.go && ./test/test_run_l2wallet1/w
 go build -o ./test/test_run_l2wallet2/w run/client/main.go && ./test/test_run_l2wallet2/w
 
-	1Gmc6vNaK9z2SSftEAKsyK2cYvqf2YaXRc_c56934b4a165a0afc129cd93b1130e63_TN1   debugtest1
+1Gmc6vNaK9z2SSftEAKsyK2cYvqf2YaXRc_c56934b4a165a0afc129cd93b1130e63_TN1   debugtest1
 1G7bhnoo54mdMxQe7dWCGx9kedtNYFihT2_fdfb81f2c55e814b03e1a33653666bc3_TN2   debugtest5
-*/
 
+*/
 
 func Test_create_and_commit_test_trs(t *testing.T) {
 
 	/*
-	0	1MzNY1oA3kfgYi75zquj3SRUPYztzXHzK9 123456
-	1	1Gmc6vNaK9z2SSftEAKsyK2cYvqf2YaXRc debugtest1
-	2	1GTy2mbWAYFekpfiAn6JRtxyKKnF2TahYa debugtest2
-	3	1NjCTuSX8tmYTp68JArrSWX3PsJgN5BrT4 debugtest3
-	4	1ATUXj9KoagEKTHe1KRTDdD3UK8rmP4ydr debugtest4
-	5	1G7bhnoo54mdMxQe7dWCGx9kedtNYFihT2 debugtest5
-	6	1ArBGAe238Wh8BMv41Q9xBjTteTGcZSbXc debugtest6
+		0	1MzNY1oA3kfgYi75zquj3SRUPYztzXHzK9 123456
+		1	1Gmc6vNaK9z2SSftEAKsyK2cYvqf2YaXRc debugtest1
+		2	1GTy2mbWAYFekpfiAn6JRtxyKKnF2TahYa debugtest2
+		3	1NjCTuSX8tmYTp68JArrSWX3PsJgN5BrT4 debugtest3
+		4	1ATUXj9KoagEKTHe1KRTDdD3UK8rmP4ydr debugtest4
+		5	1G7bhnoo54mdMxQe7dWCGx9kedtNYFihT2 debugtest5
+		6	1ArBGAe238Wh8BMv41Q9xBjTteTGcZSbXc debugtest6
 
-	1 => 2,3 => 4 => 5
-	c56934b4a165a0afc129cd93b1130e63   47295889c6e0e1fc64237e01cd480fd6   fdfb81f2c55e814b03e1a33653666bc3
+		1 => 2,3 => 4 => 5
+		c56934b4a165a0afc129cd93b1130e63   47295889c6e0e1fc64237e01cd480fd6   fdfb81f2c55e814b03e1a33653666bc3
 
 
 	*/
-
-
-
 
 	allprikeys := []string{"123456", "debugtest1", "debugtest2", "debugtest3", "debugtest4", "debugtest5", "debugtest6"}
 	allPrivateKeyBytes := make(map[string][]byte, len(allprikeys))
@@ -63,15 +60,13 @@ func Test_create_and_commit_test_trs(t *testing.T) {
 		alltestacc[i] = acc
 	}
 
-
-
 	var hx1, _ = hex.DecodeString("00000000006ff7e57530f44b3326b1edc56934b4a165a0afc129cd93b1130e63")
 	var mainacc = account.GetAccountByPrivateKeyOrPassword("123456")
 
 	var trspkg = transactions.Transaction_2_Simple{
-		Timestamp:      1691642059,
-		MainAddress:    mainacc.Address,
-		Fee:            *fields.NewAmountNumSmallCoin(1),
+		Timestamp:   1691642059,
+		MainAddress: mainacc.Address,
+		Fee:         *fields.NewAmountNumSmallCoin(1),
 	}
 	// chain ID = 1
 	trspkg.AddAction(&actions.Action_30_SupportDistinguishForkChainID{CheckChainID: 1})
@@ -90,16 +85,20 @@ func Test_create_and_commit_test_trs(t *testing.T) {
 
 	// transfer BTC
 	for i, v := range alltestacc {
-		if i == 0 { continue }  // over main
+		if i == 0 {
+			continue
+		} // over main
 		trspkg.AddAction(&actions.Action_8_SimpleSatoshiTransfer{
 			ToAddress: v.Address,
-			Amount:    50*100000000,
+			Amount:    50 * 100000000,
 		})
 	}
 
 	// transfer HAC
 	for i, v := range alltestacc {
-		if i == 0 { continue }  // over main
+		if i == 0 {
+			continue
+		} // over main
 		trspkg.AddAction(&actions.Action_1_SimpleToTransfer{
 			ToAddress: v.Address,
 			Amount:    *fields.NewAmountNumSmallCoin(50),
@@ -117,10 +116,10 @@ func Test_create_and_commit_test_trs(t *testing.T) {
 		InterestAttribution:  0,
 		LeftAddress:          alltestacc[1].Address,
 		LeftAmount:           *fields.NewAmountNumSmallCoin(10),
-		LeftSatoshi:          fields.NewSatoshiVariation(10*100000000),
+		LeftSatoshi:          fields.NewSatoshiVariation(10 * 100000000),
 		RightAddress:         alltestacc[2].Address,
 		RightAmount:          *fields.NewAmountNumSmallCoin(10),
-		RightSatoshi:         fields.NewSatoshiVariation(10*100000000),
+		RightSatoshi:         fields.NewSatoshiVariation(10 * 100000000),
 	})
 	trspkg.AddAction(&actions.Action_31_OpenPaymentChannelWithSatoshi{
 		ChannelId:            channel_id_2,
@@ -128,10 +127,10 @@ func Test_create_and_commit_test_trs(t *testing.T) {
 		InterestAttribution:  0,
 		LeftAddress:          alltestacc[3].Address,
 		LeftAmount:           *fields.NewAmountNumSmallCoin(10),
-		LeftSatoshi:          fields.NewSatoshiVariation(10*100000000),
+		LeftSatoshi:          fields.NewSatoshiVariation(10 * 100000000),
 		RightAddress:         alltestacc[4].Address,
 		RightAmount:          *fields.NewAmountNumSmallCoin(10),
-		RightSatoshi:         fields.NewSatoshiVariation(10*100000000),
+		RightSatoshi:         fields.NewSatoshiVariation(10 * 100000000),
 	})
 	trspkg.AddAction(&actions.Action_31_OpenPaymentChannelWithSatoshi{
 		ChannelId:            channel_id_3,
@@ -139,21 +138,11 @@ func Test_create_and_commit_test_trs(t *testing.T) {
 		InterestAttribution:  0,
 		LeftAddress:          alltestacc[4].Address,
 		LeftAmount:           *fields.NewAmountNumSmallCoin(10),
-		LeftSatoshi:          fields.NewSatoshiVariation(10*100000000),
+		LeftSatoshi:          fields.NewSatoshiVariation(10 * 100000000),
 		RightAddress:         alltestacc[5].Address,
 		RightAmount:          *fields.NewAmountNumSmallCoin(10),
-		RightSatoshi:         fields.NewSatoshiVariation(10*100000000),
+		RightSatoshi:         fields.NewSatoshiVariation(10 * 100000000),
 	})
-
-
-
-
-
-
-
-
-
-
 
 	/********************************8*/
 
@@ -196,9 +185,6 @@ func commitTrs(domain string, txbody []byte, isonlytry bool) error {
 	return nil
 }
 
-
-
 func Test_t2(t *testing.T) {
-
 
 }

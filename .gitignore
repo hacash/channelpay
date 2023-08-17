@@ -1,3 +1,9 @@
+test/test_run_*
+test/channel_routes_source/*.dat
+test/*_data/
+
+
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
