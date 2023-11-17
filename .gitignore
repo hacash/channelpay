@@ -1,7 +1,7 @@
 test/test_run_*
 test/channel_routes_source/*.dat
 test/*_data/
-
+*_local/
 
 
 # Binaries for programs and plugins

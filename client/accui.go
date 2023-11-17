@@ -1,4 +1,5 @@
 package client
+
 const AccUIhtmlContent = `
 <html>
 <head>
@@ -454,7 +455,7 @@ h3.tt {
         <h3 class="tt">Payment:</h3>
         <div id="gopay" class="gopay">
             <input class="addr" id="payaddr" placeholder="Target channel collection address" />
-            <input class="amt" id="payamt" placeholder="Amount: ㄜ125:246 or 1.25" />
+            <input class="amt" id="payamt" placeholder="Amount: ㄜ125:246 , 1.25 or 0.05SAT" />
             <button class="trsbtn" id="paybtn">Start transfer</button>
             <div class="err" id="payerr"></div>
         </div>
@@ -735,4 +736,4 @@ function SelectPaymentPaths(noteinfo, paths) {
 </body>
 </html>
 
-`;
+`

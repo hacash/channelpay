@@ -1,6 +1,7 @@
 package accui
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -29,6 +30,8 @@ func AssembleUIfiles(fpath string) {
 
 	htmlcon = "package client\nconst AccUIhtmlContent = `\n" + htmlcon + "\n`;"
 
-	ioutil.WriteFile(rfp, []byte(htmlcon), 0777)
-
+	e := ioutil.WriteFile(rfp, []byte(htmlcon), 0777)
+	if e != nil {
+		fmt.Println(e)
+	}
 }

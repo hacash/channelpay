@@ -122,12 +122,12 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	objs.Add(inputAddr)
 
 	// Password or private key
-	objs.Add(widget.NewLabel("\nPrivate key or Password:"))
+	objs.Add(widget.NewLabel("Private key or Password:"))
 	inputPrikey := widget.NewPasswordEntry()
 	objs.Add(inputPrikey)
 
 	// Reconciliation bill
-	objs.Add(widget.NewLabel("\nReconciliation or payment bill:"))
+	objs.Add(widget.NewLabel("Reconciliation or payment bill:"))
 	inputBill := widget.NewMultiLineEntry()
 	inputBill.Wrapping = fyne.TextWrapBreak
 	inputBill.Scroll = true
@@ -135,7 +135,13 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	inputBill.Refresh()
 	objs.Add(inputBill)
 
-	//objs.Add(widget.NewLabel("\n"))
+	// route api url
+	objs.Add(widget.NewLabel("Route Server URL:"))
+	inputRouteURL := widget.NewEntry()
+	inputRouteURL.SetPlaceHolder("Optional: can use test url")
+	objs.Add(inputRouteURL)
+
+	objs.Add(widget.NewLabel("\n"))
 	// login btn
 	loginBtn := widget.NewButton("Login", nil)
 	objs.Add(loginBtn)
@@ -150,7 +156,7 @@ func createLoginTab(app fyne.App, window fyne.Window) *fyne.Container {
 	loginBtn.OnTapped = func() {
 		go func() {
 			// Execute login
-			e := HandlerLogin(inputAddr.Text, inputPrikey.Text, inputBill.Text, app, window, loginBtn)
+			e := HandlerLogin(inputAddr.Text, inputPrikey.Text, inputBill.Text, inputRouteURL.Text, app, window, loginBtn)
 			if e != nil {
 				errorshow.SetText(e.Error())
 			} else {
@@ -177,7 +183,7 @@ func trimInput(addr string) string {
 // Execute login
 var isInHandlerLoginState = false
 
-func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window fyne.Window, loginBtn *widget.Button) error {
+func HandlerLogin(addr, prikeyorpassword, billhex, routeurl string, app fyne.App, window fyne.Window, loginBtn *widget.Button) error {
 	if isInHandlerLoginState {
 		return nil // Processing
 	}
@@ -197,6 +203,7 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 	addr = trimInput(addr)
 	prikeyorpassword = trimInput(prikeyorpassword)
 	billhex = trimInput(billhex)
+	routeurl = trimInput(routeurl)
 
 	// Required
 	if len(addr) == 0 {
@@ -232,6 +239,9 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 	}
 
 	// Requesting IP address resolution and channel status data from the network service provider
+	if len(routeurl) > 0 {
+		SetLoginResolutionApiDomain(routeurl) // change url
+	}
 	apiurl := GetLoginResolutionApiDomain()
 	chaninfo, nodeinfo, e := protocol.RequestChannelAndSernodeInfoFromLoginResolutionApi(
 		apiurl, addrobj.ChannelId, addrobj.ServicerName.Value())
@@ -291,7 +301,7 @@ func HandlerLogin(addr, prikeyorpassword, billhex string, app fyne.App, window f
 
 	// Start login process
 	wsptcl := "wss"
-	if DevDebug {
+	if DevDebug || strings.HasPrefix(apiurl, "http://") {
 		wsptcl = "ws"
 	}
 	wsurl := fmt.Sprintf("%s://%s/customer/connect", wsptcl, nodeinfo.Gateway.Value())
