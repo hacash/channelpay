@@ -30,8 +30,8 @@ func init() {
 
 func main() {
 
-	//mainRelease()
-	mainDev1()
+	mainRelease()
+	//mainDev1()
 
 }
 
@@ -45,7 +45,6 @@ func mainRelease() {
 	//回退字体设置
 	os.Unsetenv("FYNE_FONT")
 }
-
 
 func mainDev1() {
 
