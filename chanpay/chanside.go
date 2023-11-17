@@ -243,6 +243,37 @@ func (c *ChannelSideConn) GetChannelCapacityAmountOfOur() fields.Amount {
 func (c *ChannelSideConn) GetChannelCapacityAmountOfRemote() fields.Amount {
 	return c.GetChannelCapacityAmount("remote")
 }
+// Get channel capacity
+// side = our, remote
+func (c *ChannelSideConn) GetChannelCapacitySatoshi(side string) fields.Satoshi {
+	c.statusMux.RLock()
+	defer c.statusMux.RUnlock()
+
+	leftSat := c.ChannelInfo.LeftSatoshi
+	rightSat := c.ChannelInfo.RightSatoshi
+	// Judge whether there is a receipt
+	bill := c.LatestReconciliationBalanceBill
+	if bill != nil {
+		leftSat = bill.GetLeftSatoshi()
+		rightSat = bill.GetRightSatoshi()
+	}
+	remoteIsLeft := c.RemoteAddress.Equal(c.ChannelInfo.LeftAddress)
+	//fmt.Println(leftAmt.ToFinString(), rightAmt.ToFinString())
+	// Return capacity
+	if (side == "remote" && remoteIsLeft) ||
+		(side == "our" && !remoteIsLeft) {
+		return leftSat
+	} else {
+		return rightSat
+	}
+
+}
+func (c *ChannelSideConn) GetChannelCapacitySatoshiOfOur() fields.Satoshi {
+	return c.GetChannelCapacitySatoshi("our")
+}
+func (c *ChannelSideConn) GetChannelCapacitySatoshiOfRemote() fields.Satoshi {
+	return c.GetChannelCapacitySatoshi("remote")
+}
 
 // Directly save (do not check) payment reconciliation bills
 func (c *ChannelSideConn) UncheckSignSaveBillByCompleteDocuments(bills *channel.ChannelPayCompleteDocuments) error {

@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/url"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -18,6 +19,7 @@ import (
 type pendingPayment struct {
 	address     protocol.ChannelAccountAddress
 	amount      fields.Amount
+	satoshi     fields.SatoshiVariation
 	prequeryMsg *protocol.MsgResponsePrequeryPayment
 }
 
@@ -55,9 +57,11 @@ func (c *ChannelPayClient) UpdateBalanceShow() {
 		bts, _ := bill.SerializeWithTypeCode()
 		billhex = hex.EncodeToString(bts)
 	}
-	c.payui.Eval(fmt.Sprintf(`UpdateBalance("%s","%s",%d,%d,"%s")`,
+	c.payui.Eval(fmt.Sprintf(`UpdateBalance("%s","%s",%d,%d,%d,%d,"%s")`,
 		cside.GetChannelCapacityAmountOfOur().ToFinString(),
 		cside.GetChannelCapacityAmountOfRemote().ToFinString(),
+		cside.GetChannelCapacitySatoshiOfOur(),
+		cside.GetChannelCapacitySatoshiOfRemote(),
 		cside.GetAvailableReuseVersion(),
 		cside.GetAvailableAutoNumber(),
 		billhex,
@@ -68,7 +72,7 @@ func (c *ChannelPayClient) UpdateBalanceShow() {
 func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	//fmt.Println("BindFuncInitiatePayment:", addr, amt)
 	addr = strings.Trim(addr, "\n ")
-	amt = strings.Trim(amt, "\n ")
+	amt = strings.ToUpper(strings.Trim(amt, "\n "))
 	if len(addr) == 0 {
 		return "Please enter the address."
 	}
@@ -95,19 +99,39 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 		return fmt.Sprintf("Address format error: %s", e.Error()) // 错误
 	}
 	amount, e := fields.NewAmountFromString(amt)
-	if e != nil {
+	satoshi := fields.NewSatoshiVariation(0)
+	var sts uint64 = 0
+	if strings.Contains(amt, "SAT") {
+		sts, e = strconv.ParseUint(strings.Trim(amt, "SAT"), 10, 64)
+		if e == nil && sts > 0 {
+			satoshi = fields.NewSatoshiVariation(sts)
+		}
+	}
+	if sts == 0 && amount == nil {
 		return fmt.Sprintf("Amount format error: %s", e.Error()) // 错误
 	}
+	if amount == nil {
+		amount = fields.NewEmptyAmount()
+	}
 	// Balance check
+	// check SAT
+	stscap := c.user.servicerStreamSide.ChannelSide.GetChannelCapacitySatoshiOfOur()
+	if uint64(stscap) < sts {
+		return fmt.Sprintf("Balance %d sats not enough for transfer %d sts",
+			stscap, sts) // Sorry, your credit is running low
+	}
+	// check HAC
 	amtcap := c.user.servicerStreamSide.ChannelSide.GetChannelCapacityAmountOfOur()
 	if amtcap.LessThan(amount) {
 		return fmt.Sprintf("Balance %s not enough for transfer %s",
 			amtcap.ToFinString(), amount.ToFinString()) // Sorry, your credit is running low
 	}
+
 	// Send pre query payment information
 	//fmt.Println(addrobj, amount)
 	msg := &protocol.MsgRequestPrequeryPayment{
 		PayAmount:        *amount,
+		PaySatoshi:       satoshi,
 		PayeeChannelAddr: fields.CreateStringMax255(addr),
 	}
 	err := protocol.SendMsg(c.user.servicerStreamSide.ChannelSide.WsConn, msg)
@@ -118,6 +142,7 @@ func (c *ChannelPayClient) BindFuncPrequeryPayment(addr, amt string) string {
 	c.pendingPaymentObj = &pendingPayment{
 		address:     *acc,
 		amount:      *amount,
+		satoshi:     fields.NewSatoshiVariation(sts),
 		prequeryMsg: nil,
 	}
 	c.statusMutex.Unlock()

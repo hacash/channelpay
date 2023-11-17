@@ -166,27 +166,38 @@ func (m PayRelayNode) Serialize() ([]byte, error) {
 }
 
 // Estimated service charge
-func (m PayRelayNode) PredictFeeForPay(payamt *fields.Amount) *fields.Amount {
-	nofee := fields.NewEmptyAmount()
+func (m PayRelayNode) PredictFeeForPay(payamt *fields.Amount, paysat *fields.Satoshi) (*fields.Amount, *fields.Satoshi) {
+	amtfee := fields.NewEmptyAmount()
+	satfee := fields.Satoshi(0)
 	// Calculate scale
-	bv := payamt.GetValue()
-	feeb := new(big.Int).Div(bv, new(big.Int).SetUint64(10000*10000))
-	feeb = new(big.Int).Mul(feeb, new(big.Int).SetUint64(uint64(m.FeeRatio)))
-	fee, e := fields.NewAmountByBigInt(feeb)
-	if e != nil {
-		return nofee // error
+	if !payamt.IsEmpty() {
+		bv := payamt.GetValue()
+		feeb := new(big.Int).Div(bv, new(big.Int).SetUint64(10000*10000))
+		feeb = new(big.Int).Mul(feeb, new(big.Int).SetUint64(uint64(m.FeeRatio)))
+		fee, e := fields.NewAmountByBigInt(feeb)
+		if e == nil {
+			amtfee = fee
+		}
+	}
+	if uint64(*paysat) > 0 {
+		satfee = fields.Satoshi(float64(*paysat) * float64(m.FeeRatio) / 100000000)
+		if satfee == 0 {
+			satfee = 1 // min fee sat = 1
+		}
 	}
 	// Limit height
-	if m.FeeMin.IsNotEmpty() && fee.LessThan(&m.FeeMin) {
-		fee = m.FeeMin.Copy() // minimum
-	} else if m.FeeMax.IsNotEmpty() && fee.MoreThan(&m.FeeMax) {
-		fee = m.FeeMax.Copy() // highest
-	}
-	// Field size limit
-	retfee, _, e := fee.CompressForMainNumLen(4, false)
-	if e != nil {
-		return nofee
+	if payamt.IsPositive() {
+		if m.FeeMin.IsNotEmpty() && amtfee.LessThan(&m.FeeMin) {
+			amtfee = m.FeeMin.Copy() // minimum
+		} else if m.FeeMax.IsNotEmpty() && amtfee.MoreThan(&m.FeeMax) {
+			amtfee = m.FeeMax.Copy() // highest
+		}
+		// Field size limit
+		retfee, _, e := amtfee.CompressForMainNumLen(4, false)
+		if e == nil {
+			amtfee = retfee
+		}
 	}
 	// ok
-	return retfee
+	return amtfee, &satfee
 }

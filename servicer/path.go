@@ -9,26 +9,29 @@ import (
 )
 
 // Create a single path
-func CreatePayPathFormsBySingleNodePath(node *payroutes.PayRelayNode, payamt *fields.Amount) *protocol.PayPathForms {
-	return CreatePayPathForms([][]*payroutes.PayRelayNode{{node}}, payamt)
+func CreatePayPathFormsBySingleNodePath(node *payroutes.PayRelayNode, payamt *fields.Amount, paysat *fields.Satoshi) *protocol.PayPathForms {
+	return CreatePayPathForms([][]*payroutes.PayRelayNode{{node}}, payamt, paysat)
 }
 
 // Create multiple paths
-func CreatePayPathForms(nodepaths [][]*payroutes.PayRelayNode, payamt *fields.Amount) *protocol.PayPathForms {
+func CreatePayPathForms(nodepaths [][]*payroutes.PayRelayNode, payamt *fields.Amount, paysat *fields.Satoshi) *protocol.PayPathForms {
 
 	pathdscs := make([]*protocol.PayPathDescribe, len(nodepaths))
 	for i, ps := range nodepaths {
-		ttfee := fields.NewEmptyAmount()
+		ttfeeamt := fields.NewEmptyAmount()
+		ttfeesat := fields.Satoshi(0)
 		idlist := make([]fields.VarUint4, len(ps))
 		dscs := make([]string, len(ps))
 		for n, node := range ps {
 			// Handling charge unit: 1000%
 			idlist[n] = node.ID
-			fee := node.PredictFeeForPay(payamt)
-			feeadd, e := ttfee.Add(fee)
+			feeamt, feesat := node.PredictFeeForPay(payamt, paysat)
+			feeamtadd, e := ttfeeamt.Add(feeamt)
+			feesatadd := ttfeesat + *feesat
 			if e == nil {
-				ttfee = feeadd // Service charge accumulation
+				ttfeeamt = feeamtadd // Service charge accumulation
 			}
+			ttfeesat = feesatadd
 			dscs[n] = fmt.Sprintf(`%s(fee:%.2f‰)`,
 				node.IdentificationName.Value(), float64(node.FeeRatio)/100000)
 		}
@@ -38,9 +41,10 @@ func CreatePayPathForms(nodepaths [][]*payroutes.PayRelayNode, payamt *fields.Am
 			NodeIdPath:  idlist,
 		}
 		paths := &protocol.PayPathDescribe{
-			NodeIdPath:     ids,
-			PredictPathFee: *ttfee, // 预估手续费
-			Describe:       fields.CreateStringMax65535(dscsall),
+			NodeIdPath:        ids,
+			PredictPathFeeAmt: *ttfeeamt, // fee
+			PredictPathFeeSat: fields.NewSatoshiVariation(uint64(ttfeesat)),
+			Describe:          fields.CreateStringMax65535(dscsall),
 		}
 		pathdscs[i] = paths
 

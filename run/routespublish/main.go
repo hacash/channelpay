@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+/*
+
+go build -o ./test/test_run_routespublish run/routespublish/main.go && ./test/test_run_routespublish ../run/routespublish/channelpayroutespublish.config.ini
+
+
+*/
+
 func main() {
 
 	// Start the server

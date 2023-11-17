@@ -23,16 +23,20 @@ func (s *Servicer) setupPasswordSettings() {
 		bts, e := ioutil.ReadFile(fpth)
 		if e == nil {
 			passwordstr = string(bts)
+			//fmt.Println(passwordstr, "**************************")
 		}
 	}
 	s.settlenoderChgLock.Lock()
 	defer s.settlenoderChgLock.Unlock()
 	// Take out line breaks and spaces
 	passwordstr = strings.Replace(passwordstr, " ", "", -1)
-	passwordstr = strings.Replace(passwordstr, "\n", "", -1)
+	//passwordstr = strings.Replace(passwordstr, "\n", "", -1)
 	// Parse password
 	//fmt.Println(passwordstr)
-	for _, v := range strings.Split(passwordstr, ",") {
+	for _, v := range strings.Split(passwordstr, "\n") {
+		if len(v) < 6 {
+			continue
+		}
 		s.signmachine.TemporaryStoragePrivateKeyForSign(v)
 	}
 }

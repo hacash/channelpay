@@ -64,16 +64,20 @@ function InitAccount(pcid, paddr) {
 
 /* 更新余额显示 */
 var blsamt = document.getElementById("blsamt")
-, blscap = document.getElementById("blscap")
+    , blscap = document.getElementById("blscap")
+    ,blssat = document.getElementById("blssat")
+    , satcap = document.getElementById("satcap")
 , blrun = document.getElementById("blrun")
 , blanb = document.getElementById("blanb")
 , nobill = document.getElementById("nobill")
 , bdts = document.getElementById("bdts")
 ;
-function UpdateBalance(bls, cap, reusenum, billno, billbodyhex) {
+function UpdateBalance(bls, cap, sat_bls, sat_cap, reusenum, billno, billbodyhex) {
     // 数额
     blsamt.innerText = bls;
     blscap.innerText = cap;
+    blssat.innerText = sat_bls + " sats";
+    satcap.innerText = sat_cap + " sats";
     blrun.innerText = reusenum;
     blanb.innerText = billno;
     // 票据

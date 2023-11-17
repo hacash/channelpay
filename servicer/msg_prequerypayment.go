@@ -44,7 +44,8 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 
 	if chanAddr.CompareServiceName(localServicerName) {
 		// Local Payment
-		forms := CreatePayPathFormsBySingleNodePath(localnode, &msg.PayAmount)
+		paysat := msg.PaySatoshi.GetRealSatoshi()
+		forms := CreatePayPathFormsBySingleNodePath(localnode, &msg.PayAmount, &paysat)
 		resmsg := protocol.NewMsgResponsePrequeryPayment(0)
 		resmsg.Notes = fields.CreateStringMax65535("")
 		resmsg.PathForms = forms
@@ -75,7 +76,8 @@ func (s *Servicer) MsgHandlerRequestPrequeryPayment(newcur *chanpay.Customer, ms
 			localServicerName, tarNodeName))
 		return
 	}
-	forms := CreatePayPathForms(pathResults, &msg.PayAmount) // 路径列表
+	patsat := msg.PaySatoshi.GetRealSatoshi()
+	forms := CreatePayPathForms(pathResults, &msg.PayAmount, &patsat) // 路径列表
 	// news
 	resmsg := protocol.NewMsgResponsePrequeryPayment(0)
 	resmsg.Notes = fields.CreateStringMax65535("")

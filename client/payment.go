@@ -15,7 +15,12 @@ func (c *ChannelPayClient) dealPrequeryPaymentResult(msg *protocol.MsgResponsePr
 	params := make([]string, 0)
 	paths := msg.PathForms.PayPaths
 	for _, v := range paths {
-		item := fmt.Sprintf(`"%s, total fee: %s"`, strings.Replace(v.Describe.Value(), `"`, ``, -1), v.PredictPathFee.ToFinString())
+		feeshow := fmt.Sprintf(`%s`, v.PredictPathFeeAmt.ToFinString())
+		feesat := v.PredictPathFeeSat.GetRealSatoshi()
+		if feesat > 0 {
+			feeshow = fmt.Sprintf(`%d sats`, feesat)
+		}
+		item := fmt.Sprintf(`"%s, total fee: %s"`, strings.Replace(v.Describe.Value(), `"`, ``, -1), feeshow)
 		params = append(params, item)
 	}
 	// Payment status
@@ -28,9 +33,21 @@ func (c *ChannelPayClient) dealPrequeryPaymentResult(msg *protocol.MsgResponsePr
 	c.statusMutex.Unlock()
 
 	// Select payment channel
-	checkinfo := fmt.Sprintf(`Transfer %s (%sMei) to %s`,
-		payobj.amount.ToFinString(), payobj.amount.ToMeiString(),
+	payshow := []string{}
+	if payobj.amount.IsPositive() {
+		payshow = append(payshow, fmt.Sprintf(`%s (%sMei)`,
+			payobj.amount.ToFinString(),
+			payobj.amount.ToMeiString()))
+	}
+	// if SAT
+	if payobj.satoshi.GetRealSatoshi() > 0 {
+		payshow = append(payshow, fmt.Sprintf(`%d sats`,
+			payobj.satoshi.GetRealSatoshi()))
+	}
+	checkinfo := fmt.Sprintf(`Transfer %s to %s`,
+		strings.Join(payshow, " and "),
 		payobj.address.Address.ToReadable())
+
 	c.payui.Eval(fmt.Sprintf(`SelectPaymentPaths("%s", [%s])`,
 		checkinfo, strings.Join(params, ",")))
 }
@@ -64,13 +81,14 @@ func (c *ChannelPayClient) BindFuncConfirmPayment(pathselect int) string {
 	odidckr := make([]byte, 16)
 	rand.Read(odidckr)
 	// The total handling fee shall not exceed twice the estimated handling fee
-	maxfee, _ := tarpath.PredictPathFee.Add(&tarpath.PredictPathFee)
+	maxfee, _ := tarpath.PredictPathFeeAmt.Add(&tarpath.PredictPathFeeAmt)
 	paymsg := &protocol.MsgRequestInitiatePayment{
 		TransactionDistinguishId: fields.VarUint8(randtrsid),
 		Timestamp:                fields.BlockTxTimestamp(ttimest),
 		OrderNoteHashHalfChecker: odidckr,
 		HighestAcceptanceFee:     *maxfee,
 		PayAmount:                payobj.amount,
+		PaySatoshi:               payobj.satoshi,
 		PayeeChannelAddr:         fields.CreateStringMax255(payobj.address.ToReadable(true)),
 		TargetPath:               *tarpath.NodeIdPath,
 	}

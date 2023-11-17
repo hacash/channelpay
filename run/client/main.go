@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/flopp/go-findfont"
 	"github.com/hacash/channelpay/client"
+	"github.com/hacash/channelpay/client/accui"
 	"os"
 	"strings"
 )
@@ -29,14 +30,29 @@ func init() {
 
 func main() {
 
-	mainRelease()
-	//mainDev1()
+	//mainRelease()
+	mainDev1()
 
 }
 
 func mainRelease() {
 	// Developer mode
 	client.DevDebug = false
+
+	// start-up
+	client.MainNewAppRun()
+
+	//回退字体设置
+	os.Unsetenv("FYNE_FONT")
+}
+
+
+func mainDev1() {
+
+	accui.AssembleUIfiles("./client/accui")
+
+	// Developer mode
+	client.DevDebug = true
 
 	// start-up
 	client.MainNewAppRun()

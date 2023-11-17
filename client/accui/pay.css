@@ -142,6 +142,9 @@ h3.tt {
     background-image: linear-gradient(to right, #005700, #7d7804);
     border-radius: 4px;
 }
+.blsw table {
+    width: 100%;
+}
 .blsw * {
     vertical-align: baseline;
 }
