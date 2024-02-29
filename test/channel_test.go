@@ -72,7 +72,7 @@ func Test_create_and_commit_test_trs(t *testing.T) {
 	trspkg.AddAction(&actions.Action_30_SupportDistinguishForkChainID{CheckChainID: 1})
 
 	// btc move
-	trspkg.AddAction(&actions.Action_7_SatoshiGenesis{
+	trspkg.AddAction(&actions.Action_34_SatoshiGenesis{
 		TransferNo:               1,
 		BitcoinBlockHeight:       1,
 		BitcoinBlockTimestamp:    1691642059,
